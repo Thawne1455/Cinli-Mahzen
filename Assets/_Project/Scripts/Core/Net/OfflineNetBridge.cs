@@ -37,6 +37,7 @@ namespace CinliMahzen.Core.Net
         {
             msg.Sender = LocalPlayer;
             msg.SentTime = Time;
+            NetDebugLog.Record(msg, false);
             Dispatch(msg);
         }
 
@@ -49,6 +50,7 @@ namespace CinliMahzen.Core.Net
             }
             msg.Sender = LocalPlayer;
             msg.SentTime = Time;
+            NetDebugLog.Record(msg, true);
             Dispatch(msg);
         }
 

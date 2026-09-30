@@ -55,3 +55,15 @@ MonoBehaviour:
   - key: interact.cancelled
     tr: "\u0130ptal edildi"
     en: Cancelled
+  - key: menu.title
+    tr: Cinli Mahzen
+    en: Cinli Mahzen
+  - key: menu.play_hotseat
+    tr: Test Oyunu (Hotseat)
+    en: Test Game (Hotseat)
+  - key: menu.online
+    tr: "Online (yak\u0131nda)"
+    en: Online (coming soon)
+  - key: menu.quit
+    tr: "\xC7\u0131k\u0131\u015F"
+    en: Quit
