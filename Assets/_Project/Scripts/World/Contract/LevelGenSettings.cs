@@ -9,7 +9,7 @@ namespace CinliMahzen.World
         public int MaxRooms = 12;
         public float CellSize = 4f;
         public int GridSize = 7;
-        public float WallHeight = 3f;
+        public float WallHeight = 4f;
         public float ExtraEdgeChance = 0.2f;
         public float MinExitPathFromVault = 35f;
         public float MinJinnDistanceFromHuman = 25f;

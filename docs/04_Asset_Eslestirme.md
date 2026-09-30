@@ -10,19 +10,19 @@
 
 | Model | Bounds (x × y × z) | Pivot | Not |
 |---|---|---|---|
-| `wall` | ? | ? | Grid hücre boyutu buradan |
-| `wall_doorway` | ? | ? | |
-| `wall_gated` | ? | ? | Vault kapısı |
-| `floor_tile_large` | ? | ? | |
-| `floor_tile_small` | ? | ? | |
-| `stairs` | ? | ? | Çıkış |
-| `shelf_large` | ? | ? | |
-| `barrel_large` | ? | ? | |
-| `chest` | ? | ? | |
-| `chair` | ? | ? | |
+| `wall` | 4.00 × 4.00 × 1.00 | segment merkezi, taban y=0; uzunluk yerel X, kalınlık Z (±0.5) | Grid hücre boyutu buradan |
+| `wall_doorway` | 4.00 × 4.00 × 1.00 | wall ile aynı; kapı mesh'i ayrı çocuk (`wall_doorway_door`), `Env_WallDoorway` prefabında gizli = açık geçit | |
+| `wall_gated` | 4.00 × 4.00 × 1.00 | wall ile aynı (kapalı parmaklık) | Vault kapısı |
+| `floor_tile_large` | 4.00 × 0.15 × 4.00 | hücre merkezi; y −0.10…+0.05 (üst yüzey +0.05) | |
+| `floor_tile_small` | 2.00 × 0.15 × 2.00 | karo merkezi; y −0.10…+0.05 | |
+| `stairs` | 5.00 × 5.10 × 4.00 | alt kenar ortası; +Z yönünde yükselir (z 0…4) | Çıkış |
+| `shelf_large` | 2.00 × 0.45 × 0.50 | arka yüz z=0, öne doğru +0.5; ölçü tek raf bölümü | |
+| `barrel_large` | 1.80 × 2.00 × 1.80 | taban merkezi | |
+| `chest` | 1.70 × 1.30 × 1.45 | taban merkezi (z −0.70…+0.75) | |
+| `chair` | 0.75 × 1.23 × 0.75 | taban merkezi | |
 
-**Grid hücre boyutu (kesin):** `? m` → `LevelGenSettings.CellSize` ve `02_GDD_Teknik.md §7.2`'ye yazılır.
-**Duvar yüksekliği:** `? m` → Spirit tavan sınırı (`§6.1`) buna göre.
+**Grid hücre boyutu (kesin):** `4 m` (wall/floor_tile_large 4 m) → `LevelGenSettings.CellSize` ve `02_GDD_Teknik.md §7.2`'ye yazılır.
+**Duvar yüksekliği:** `4 m` (`LevelGenSettings.WallHeight = 4`; duvar kalınlığı 1 m, grid çizgisine ortalı → köşelerde `pillar` (1.5 m) boşluğu kapatır) → Spirit tavan sınırı (`§6.1`) buna göre.
 
 ---
 

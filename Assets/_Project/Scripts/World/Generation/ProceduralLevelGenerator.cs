@@ -6,7 +6,7 @@ namespace CinliMahzen.World
 {
     /// <summary>
     /// Unity layer of the procedural generator: turns a LevelPlan (pure C#, see LevelPlanner) into GameObjects.
-    /// M0 uses primitive cubes for floors/walls; C0.2 prefabs replace them (prefab pivot convention: segment centre, length along local X).
+    /// Uses the KayKit prefabs from LevelPrefabSet (pivot convention: see LevelPrefabSet); falls back to primitive cubes when the set is missing.
     /// </summary>
     public sealed class ProceduralLevelGenerator : ILevelGenerator
     {
@@ -42,6 +42,9 @@ namespace CinliMahzen.World
             float cell = plan.CellSize;
             float h = s.WallHeight;
 
+            var prefabs = LevelPrefabSet.Load();
+            if (prefabs != null && !prefabs.IsComplete) prefabs = null;
+
             var floors = Child(root, "Floors");
             var walls = Child(root, "Walls");
             var markers = Child(root, "Markers");
@@ -51,7 +54,12 @@ namespace CinliMahzen.World
                 var r = plan.Rooms[ri];
                 for (int x = r.CellX; x < r.CellX + r.CellW; x++)
                     for (int z = r.CellZ; z < r.CellZ + r.CellH; z++)
-                        Box(floors, "Floor_" + x + "_" + z, new Vector3((x + 0.5f) * cell, -0.1f, (z + 0.5f) * cell), new Vector3(cell, 0.2f, cell), 0f, layer, 1);
+                    {
+                        if (prefabs != null)
+                            Spawn(floors, "Floor_" + x + "_" + z, Pick(prefabs.Floors, x, z, 5), new Vector3((x + 0.5f) * cell, 0f, (z + 0.5f) * cell), 0f);
+                        else
+                            Box(floors, "Floor_" + x + "_" + z, new Vector3((x + 0.5f) * cell, -0.1f, (z + 0.5f) * cell), new Vector3(cell, 0.2f, cell), 0f, layer, 1);
+                    }
             }
 
             for (int i = 0; i < plan.Walls.Count; i++)
@@ -62,6 +70,14 @@ namespace CinliMahzen.World
                 float yaw = w.Horizontal ? 0f : 90f;
                 string tag = w.X + "_" + w.Z + (w.Horizontal ? "h" : "v");
                 float len = cell + WallThickness;
+                if (prefabs != null)
+                {
+                    GameObject prefab = w.Kind == WallKind.Wall ? Pick(prefabs.Walls, w.X, w.Z, 6)
+                        : w.Kind == WallKind.Gated ? prefabs.WallGated : prefabs.WallDoorway;
+                    string prefix = w.Kind == WallKind.Wall ? "Wall_" : w.Kind == WallKind.Gated ? "WallGated_" : "WallDoorway_";
+                    Spawn(walls, prefix + tag, prefab, new Vector3(mx, 0f, mz), yaw);
+                    continue;
+                }
                 switch (w.Kind)
                 {
                     case WallKind.Wall:
@@ -81,6 +97,23 @@ namespace CinliMahzen.World
                         Box(walls, "WallLintel_" + tag, mid + Vector3.up * (DoorHeight + (h - DoorHeight) * 0.5f), new Vector3(DoorWidth, h - DoorHeight, WallThickness), yaw, layer, 2);
                         break;
                     }
+                }
+            }
+
+            if (prefabs != null)
+            {
+                // Pillars on every grid vertex that touches a wall: hide the corner gap between 1 m thick wall segments.
+                var vertices = new SortedSet<long>();
+                for (int i = 0; i < plan.Walls.Count; i++)
+                {
+                    var w = plan.Walls[i];
+                    vertices.Add(VertexKey(w.X, w.Z));
+                    vertices.Add(w.Horizontal ? VertexKey(w.X + 1, w.Z) : VertexKey(w.X, w.Z + 1));
+                }
+                foreach (long key in vertices)
+                {
+                    int vx = (int)(key / 1000L), vz = (int)(key % 1000L);
+                    Spawn(walls, "Pillar_" + vx + "_" + vz, prefabs.Pillar, new Vector3(vx * cell, 0f, vz * cell), 0f);
                 }
             }
 
@@ -107,6 +140,33 @@ namespace CinliMahzen.World
             if (holder == null) holder = root.gameObject.AddComponent<LevelLayoutHolder>();
             holder.Store(layout);
             return layout;
+        }
+
+        private static long VertexKey(int x, int z) => x * 1000L + z;
+
+        /// <summary>Deterministic variant pick from grid coordinates (never UnityEngine.Random): ~1/rarity cells use a non-default variant.</summary>
+        private static GameObject Pick(GameObject[] variants, int x, int z, int rarity)
+        {
+            if (variants.Length == 1 || variants[1] == null) return variants[0];
+            unchecked
+            {
+                uint h = (uint)(x * 73856093) ^ (uint)(z * 19349663);
+                h ^= h >> 13; h *= 1274126177u; h ^= h >> 16;
+                return h % (uint)rarity == 0 ? variants[1 + (int)((h / (uint)rarity) % (uint)(variants.Length - 1))] : variants[0];
+            }
+        }
+
+        private static void Spawn(Transform parent, string name, GameObject prefab, Vector3 pos, float yaw)
+        {
+            var go = Object.Instantiate(prefab, parent, false);
+            go.name = name;
+            go.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, yaw, 0f));
+            SetStatic(go);
+        }
+
+        private static void SetStatic(GameObject go)
+        {
+            foreach (var t in go.GetComponentsInChildren<Transform>(true)) t.gameObject.isStatic = true;
         }
 
         private static LevelMarker CreateMarker(PlannedMarker pm, int index, Transform parent)
