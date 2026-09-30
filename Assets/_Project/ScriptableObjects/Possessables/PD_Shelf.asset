@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36605d430c2a40b389f9b08cfdd236a3, type: 3}
+  m_Name: PD_Shelf
+  m_EditorClassIdentifier: CM.Possession::CinliMahzen.Possession.PossessableDefinition
+  id: shelf
+  nameKey: poss.shelf
+  primary:
+    id: topple
+    nameKey: action.topple
+    causeId: shelf.topple
+    trigger: 0
+    telegraphTime: 1
+    recoverTime: 1
+    energyCost: 40
+    cooldown: 0
+    singleUse: 1
+    damage: 3
+    flags: 4
+    knockdownTime: 0
+    grabTime: 0
+    applyStatus: 0
+    statusDuration: 0
+    shape: 0
+    shapeSize: {x: 2, y: 2, z: 1.5}
+    shapeOffset: {x: 0, y: 1, z: 1}
+    outerRadius: 0
+    outerDamage: 0
+    outerFlags: 0
+    outerKnockdownTime: 0
+    projectileSpeed: 0
+    projectileRange: 0
+    projectileArc: 0
+    effectDuration: 0
+  secondary:
+    id: 
+    nameKey: 
+    causeId: 
+    trigger: 0
+    telegraphTime: 0
+    recoverTime: 0
+    energyCost: 0
+    cooldown: 0
+    singleUse: 0
+    damage: 0
+    flags: 0
+    knockdownTime: 0
+    grabTime: 0
+    applyStatus: 0
+    statusDuration: 0
+    shape: 0
+    shapeSize: {x: 0, y: 0, z: 0}
+    shapeOffset: {x: 0, y: 0, z: 0}
+    outerRadius: 0
+    outerDamage: 0
+    outerFlags: 0
+    outerKnockdownTime: 0
+    projectileSpeed: 0
+    projectileRange: 0
+    projectileArc: 0
+    effectDuration: 0
+  canMove: 0
+  hopDistance: 1
+  hopInterval: 0.5
+  hopEnergy: 2
+  hopAnimTime: 0.25
+  hopHeight: 0.3
+  yawLimitDeg: 0
+  yawSpeedDeg: 60
+  enterShakeAmplitude: 0.02
+  enterShakeAngleDeg: 2
+  cameraDistance: 4
+  isSearchableContainer: 1
