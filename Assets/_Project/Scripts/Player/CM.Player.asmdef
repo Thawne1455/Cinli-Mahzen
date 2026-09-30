@@ -1,7 +1,7 @@
 {
     "name": "CM.Player",
     "rootNamespace": "CinliMahzen.Player",
-    "references": ["CM.Core"],
+    "references": ["CM.Core", "Unity.InputSystem"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
