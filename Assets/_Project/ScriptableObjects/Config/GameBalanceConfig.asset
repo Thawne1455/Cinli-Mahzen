@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2cffb4da4099ce4f99fc8dfd0deda1b, type: 3}
+  m_Name: GameBalanceConfig
+  m_EditorClassIdentifier: CM.Core::CinliMahzen.Core.GameBalanceConfig
+  roundDuration: 600
+  jinnWakeDelay: 20
+  introCountdown: 5
+  roundsPerMatch: 4
+  keyFragmentsRequired: 3
+  humanMaxHp: 3
+  humanInvulnAfterHit: 1.5
+  humanWalkSpeed: 3.5
+  humanSprintSpeed: 5.5
+  humanCarrySpeed: 2.4
+  staminaMax: 100
+  staminaDrain: 20
+  staminaRegen: 15
+  staminaRegenDelay: 1
+  interactRange: 2.2
+  searchHoldTime: 1
+  digHoldTime: 3
+  pickupGoldTime: 1
+  kickRange: 2
+  kickCooldown: 6
+  kickStun: 2.5
+  lanternPulseRange: 8
+  lanternPulseDuration: 3
+  lanternPulseCooldown: 12
+  saltRadius: 3
+  saltDuration: 25
+  saltStartCount: 0
+  nazarStartCount: 0
+  itemSlotCount: 2
+  evilJinnSpeed: 6.5
+  goodJinnSpeed: 7
+  spiritBoostMult: 1.5
+  energyMax: 100
+  energyStart: 50
+  energyRegen: 5
+  possessRange: 3
+  possessTime: 1.2
+  reenterCooldown: 10
+  exorciseRange: 3
+  exorciseHoldTime: 1.5
+  exorciseCooldown: 18
+  exorciseStun: 4
+  exorcisePossessLock: 4
+  blessAfterExorcise: 15
+  pingDuration: 8
+  pingCooldown: 3
+  pingMaxActive: 2
+  blessDuration: 20
+  blessCooldown: 25
+  blessMaxActive: 1
+  goodSightSpiritRange: 20
+  goodSightLurkRange: 4
+  goodSightChargeRange: 25
+  heatTrailDuration: 5
+  noisePingRange: 15
+  coldBreathRange: 3
+  rageRegenMult: 2
+  rageCooldownMult: 0.6
+  netRangeTolerance: 0.5

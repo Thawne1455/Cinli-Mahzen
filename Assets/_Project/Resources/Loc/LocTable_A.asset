@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c32971c33877754db10e2ceffaa0267, type: 3}
+  m_Name: LocTable_A
+  m_EditorClassIdentifier: CM.Core::CinliMahzen.Core.LocTable
+  entries:
+  - key: role.human
+    tr: "\u0130nsan"
+    en: Human
+  - key: role.good_jinn
+    tr: "\u0130yi Cin"
+    en: Good Jinn
+  - key: role.evil_jinn
+    tr: "K\xF6t\xFC Cin"
+    en: Evil Jinn
+  - key: team.seekers
+    tr: "Aray\u0131c\u0131lar"
+    en: Seekers
+  - key: team.jinns
+    tr: Cinler
+    en: Jinns
+  - key: item.salt
+    tr: Tuz
+    en: Salt
+  - key: item.nazar
+    tr: "Nazar Boncu\u011Fu"
+    en: Evil Eye Bead
+  - key: interact.hold
+    tr: "[E] bas\u0131l\u0131 tut: {0}"
+    en: 'Hold [E]: {0}'
+  - key: interact.press
+    tr: '[E] {0}'
+    en: '[E] {0}'
+  - key: interact.pickup
+    tr: Al
+    en: Pick up
+  - key: interact.use_item
+    tr: '[Q] {0} kullan'
+    en: '[Q] Use {0}'
+  - key: interact.kick
+    tr: '[F] Tekme'
+    en: '[F] Kick'
+  - key: interact.lantern
+    tr: "[Sa\u011F t\u0131k] Feneri parlat"
+    en: '[Right click] Lantern pulse'
+  - key: interact.cancelled
+    tr: "\u0130ptal edildi"
+    en: Cancelled
