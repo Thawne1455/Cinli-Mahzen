@@ -1,0 +1,14 @@
+{
+    "name": "CM.Objectives",
+    "rootNamespace": "CinliMahzen.Objectives",
+    "references": ["CM.Core", "CM.World"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,14 @@
+{
+    "name": "CM.Editor",
+    "rootNamespace": "CinliMahzen.Editor",
+    "references": ["CM.Core", "CM.Player", "CM.Possession", "CM.Jinn", "CM.Visibility", "CM.World", "CM.Objectives", "CM.Audio", "CM.Match", "CM.UI", "CM.DebugTools", "CM.Net.Pun", "Unity.InputSystem", "Unity.AI.Navigation"],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -37,7 +37,7 @@
 |---|---|---|---|---|---|
 | [x] | A0.1 | A | Unity projesi + git kurulumu | — | S |
 | [x] | A0.2 | A | Paketler & proje ayarları | A0.1 | S |
-| [ ] | A0.3 | A | Klasör yapısı + asmdef'ler | A0.2 | S |
+| [x] | A0.3 | A | Klasör yapısı + asmdef'ler | A0.2 | S |
 | [ ] | A0.4 | A | Tags/Layers/Fizik matrisi/Render feature | A0.3 | S |
 | [ ] | A0.5 | A | Core kontratları + stub'lar | A0.3 | M |
 | [ ] | A0.6 | A | OfflineNetBridge, EventBus, EntityRegistry, GameServices + testler | A0.5 | M |

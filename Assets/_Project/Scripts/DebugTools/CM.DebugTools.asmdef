@@ -1,0 +1,14 @@
+{
+    "name": "CM.DebugTools",
+    "rootNamespace": "CinliMahzen.DebugTools",
+    "references": ["CM.Core", "CM.Match", "CM.Player", "CM.Jinn", "CM.World"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

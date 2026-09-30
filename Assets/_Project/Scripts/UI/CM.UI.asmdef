@@ -1,0 +1,14 @@
+{
+    "name": "CM.UI",
+    "rootNamespace": "CinliMahzen.UI",
+    "references": ["CM.Core"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

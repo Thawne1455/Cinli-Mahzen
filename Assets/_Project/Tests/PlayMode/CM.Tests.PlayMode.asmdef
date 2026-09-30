@@ -1,0 +1,14 @@
+{
+    "name": "CM.Tests.PlayMode",
+    "rootNamespace": "CinliMahzen.Tests.PlayMode",
+    "references": ["CM.Core", "CM.Player", "CM.Possession", "CM.Jinn", "CM.Visibility", "CM.World", "CM.Objectives", "CM.Audio", "CM.Match", "CM.UI", "CM.DebugTools", "UnityEngine.TestRunner", "Unity.InputSystem"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": ["nunit.framework.dll"],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
