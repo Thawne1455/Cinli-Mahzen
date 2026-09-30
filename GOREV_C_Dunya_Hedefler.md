@@ -1,8 +1,8 @@
 # 🏚️ GÖREV DOKÜMANI — AJAN C: Dünya, Hedefler, Bulmacalar & Ses
 
 > **Kim:** Üçüncü arkadaş + Claude Code (kendi bilgisayarında, repo klonu ile).
-> **Rolün:** Oyunun **geçtiği yeri ve hedefini** yaparsın: KayKit asset'lerinin importu, test haritası üreticisi, haritaya eşya/bulmaca yerleştiren populator, mühür bulmacaları, hazine ve kaçış, ışık, ses ve raund sonu ekranları.
-> **Önemli:** Asıl prosedürel level generator'ı **proje sahibi dışarıdan getirecek.** Sen **kontratı** ve geçici bir **TestMapGenerator** yazarsın. Kontrat düzgün olursa onun generator'ı tak-çalıştır çalışır.
+> **Rolün:** Oyunun **geçtiği yeri ve hedefini** yaparsın: KayKit asset'lerinin importu, prosedürel level generator'ı (`DungeonGenerator`), haritaya eşya/bulmaca yerleştiren populator, mühür bulmacaları, hazine ve kaçış, ışık, ses ve raund sonu ekranları.
+> **Önemli:** Prosedürel level generator'ı (`DungeonGenerator`) **sen yazarsın ve kalıcıdır**: M0'da hızlı bir v1 (C0.4, A/B bloklanmasın), M3'te kalite & çeşitlilik v2 (C3.4). Bu, diğer görevlerinin (populator, hedefler, bulmacalar, ışık, ses, otopsi) **yanında** bir iştir, yerine değil. A ve B yalnızca §8 kontratına bağımlı.
 > **Detaylı referans:** `docs/01_GDD_Oyun.md` §5, §6, §11 · `docs/02_GDD_Teknik.md` §7, §8 · `docs/04_Asset_Eslestirme.md` · `docs/03_TODO.md`.
 
 ---
@@ -22,7 +22,7 @@ Sonra sıradaki [ ] görevimi başlat. Her görevde kabul kriterlerini Unity MCP
 1. Ajan A "repo hazır" deyince: `git clone https://github.com/Thawne1455/Cinli-Mahzen.git`.
 2. Unity Hub → **aynı sürüm: 6000.3.18f1** → projeyi aç.
 3. Unity MCP'yi bağla ve doğrula.
-4. `KayKit_Dungeon_Pack_1.1_FREE.zip` dosyasını ana bilgisayardan al (veya kayKit.itch.io'dan indir).
+4. KayKit paketi repo ile gelir: `KayKit_Dungeon_Pack_1.1_FREE/` (repo kökü, ham kaynak).
 5. **C0.1'e hemen başlayabilirsin** (asset import için kontrat gerekmez). C0.3 için A'nın A0.5'ini bekle.
 
 ---
@@ -31,8 +31,7 @@ Sonra sıradaki [ ] görevimi başlat. Her görevde kabul kriterlerini Unity MCP
 
 | Alan | Klasör |
 |---|---|
-| Level kontratı, TestMapGenerator, Populator, LevelService, ışık | `Scripts/World/` (CM.World) |
-| Kullanıcının harici generator'ı (C3.4'te) | `Scripts/World/External/` |
+| Level kontratı, DungeonGenerator, Populator, LevelService, ışık | `Scripts/World/` (CM.World) |
 | Mühürler, bulmacalar, kaplar, vault, altın, çıkış | `Scripts/Objectives/` (CM.Objectives) |
 | Ses sistemi | `Scripts/Audio/`, `Audio/` |
 | Otopsi, maç sonu, hedef bildirimleri UI'ı | `Scripts/UI/Round/`, `Prefabs/UI/Round/` |
@@ -54,12 +53,12 @@ Sonra sıradaki [ ] görevimi başlat. Her görevde kabul kriterlerini Unity MCP
 
 | # | ID | Görev | Kabul |
 |---|---|---|---|
-| 1 | C0.1 | **KayKit import:** zip içindeki `Assets/fbx(unity)/` → `Art/KayKit/Models/`, texture → `Art/KayKit/Textures/`, tek materyal `M_KayKit_Dungeon` (URP Lit). `License.txt` da kopyalanır. **Ölçü raporu:** duvar, zemin, kapı, merdiven, raf, fıçı, sandık, sandalye bounds'ları → `04_Asset_Eslestirme.md §1` | Pembe model yok, **grid hücre boyutu kesinleşti** (beklenti 4 m) |
+| 1 | C0.1 | **KayKit import:** repo kökündeki `KayKit_Dungeon_Pack_1.1_FREE/Assets/fbx(unity)/` → `Art/KayKit/Models/`, texture → `Art/KayKit/Textures/`, tek materyal `M_KayKit_Dungeon` (URP Lit). `License.txt` da kopyalanır. **Ölçü raporu:** duvar, zemin, kapı, merdiven, raf, fıçı, sandık, sandalye bounds'ları → `04_Asset_Eslestirme.md §1` | Pembe model yok, **grid hücre boyutu kesinleşti** (beklenti 4 m) |
 | 2 | C0.2 | **Prefablar:** Environment (duvar çeşitleri, zemin, kapı açıklığı, `wall_gated`, sütun, merdiven — `Environment` layer collider'lı, tutarlı pivot) + Props (collider'lı, possessable bileşeni **yok**) | Sandbox_C'de elle kurulmuş 3×3 oda, boşluk yok (screenshot) |
 | — | 📣 | **B'ye haber ver: "Prop prefabları hazır."** B1.3 bunu bekliyor | |
 | 3 | C0.3 | **Level kontratı** (Teknik §8.1–8.5): `ILevelGenerator`, `LevelLayout`, `RoomInfo`, tüm marker bileşenleri (gizmo'lu), `LevelValidator`, `LevelHash` | Validator testleri yeşil |
 | — | 📣 | **A'ya haber ver: "Marker'lar hazır."** A1.5 (PawnSpawner) bunu kullanıyor | |
-| 4 | C0.4 | **TestMapGenerator** (Teknik §7.2): 7×7 grid, 8-12 oda, MST + %20 ekstra koridor (döngü), `wall_doorway` ve `wall_gated`, tüm marker kuralları. Editör menüleri | Aynı seed → aynı hash · 50 seed → hepsi Validator'dan geçiyor · üstten screenshot |
+| 4 | C0.4 | **DungeonGenerator v1** (Teknik §7.2, kalıcı kod): 7×7 grid, 8-12 oda, MST + %20 ekstra koridor (döngü), `wall_doorway` ve `wall_gated`, tüm marker kuralları. Editör menüleri | Aynı seed → aynı hash · 50 seed → hepsi Validator'dan geçiyor · üstten screenshot |
 
 ### 🟧 M1 — Çekirdek Döngü
 
@@ -89,7 +88,7 @@ Sonra sıradaki [ ] görevimi başlat. Her görevde kabul kriterlerini Unity MCP
 | C3.1 | **Otopsi Raporu** ekranı (ölüm sebebi, katil, raund istatistikleri, komik metinler) — A'nın StatsService'ini kullanır |
 | C3.2 | **Maç Sonu** ekranı + unvanlar ("Mobilya Katili", "Tekmeci Dayı"...) |
 | C3.3 | **AudioService** + `SfxLibrary` + tüm event'lere ses hook'u (placeholder ses; telgraf sesleri 3D ve öncelikli) |
-| **C3.4** | ⭐ **Harici prosedürel generator entegrasyonu** (proje sahibi verince): adapter, marker ekleme, determinizm testi, 20 seed doğrulama (Teknik §8.6) |
+| **C3.4** | ⭐ **DungeonGenerator v2 — kalite & çeşitlilik:** şekilli odalar / oda şablonları, graf mesafesiyle rol atama, oynanış sezgileri, `Batch Report (100 seeds)` → 100/100 geçer (Teknik §7.2 v2, §8.6) |
 | C3.5 | Post-MVP eşya soketleri (Masa, Diken, Tabak) — prefab/aksiyon B'de |
 
 ### 🟦 M4 — Online (EN SON)
@@ -121,13 +120,13 @@ Sonra sıradaki [ ] görevimi başlat. Her görevde kabul kriterlerini Unity MCP
 | C1.1 LevelService / `ILevelInfo` | A, B | Maç akışı, cin uçuş sınırı |
 | C1.5 `ILightService` | B | Meşale söndürme |
 | C2.4 `GoldStateEvt` | A, B | İnsanın yavaşlaması, Öfke modu |
-| **§8 Level kontratı** | Proje sahibi | Kendi generator'ını bağlamak için |
+| **§8 Level kontratı** | A, B | Generator'dan bağımsız çalışmaları için (sadece `LevelLayout` / marker'lar) |
 
 ---
 
 ## 7. Dikkat Et
 - **Determinizm her şeydir.** Online'da her oyuncu haritayı aynı seed'den kendisi üretir. `UnityEngine.Random` yok, sadece `GameRandom(seed)`. `Dictionary` / `HashSet` sırasına güvenme, listeleri sırala. Her üretim değişikliğinden sonra "aynı seed → aynı hash" testi.
-- **Generator ile populator ayrı.** Generator sadece duvar, zemin ve marker üretir. Eşya, bulmaca, altın hep populator'ın işi. Harici generator gelince sadece generator tarafı değişir.
+- **Generator ile populator ayrı.** Generator sadece duvar, zemin ve marker üretir. Eşya, bulmaca, altın hep populator'ın işi. Generator'ı geliştirirken populator'a dokunmak gerekmez (kontrat sabit kaldıkça).
 - Haritanın tasarım kuralları: `01_GDD_Oyun.md §11`. En az 1 döngü koridor, çıkış vault'tan ≥ 35 m, rün ipucu ile rün taşları farklı odalarda.
 - Performans: tek gölgeli ışık insanın feneri olmalı. Meşale ışıkları gölgesiz.
 - Harita üretimi + populate < 1.5 sn sürmeli.

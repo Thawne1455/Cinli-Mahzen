@@ -61,7 +61,7 @@ Bu proje **3 Claude Code ajanı** (A, B, C) tarafından, 3 ayrı makinede, paral
 - Sahne/prefab düzenlemelerini MCP ile yaparken değişiklik sonrası **sahneyi kaydet**.
 - Büyük script'leri dosya olarak yaz (Write), MCP'yi derleme/konsol/test/play mode/sahne işlemleri için kullan.
 - Play mode'dayken yapılan sahne değişiklikleri kaybolur — düzenleme yapmadan önce Play'den çık.
-- Test haritası üretmek için: `CinliMahzen/Level/Generate Test Map (Random Seed)`.
+- Harita üretmek için: `CinliMahzen/Level/Generate Map (Random Seed)`.
 - Hotseat tuşları: F1-F4 oyuncu değiştir, F5 ölümsüz insan, F6 sınırsız enerji, F7 her şeyi göster, F8 yeni raund, F9 overlay, F10 hız ×2, F11 tüm mühürler, F12 dummy bot. MCP ile tuş basamıyorsan eşdeğer `CinliMahzen/Debug/*` menü komutunu kullan.
 
 ## 5. Kodlama Standartları
@@ -76,4 +76,4 @@ Bu proje **3 Claude Code ajanı** (A, B, C) tarafından, 3 ayrı makinede, paral
 - Başka ajanın görevini "yardım olsun" diye yapma — bağımlılık eksikse stub kullan veya kullanıcıya bildir.
 - M4'ten önce PUN import etme veya PUN kodu yazma.
 - `main` dalına derlenmeyen kod push'lama.
-- Level generator'ı yeniden yazma — kullanıcı kendi generator'ını getirecek; sen sadece `TestMapGenerator` (C) ve kontratı yazarsın.
+- Level generator (`DungeonGenerator`) **C'nindir**; C onu kalıcı olarak yazar ve geliştirir (C'nin diğer görevlerinin yanında). §8 Level kontratını bozmadan geliştirilir. A ve B generator'a değil, sadece `LevelLayout` / marker'lara bağımlıdır.

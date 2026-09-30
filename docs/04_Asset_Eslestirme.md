@@ -1,6 +1,6 @@
 # CİNLİ MAHZEN — Asset Eşleştirme
 
-> Kaynak: `KayKit_Dungeon_Pack_1.1_FREE.zip` → **`Assets/fbx(unity)/`** (Unity için hazırlanmış fbx'ler) + `Assets/textures/dungeon_texture.png`.
+> Kaynak: repo kökündeki `KayKit_Dungeon_Pack_1.1_FREE/` klasörü (ham paket, Unity import etmez) → **`Assets/fbx(unity)/`** (Unity için hazırlanmış fbx'ler) + `Assets/textures/dungeon_texture.png`.
 > Tüm modeller **tek texture atlas** kullanır → tek materyal `M_KayKit_Dungeon`.
 > Lisans: KayKit (CC0 — `License.txt` repo'ya `Art/KayKit/` altında kopyalanır).
 

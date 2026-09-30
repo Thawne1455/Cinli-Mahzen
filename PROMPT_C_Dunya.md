@@ -13,7 +13,7 @@
    Window → Package Manager → `+` → *Add package from git URL* →
    `https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity`
 4. Unity'de **Window → MCP for Unity** → sunucuyu başlat → **Claude Code** için *Configure*.
-5. **`KayKit_Dungeon_Pack_1.1_FREE.zip`** dosyasını ana bilgisayardan al, bilgisayarında bir yere çıkar. Yolunu not et.
+5. KayKit paketi repo ile gelir: **`KayKit_Dungeon_Pack_1.1_FREE/`** (repo kökü). Ayrıca indirmene gerek yok.
 6. Terminalde proje klasöründe `claude` çalıştır → `/mcp` ile UnityMCP ✔ olduğunu gör.
 
 ---
@@ -96,8 +96,8 @@ Bu görev bitti. docs/03_TODO.md'deki sıradaki [ ] görevime geç. Aynı döng�
 ## 5. Harita Doğrulama Promptu (C0.4 ve sonrasında sık kullanılır)
 
 ```
-Test haritasını doğrula:
-1. execute_menu_item "CinliMahzen/Level/Generate Test Map (Random Seed)" — 3 kez, farklı seed.
+Haritayı doğrula:
+1. execute_menu_item "CinliMahzen/Level/Generate Map (Random Seed)" — 3 kez, farklı seed.
 2. Her seferde "CinliMahzen/Level/Validate Current Level" çalıştır, raporu read_console'dan oku.
 3. Her harita için kuş bakışı screenshot al (manage_camera, view_position yukarıdan,
    max_resolution=512, include_image=True).
@@ -107,18 +107,18 @@ Test haritasını doğrula:
 
 ---
 
-## 6. Harici Generator Entegrasyonu (C3.4 — proje sahibi generator'ı verince)
+## 6. DungeonGenerator v2 (C3.4 — kalite & çeşitlilik)
 
 ```
-Proje sahibi prosedürel level generator'ını verdi, şurada: <BURAYA_YOL>
-docs/02_GDD_Teknik.md §8'i (özellikle §8.6) oku.
-1. Önce generator kodunu incele ve bana şunu raporla: nasıl çalışıyor, deterministik mi
-   (UnityEngine.Random, Dictionary sırası, zaman kullanımı var mı), hangi prefabları kullanıyor.
-2. Uyumsuzlukları ve önerdiğim adapter planını göster, onayımı bekle.
-3. Onaydan sonra: Scripts/World/External/ altına koy (kendi asmdef'i), ILevelGenerator adapter'ı,
-   marker ekleme (post-process), LevelGenSettings'te GeneratorType=External.
-4. Determinizm testi + 20 seed Validator testi + tam raund play testi.
-Generator'ın kendi mantığını yeniden YAZMA, sadece adapter ile sar. Değiştirmek gerekirse önce sor.
+C3.4'e başlıyoruz: DungeonGenerator v2.
+docs/02_GDD_Teknik.md §7.2 (v2), §8 ve docs/01_GDD_Oyun.md §11'i oku.
+1. Mevcut v1'i incele; v2 yaklaşımını öner: şekilli odalar (L/T) mi, elle hazırlanmış oda şablonları
+   (room prefab + soket) + prosedürel yerleşim mi. Artı/eksi ve KayKit ile uyumu. Onayımı bekle.
+2. Oda rollerini graf/yol mesafesiyle ata (Start, Vault, Exit ≥ 35 m, rün ↔ ipucu ≥ 2 oda).
+3. Oynanış sezgileri: vault çevresinde döngü, çıkmaz sınırı, koridor/oda oranı. Ayarlar LevelGenSettings'te.
+4. CinliMahzen/Level/Batch Report (100 seeds) menüsü → tablo raporu.
+5. Determinizm testi + 100 seed Validator testi + 3 seed'de tam raund play testi + üstten screenshot'lar.
+Kontrat (§8.1–8.4) değişecekse önce CONTRACT_CHANGES'e yaz ve bana söyle.
 ```
 
 ---

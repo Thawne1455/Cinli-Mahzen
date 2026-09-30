@@ -27,11 +27,12 @@
 ## Ajanlar
 - **A** — Çekirdek, İnsan, Maç akışı, UI framework, (M4) Photon PUN
 - **B** — Cinler, Possession, Eşya aksiyonları, Görünürlük, İyi cin yetenekleri
-- **C** — Harita (test generator + kontrat), Populator, Hedefler, Bulmacalar, Işık, Ses, Otopsi
+- **C** — Harita (level generator + kontrat), Populator, Hedefler, Bulmacalar, Işık, Ses, Otopsi
 
 ## Önemli Notlar
 - **Online (Photon PUN 2) en son (M4).** Ama kod baştan network'e hazır yazılıyor.
-- **Prosedürel level generator'ı sen getireceksin** → `02_GDD_Teknik.md §8` kontratını uygulaması yeterli. Entegrasyon görevi: `C3.4`.
+- **Prosedürel level generator'ı C yazar** (`DungeonGenerator`, `02_GDD_Teknik.md §7.2`): v1 = `C0.4`, v2 (kalite & çeşitlilik) = `C3.4`. `§8` kontratı sayesinde başka bir generator da takılabilir.
+- **KayKit paketi** repo kökünde: `KayKit_Dungeon_Pack_1.1_FREE/` (ham kaynak; C0.1'de `Assets/_Project/Art/KayKit/`'e import edilir).
 - **Discord:** Maçta takımlar ayrı ses kanalında olmalı.
 - **Photon AppId** repo'ya commit edilmez, herkes kendi yerel ayarına girer (M4).
 - Eksik asset'ler (insan karakteri, sesler, font): `04_Asset_Eslestirme.md §6`.

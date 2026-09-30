@@ -20,7 +20,7 @@
 
 | MS | Ad | Çıkış kriteri |
 |---|---|---|
-| **M0** | Kurulum | Proje 3 makinede derleniyor, Core kontratları + stub'lar var, KayKit import edildi, test haritası üretiliyor |
+| **M0** | Kurulum | Proje 3 makinede derleniyor, Core kontratları + stub'lar var, KayKit import edildi, DungeonGenerator v1 harita üretiyor |
 | **M1** | Çekirdek Döngü (offline) | Hotseat'te: insan dolaşır, kötü cin rafa girip devirir ve insanı öldürür; insan altını bulup çıkabilir; raund biter ve yeni seed ile başlar |
 | **M2** | Tam Oynanış (offline) | Tüm MVP eşyaları, iyi cin yetenekleri, görünürlük, 3 mühür bulmacası, hazine/kaçış, 4 raund rotasyon + puan |
 | **M3** | Cila | Menüler, otopsi, maç sonu, ses, VFX, denge araçları, performans |
@@ -49,7 +49,7 @@
 | [ ] | C0.1 | C | KayKit import + materyal + ölçü raporu | A0.3 | S |
 | [ ] | C0.2 | C | Environment & prop prefabları | C0.1 | M |
 | [ ] | C0.3 | C | Level kontratı kodu (ILevelGenerator, marker'lar, LevelLayout, Validator) | A0.5 | M |
-| [ ] | C0.4 | C | TestMapGenerator | C0.2, C0.3 | L |
+| [ ] | C0.4 | C | DungeonGenerator v1 (kalıcı level generator) | C0.2, C0.3 | L |
 
 ### A0.1 — Unity projesi + git
 - Unity Hub → **6000.3.18f1** → "Universal 3D" şablonu → proje adı `CinliMahzen`.
@@ -117,7 +117,7 @@
 - **Kabul:** Screenshot (MCP) ile görseller doğrulandı.
 
 ### C0.1 — KayKit import
-- Kaynak: `Downloads/KayKit_Dungeon_Pack_1.1_FREE.zip` → içindeki **`Assets/fbx(unity)/`** klasörü → `Assets/_Project/Art/KayKit/Models/`. Texture: `Assets/textures/dungeon_texture.png` → `Art/KayKit/Textures/`.
+- Kaynak: repo kökündeki `KayKit_Dungeon_Pack_1.1_FREE/` klasörü (ham paket, Unity import etmez) → içindeki **`Assets/fbx(unity)/`** klasörü → `Assets/_Project/Art/KayKit/Models/`. Texture: `Assets/textures/dungeon_texture.png` → `Art/KayKit/Textures/`.
 - Tek materyal `M_KayKit_Dungeon` (URP Lit, base map = dungeon_texture, smoothness 0.1). Model import ayarı: Materials → "Use External Materials (Legacy)" veya Remap ile hepsini bu materyale bağla.
 - **Ölçü raporu:** `wall`, `floor_tile_large`, `floor_tile_small`, `wall_doorway`, `wall_gated`, `stairs`, `shelf_large`, `barrel_large`, `chest`, `chair` bounds'larını ölç → `docs/04_Asset_Eslestirme.md` "Ölçüler" tablosunu doldur. Grid hücre boyutunu (beklenti 4 m) kesinleştir.
 - **Kabul:** Tüm modeller pembe değil (materyal bağlı), ölçü tablosu dolu, commit.
@@ -132,8 +132,8 @@
 - **Testler:** Validator eksik marker senaryoları.
 - **Kabul:** Testler yeşil.
 
-### C0.4 — TestMapGenerator
-- `§7.2`. Marker kurallarını sağlar. Editör menüleri.
+### C0.4 — DungeonGenerator v1
+- `02_GDD_Teknik.md §7.2` (v1). Kalıcı kod: mantık düz C#, sonradan v2'ye genişletilecek. Marker kurallarını sağlar. Editör menüleri.
 - **Testler:** Aynı seed 2 kez → aynı `LevelHash`; 50 farklı seed → hepsi Validator'dan geçer.
 - **Kabul (MCP):** Menüden üret → screenshot (üstten ortografik) → odalar, kapılar, marker gizmoları görünüyor.
 
@@ -360,11 +360,12 @@ Hotseat'te tek kişi tam bir raundu oynayabilmeli: 3 mühür (kap, rün, kazı) 
 | [ ] | C3.1 | C | Otopsi Raporu ekranı | A2.5 | M |
 | [ ] | C3.2 | C | MatchEnd ekranı + unvanlar | A2.5 | S |
 | [ ] | C3.3 | C | AudioService + SfxLibrary + tüm hook'lara placeholder ses | M2 | M |
-| [ ] | C3.4 | C | **Kullanıcının prosedürel generator'ı entegrasyonu** (kullanıcı verince) | C0.3 | M |
+| [ ] | C3.4 | C | **DungeonGenerator v2** — kalite & çeşitlilik (şekilli odalar/şablonlar, rol atama, sezgiler, batch rapor) | C0.4, C2.4 | L |
 | [ ] | C3.5 | C | Post-MVP eşyalar: Masa Kay, Diken, Tabak Gürültü (B ile koordineli; prefab B, soket C) | M2 | M |
 
-### C3.4 — Harici generator
-- `02_GDD_Teknik.md §8.6` adımları. **Kabul:** Harici generator ile 20 seed → Validator'dan geçiyor, determinizm testi yeşil, tam raund oynanıyor.
+### C3.4 — DungeonGenerator v2
+- `02_GDD_Teknik.md §7.2` (v2) + `§8.6` kuralları, `01_GDD_Oyun.md §11` tasarım gereksinimleri.
+- **Kabul:** `Batch Report (100 seeds)` → 100/100 Validator'dan geçiyor, determinizm testi yeşil, 3 farklı seed'de tam raund oynanıyor, üretim+populate < 1.5 sn, üstten screenshot'larda belirgin çeşitlilik.
 
 *(Diğer M3 görevlerinin kabul kriteri: ilgili GDD bölümü + MCP screenshot + konsolda Error yok.)*
 
