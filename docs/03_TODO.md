@@ -48,8 +48,8 @@
 | [~] | B0.2 | B | Sandbox_B sahnesi + spirit placeholder görseller | A0.4 | S |
 | [ ] | C0.1 | C | KayKit import + materyal + ölçü raporu | A0.3 | S |
 | [ ] | C0.2 | C | Environment & prop prefabları | C0.1 | M |
-| [ ] | C0.3 | C | Level kontratı kodu (ILevelGenerator, marker'lar, LevelLayout, Validator) | A0.5 | M |
-| [ ] | C0.4 | C | ProceduralLevelGenerator v1 (kalıcı level generator) | C0.2, C0.3 | L |
+| [~] | C0.3 | C | Level kontratı kodu (ILevelGenerator, marker'lar, LevelLayout, Validator) | A0.5 | M |
+| [~] | C0.4 | C | ProceduralLevelGenerator v1 (kalıcı level generator) | C0.2, C0.3 | L |
 
 ### A0.1 — Unity projesi + git
 - Unity Hub → **6000.3.18f1** → "Universal 3D" şablonu → proje adı `CinliMahzen`.
