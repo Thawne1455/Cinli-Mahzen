@@ -45,7 +45,7 @@
 | [ ] | A0.8 | A | Input Actions asset | A0.2 | S |
 | [ ] | A0.9 | A | Boot/Game sahneleri, auto-bootstrap, debug overlay iskeleti | A0.6 | M |
 | [~] | B0.1 | B | Possession veri modeli (SO) + düz C# durum makinesi + testler | A0.5 | M |
-| [ ] | B0.2 | B | Sandbox_B sahnesi + spirit placeholder görseller | A0.4 | S |
+| [~] | B0.2 | B | Sandbox_B sahnesi + spirit placeholder görseller | A0.4 | S |
 | [ ] | C0.1 | C | KayKit import + materyal + ölçü raporu | A0.3 | S |
 | [ ] | C0.2 | C | Environment & prop prefabları | C0.1 | M |
 | [ ] | C0.3 | C | Level kontratı kodu (ILevelGenerator, marker'lar, LevelLayout, Validator) | A0.5 | M |
