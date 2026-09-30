@@ -76,4 +76,4 @@ Bu proje **3 Claude Code ajanı** (A, B, C) tarafından, 3 ayrı makinede, paral
 - Başka ajanın görevini "yardım olsun" diye yapma — bağımlılık eksikse stub kullan veya kullanıcıya bildir.
 - M4'ten önce PUN import etme veya PUN kodu yazma.
 - `main` dalına derlenmeyen kod push'lama.
-- Level generator (`DungeonGenerator`) **C'nindir**; C onu kalıcı olarak yazar ve geliştirir (C'nin diğer görevlerinin yanında). §8 Level kontratını bozmadan geliştirilir. A ve B generator'a değil, sadece `LevelLayout` / marker'lara bağımlıdır.
+- Level generator (`ProceduralLevelGenerator`) **C'nindir**; C onu kalıcı olarak yazar ve geliştirir (C'nin diğer görevlerinin yanında). §8 Level kontratını bozmadan geliştirilir. A ve B generator'a değil, sadece `LevelLayout` / marker'lara bağımlıdır.

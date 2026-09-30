@@ -31,7 +31,7 @@
 
 ## Önemli Notlar
 - **Online (Photon PUN 2) en son (M4).** Ama kod baştan network'e hazır yazılıyor.
-- **Prosedürel level generator'ı C yazar** (`DungeonGenerator`, `02_GDD_Teknik.md §7.2`): v1 = `C0.4`, v2 (kalite & çeşitlilik) = `C3.4`. `§8` kontratı sayesinde başka bir generator da takılabilir.
+- **Prosedürel level generator'ı C yazar** (`ProceduralLevelGenerator`, `02_GDD_Teknik.md §7.2`): v1 = `C0.4`, v2 (kalite & çeşitlilik) = `C3.4`. `§8` kontratı sayesinde başka bir generator da takılabilir.
 - **KayKit paketi** repo kökünde: `KayKit_Dungeon_Pack_1.1_FREE/` (ham kaynak; C0.1'de `Assets/_Project/Art/KayKit/`'e import edilir).
 - **Discord:** Maçta takımlar ayrı ses kanalında olmalı.
 - **Photon AppId** repo'ya commit edilmez, herkes kendi yerel ayarına girer (M4).

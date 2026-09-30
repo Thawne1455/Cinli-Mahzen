@@ -107,10 +107,10 @@ Haritayı doğrula:
 
 ---
 
-## 6. DungeonGenerator v2 (C3.4 — kalite & çeşitlilik)
+## 6. ProceduralLevelGenerator v2 (C3.4 — kalite & çeşitlilik)
 
 ```
-C3.4'e başlıyoruz: DungeonGenerator v2.
+C3.4'e başlıyoruz: ProceduralLevelGenerator v2.
 docs/02_GDD_Teknik.md §7.2 (v2), §8 ve docs/01_GDD_Oyun.md §11'i oku.
 1. Mevcut v1'i incele; v2 yaklaşımını öner: şekilli odalar (L/T) mi, elle hazırlanmış oda şablonları
    (room prefab + soket) + prosedürel yerleşim mi. Artı/eksi ve KayKit ile uyumu. Onayımı bekle.

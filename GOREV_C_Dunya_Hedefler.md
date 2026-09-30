@@ -1,8 +1,8 @@
 # 🏚️ GÖREV DOKÜMANI — AJAN C: Dünya, Hedefler, Bulmacalar & Ses
 
 > **Kim:** Üçüncü arkadaş + Claude Code (kendi bilgisayarında, repo klonu ile).
-> **Rolün:** Oyunun **geçtiği yeri ve hedefini** yaparsın: KayKit asset'lerinin importu, prosedürel level generator'ı (`DungeonGenerator`), haritaya eşya/bulmaca yerleştiren populator, mühür bulmacaları, hazine ve kaçış, ışık, ses ve raund sonu ekranları.
-> **Önemli:** Prosedürel level generator'ı (`DungeonGenerator`) **sen yazarsın ve kalıcıdır**: M0'da hızlı bir v1 (C0.4, A/B bloklanmasın), M3'te kalite & çeşitlilik v2 (C3.4). Bu, diğer görevlerinin (populator, hedefler, bulmacalar, ışık, ses, otopsi) **yanında** bir iştir, yerine değil. A ve B yalnızca §8 kontratına bağımlı.
+> **Rolün:** Oyunun **geçtiği yeri ve hedefini** yaparsın: KayKit asset'lerinin importu, prosedürel level generator'ı (`ProceduralLevelGenerator`), haritaya eşya/bulmaca yerleştiren populator, mühür bulmacaları, hazine ve kaçış, ışık, ses ve raund sonu ekranları.
+> **Önemli:** Prosedürel level generator'ı (`ProceduralLevelGenerator`) **sen yazarsın ve kalıcıdır**: M0'da hızlı bir v1 (C0.4, A/B bloklanmasın), M3'te kalite & çeşitlilik v2 (C3.4). Bu, diğer görevlerinin (populator, hedefler, bulmacalar, ışık, ses, otopsi) **yanında** bir iştir, yerine değil. A ve B yalnızca §8 kontratına bağımlı.
 > **Detaylı referans:** `docs/01_GDD_Oyun.md` §5, §6, §11 · `docs/02_GDD_Teknik.md` §7, §8 · `docs/04_Asset_Eslestirme.md` · `docs/03_TODO.md`.
 
 ---
@@ -31,7 +31,7 @@ Sonra sıradaki [ ] görevimi başlat. Her görevde kabul kriterlerini Unity MCP
 
 | Alan | Klasör |
 |---|---|
-| Level kontratı, DungeonGenerator, Populator, LevelService, ışık | `Scripts/World/` (CM.World) |
+| Level kontratı, ProceduralLevelGenerator, Populator, LevelService, ışık | `Scripts/World/` (CM.World) |
 | Mühürler, bulmacalar, kaplar, vault, altın, çıkış | `Scripts/Objectives/` (CM.Objectives) |
 | Ses sistemi | `Scripts/Audio/`, `Audio/` |
 | Otopsi, maç sonu, hedef bildirimleri UI'ı | `Scripts/UI/Round/`, `Prefabs/UI/Round/` |
@@ -58,7 +58,7 @@ Sonra sıradaki [ ] görevimi başlat. Her görevde kabul kriterlerini Unity MCP
 | — | 📣 | **B'ye haber ver: "Prop prefabları hazır."** B1.3 bunu bekliyor | |
 | 3 | C0.3 | **Level kontratı** (Teknik §8.1–8.5): `ILevelGenerator`, `LevelLayout`, `RoomInfo`, tüm marker bileşenleri (gizmo'lu), `LevelValidator`, `LevelHash` | Validator testleri yeşil |
 | — | 📣 | **A'ya haber ver: "Marker'lar hazır."** A1.5 (PawnSpawner) bunu kullanıyor | |
-| 4 | C0.4 | **DungeonGenerator v1** (Teknik §7.2, kalıcı kod): 7×7 grid, 8-12 oda, MST + %20 ekstra koridor (döngü), `wall_doorway` ve `wall_gated`, tüm marker kuralları. Editör menüleri | Aynı seed → aynı hash · 50 seed → hepsi Validator'dan geçiyor · üstten screenshot |
+| 4 | C0.4 | **ProceduralLevelGenerator v1** (Teknik §7.2, kalıcı kod): 7×7 grid, 8-12 oda, MST + %20 ekstra koridor (döngü), `wall_doorway` ve `wall_gated`, tüm marker kuralları. Editör menüleri | Aynı seed → aynı hash · 50 seed → hepsi Validator'dan geçiyor · üstten screenshot |
 
 ### 🟧 M1 — Çekirdek Döngü
 
@@ -88,7 +88,7 @@ Sonra sıradaki [ ] görevimi başlat. Her görevde kabul kriterlerini Unity MCP
 | C3.1 | **Otopsi Raporu** ekranı (ölüm sebebi, katil, raund istatistikleri, komik metinler) — A'nın StatsService'ini kullanır |
 | C3.2 | **Maç Sonu** ekranı + unvanlar ("Mobilya Katili", "Tekmeci Dayı"...) |
 | C3.3 | **AudioService** + `SfxLibrary` + tüm event'lere ses hook'u (placeholder ses; telgraf sesleri 3D ve öncelikli) |
-| **C3.4** | ⭐ **DungeonGenerator v2 — kalite & çeşitlilik:** şekilli odalar / oda şablonları, graf mesafesiyle rol atama, oynanış sezgileri, `Batch Report (100 seeds)` → 100/100 geçer (Teknik §7.2 v2, §8.6) |
+| **C3.4** | ⭐ **ProceduralLevelGenerator v2 — kalite & çeşitlilik:** şekilli odalar / oda şablonları, graf mesafesiyle rol atama, oynanış sezgileri, `Batch Report (100 seeds)` → 100/100 geçer (Teknik §7.2 v2, §8.6) |
 | C3.5 | Post-MVP eşya soketleri (Masa, Diken, Tabak) — prefab/aksiyon B'de |
 
 ### 🟦 M4 — Online (EN SON)

@@ -16,7 +16,7 @@
 | Network | **Photon PUN 2** — **en son fazda (M4)** entegre edilir. O zamana kadar oyun **offline** çalışır, ama kod **ilk günden network'e hazır** yazılır (§4 `INetBridge`). |
 | Otorite modeli | **Master Client otoriter**: hasar, can, possession, enerji, hedefler, maç durumu. Oyuncu hareketi **sahip-otoriter** (owner). |
 | Fizik | **Oyun sonucunu etkileyen hiçbir şey Rigidbody fiziğine bağlı değildir.** Saldırılar scripted (kinematik/animasyon) + otorite hit-check. Rigidbody sadece kozmetik (ragdoll, kırık parçalar) ve lokaldir. |
-| Level | `ILevelGenerator` arayüzü. Uygulaması `DungeonGenerator` (C yazar, kalıcı; v1 → v2 geliştirilir). **Seed ile deterministik.** |
+| Level | `ILevelGenerator` arayüzü. Uygulaması `ProceduralLevelGenerator` (C yazar, kalıcı; v1 → v2 geliştirilir). **Seed ile deterministik.** |
 | Veri | Tüm denge değerleri **ScriptableObject** (`GameBalanceConfig`, `PossessableDefinition`, `ItemDefinition`). Kodda sihirli sayı yok. |
 | Test | Mantık düz C# sınıflarında (MonoBehaviour'suz) → **EditMode testleri**. Akışlar → PlayMode testleri + Unity MCP ile duman testi. |
 | Solo test | **Hotseat Debug Modu:** Tek editörde 4 piyon, F1-F4 ile rol değiştirme. Online olmadan tüm oyun test edilebilir. |
@@ -63,7 +63,7 @@ Assets/
     │   ├── Jinn/              # (B) CM.Jinn
     │   ├── Possession/        # (B) CM.Possession
     │   ├── Visibility/        # (B) CM.Visibility
-    │   ├── World/             # (C) CM.World — level kontratı, DungeonGenerator, populator
+    │   ├── World/             # (C) CM.World — level kontratı, ProceduralLevelGenerator, populator
     │   ├── Objectives/        # (C) CM.Objectives
     │   ├── Audio/             # (C) CM.Audio
     │   ├── UI/                # CM.UI — Common (A), Human (A), Jinn (B), Round (C)
@@ -614,7 +614,7 @@ Tüm istemciler:
 ```
 **Tüm istemciler aynı seed'den aynı haritayı üretir** → yüzlerce prop için network nesnesi gerekmez. Her prop'un NetId'si populator sırasıyla deterministik atanır.
 
-### 7.2 DungeonGenerator (C yazar — kalıcı)
+### 7.2 ProceduralLevelGenerator (C yazar — kalıcı)
 Tek başına harita üreticisi; C'nin diğer görevleriyle birlikte sürekli geliştirilir. Mantık düz C# (grid, oda grafı, rol atama) → Unity yerleştirmesi ince katman (EditMode testlenebilir).
 
 **v1 (C0.4 — M0, A/B'yi bloklamamak için hızlı):**
@@ -673,7 +673,7 @@ Generator sadece **geometri + marker (soket)** üretir. Oynanış nesnelerini po
 
 ## 8. Level Kontratı (Generator ↔ Oyun Sınırı) ⭐
 
-> `DungeonGenerator` (ve ileride denenebilecek başka her generator) **sadece bu arayüzü uygular**. Oynanış yerleşimini `LevelPopulator` yapar. A ve B yalnızca bu kontrata bağımlıdır.
+> `ProceduralLevelGenerator` (ve ileride denenebilecek başka her generator) **sadece bu arayüzü uygular**. Oynanış yerleşimini `LevelPopulator` yapar. A ve B yalnızca bu kontrata bağımlıdır.
 
 ### 8.1 Arayüz
 ```csharp
@@ -829,7 +829,7 @@ CinliMahzen/Level/Validate Current Level
 - NavMesh üzerinde rastgele oda gez, kapları ara, 20% ihtimalle koş. Kötü cin sistemlerini tek başına test etmek için.
 
 ### 12.4 Testler
-- **EditMode (zorunlu):** `PossessionArbiter` kuralları, `JinnEnergy`, `CooldownTracker`, `HumanHealth` (nazar, dokunulmazlık), `MatchStateMachine` geçişleri, rol rotasyonu, `ObjectiveState`, rün sırası, `TitleCalculator`, tüm NetMsg encode/decode round-trip, `DungeonGenerator` determinizm (aynı seed → aynı hash), `LevelValidator`.
+- **EditMode (zorunlu):** `PossessionArbiter` kuralları, `JinnEnergy`, `CooldownTracker`, `HumanHealth` (nazar, dokunulmazlık), `MatchStateMachine` geçişleri, rol rotasyonu, `ObjectiveState`, rün sırası, `TitleCalculator`, tüm NetMsg encode/decode round-trip, `ProceduralLevelGenerator` determinizm (aynı seed → aynı hash), `LevelValidator`.
 - **PlayMode (önemli akışlar):** Raund başlar → insan doğar; cin rafa girer → devirir → insan ölür → RoundEnd; F11 + altın + çıkış → SeekersWin.
 - Her görevin kabul kriterinde hangi testin geçmesi gerektiği yazılıdır.
 

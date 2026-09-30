@@ -287,7 +287,7 @@ Dil: **Türkçe** öncelikli. Tüm metinler anahtar tabanlı (`Loc`) — İngili
 
 ## 11. Harita Kuralları (Level Generator için tasarım gereksinimleri)
 
-Prosedürel harita üreticisini (`DungeonGenerator`) Ajan C yazar. Oyun tasarımı açısından haritanın sağlaması gerekenler:
+Prosedürel harita üreticisini (`ProceduralLevelGenerator`) Ajan C yazar. Oyun tasarımı açısından haritanın sağlaması gerekenler:
 
 - **Boyut:** 8-14 oda, tek kat (MVP). Toplam yürüme mesafesi uçtan uca ~60-90 m.
 - **Başlangıç odası:** İnsan burada doğar. Cinler haritanın öteki yarısında doğar.
