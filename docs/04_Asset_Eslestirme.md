@@ -1,110 +1,91 @@
 # CİNLİ MAHZEN — Asset Eşleştirme
 
-> Kaynak: repo kökündeki `KayKit_Dungeon_Pack_1.1_FREE/` klasörü (ham paket, Unity import etmez) → **`Assets/fbx(unity)/`** (Unity için hazırlanmış fbx'ler) + `Assets/textures/dungeon_texture.png`.
-> Tüm modeller **tek texture atlas** kullanır → tek materyal `M_KayKit_Dungeon`.
-> Lisans: KayKit (CC0 — `License.txt` repo'ya `Art/KayKit/` altında kopyalanır).
+> Kaynak: repo kökündeki `KayKit_Dungeon_Pack_1.1_FREE/` (ham paket) → içindeki `Assets/fbx(unity)/` → `Assets/_Project/Art/KayKit/Models/`; texture `dungeon_texture.png` → `Art/KayKit/Textures/`.
+> Tüm modeller tek texture atlas → tek materyal `M_KayKit_Dungeon`. Lisans CC0 (`Art/KayKit/License.txt`).
+> Import + prefablar `agent-c/m0-assets-scene` dalında hazır → TODO **P.2** ile `main`'e alınır.
+> Karar: köy evi de **KayKit Dungeon** parçalarıyla kurulur (taş duvar + ahşap zemin). Eksikler §5.
 
 ---
 
-## 1. Ölçüler (C0.1'de C doldurur)
+## 1. Ölçüler (C0.1'de ölçüldü)
 
 | Model | Bounds (x × y × z) | Pivot | Not |
 |---|---|---|---|
-| `wall` | ? | ? | Grid hücre boyutu buradan |
-| `wall_doorway` | ? | ? | |
-| `wall_gated` | ? | ? | Vault kapısı |
-| `floor_tile_large` | ? | ? | |
-| `floor_tile_small` | ? | ? | |
-| `stairs` | ? | ? | Çıkış |
-| `shelf_large` | ? | ? | |
-| `barrel_large` | ? | ? | |
-| `chest` | ? | ? | |
-| `chair` | ? | ? | |
+| `wall` | 4.00 × 4.00 × 1.00 | segment merkezi, taban y=0; uzunluk yerel X, kalınlık Z (±0.5) | Grid hücresi |
+| `wall_doorway` | 4.00 × 4.00 × 1.00 | wall ile aynı; kapı mesh'i ayrı çocuk (`wall_doorway_door`) | **Kapı var** → bulmaca/aşama kapıları |
+| `wall_gated` | 4.00 × 4.00 × 1.00 | wall ile aynı (parmaklık) | Aşama geçidi alternatifi |
+| `floor_tile_large` | 4.00 × 0.15 × 4.00 | hücre merkezi; üst yüzey +0.05 | |
+| `floor_tile_small` | 2.00 × 0.15 × 2.00 | karo merkezi | |
+| `stairs` | 5.00 × 5.10 × 4.00 | alt kenar ortası; +Z yönünde yükselir | Kat yüksekliği 4 m ile uyum için ölçek/sahanlık gerekir |
+| `shelf_large` | 2.00 × 0.45 × 0.50 | arka yüz z=0 | |
+| `barrel_large` | 1.80 × 2.00 × 1.80 | taban merkezi | |
+| `chest` | 1.70 × 1.30 × 1.45 | taban merkezi | |
+| `chair` | 0.75 × 1.23 × 0.75 | taban merkezi | |
 
-**Grid hücre boyutu (kesin):** `? m` → `LevelGenSettings.CellSize` ve `02_GDD_Teknik.md §7.2`'ye yazılır.
-**Duvar yüksekliği:** `? m` → Spirit tavan sınırı (`§6.1`) buna göre.
+**Grid:** 4 m. **Duvar yüksekliği / kat yüksekliği:** 4 m. **Duvar kalınlığı:** 1 m, grid çizgisine ortalı (köşelerde `pillar`).
 
 ---
 
-## 2. Ortam (Environment) — Ajan C
+## 2. Ev & Bahçe
 
 | Kullanım | Model(ler) |
 |---|---|
-| Zemin (oda) | `floor_tile_large`, `floor_tile_small`, `floor_tile_small_decorated`, `floor_tile_small_broken_A/B`, `floor_tile_small_weeds_A/B` (rastgele varyasyon) |
-| Zemin (ahşap oda — yatakhane/meyhane) | `floor_wood_large`, `floor_wood_large_dark`, `floor_wood_small(_dark)` |
-| Zemin (toprak koridor) | `floor_dirt_*` |
-| Duvar | `wall`, `wall_cracked`, `wall_broken` (varyasyon), `wall_half` |
-| Köşe / bağlantı | `wall_corner`, `wall_corner_small`, `wall_Tsplit`, `wall_crossing`, `wall_endcap`, `wall_pillar` |
-| Kapı açıklığı | `wall_doorway`, `wall_doorway_sides`, `wall_arched` |
-| **Hazine kapısı (mühürlü)** | `wall_gated` (kapalı) → açılınca parmaklık aşağı iner / kaybolur; alternatif `wall_corner_gated` |
-| Pencere süsü | `wall_window_closed`, `wall_archedwindow_gated` |
-| Raf duvar | `wall_shelves` (dekor, possessable değil) |
-| Sütun | `column`, `pillar`, `pillar_decorated` |
-| **Çıkış** | `stairs` / `stairs_wide` / `stairs_walled` (yukarı çıkan merdiven + ışık huzmesi) |
-| Tavan (opsiyonel) | `ceiling_tile` |
-| Moloz / dekor | `rubble_half`, `rubble_large`, `crates_stacked`, `box_stacked`, `barrel_small_stack` |
-| Temel | `floor_foundation_*` (harita kenarı) |
-| İskele (dekor) | `wall_scaffold`, `wall_*_scaffold` |
+| Zemin (ev içi) | `floor_wood_large`, `floor_wood_large_dark`, `floor_wood_small(_dark)` |
+| Zemin (mahzen, kiler) | `floor_tile_large`, `floor_tile_small_*`, `floor_dirt_*` |
+| Zemin (bahçe) | `floor_dirt_*`, `floor_tile_small_weeds_A/B` |
+| Duvar | `wall`, `wall_cracked`, `wall_half` (bahçe çiti yerine), `wall_window_closed` (pencere) |
+| Köşe / bağlantı | `wall_corner`, `wall_Tsplit`, `wall_crossing`, `wall_endcap`, `pillar` |
+| **Kapı** | `wall_doorway` + `wall_doorway_door` (açılır kapı) |
+| **Aşama geçidi** | `wall_doorway_door` (kilitli) veya `wall_gated` |
+| Merdiven | `stairs`, `stairs_walled`, `stairs_wide` |
+| Tavan | `ceiling_tile` |
+| Dekor | `crates_stacked`, `box_stacked`, `barrel_small_stack`, `rubble_*`, `wall_shelves`, `keyring_hanging` |
 
 ---
 
-## 3. Possessable Eşyalar — Ajan B (prefab), Ajan C (model import)
+## 3. Possessable Eşyalar
 
-| Oyun eşyası | Model(ler) | Aranabilir kap mı? | SocketCategory |
-|---|---|---|---|
-| Raf | `shelf_large`, `shelves`, `shelf_small` (küçük: daha az hasar varyantı — post-MVP) | ✅ | WallLarge |
-| Fıçı | `barrel_large`, `barrel_large_decorated`, `barrel_small` | ✅ | Floor, Corner |
-| Sandalye | `chair` | ❌ | Floor |
-| Tabure | `stool` | ❌ | Floor |
-| Sandık (mimik) | `chest`, `trunk_large_A/B/C`, `trunk_medium_A/B/C`, `trunk_small_A/B/C` | ✅ | Floor |
-| Kılıç-Kalkan | `sword_shield` (fırladıktan sonra `sword_shield_broken` yere düşer) | ❌ | WallMount |
-| Meşale | `torch_mounted` (duvar), `torch_lit` | ❌ | WallMount |
-| Mum | `candle_triple`, `candle_lit`, `candle_thin_lit` | ❌ | Table |
-| Şişe | `bottle_A_brown/green`, `bottle_A_labeled_*`, `bottle_B_*`, `bottle_C_*` | ❌ | Table |
-| Bira Fıçısı | `keg`, `keg_decorated` | ❌ | Corner |
-| *(post-MVP)* Masa | `table_medium`, `table_long`, `table_small` (+ `_decorated`, `_tablecloth`) | ❌ | Floor |
-| *(post-MVP)* Diken | `floor_tile_big_spikes` | ❌ | FloorTile |
-| *(post-MVP)* Tabak yığını | `plate_stack` | ❌ | Table |
-
-**Masalar** MVP'de possessable değil ama `Table` soketlerinin taşıyıcısıdır (şişe/mum masanın üstüne konur).
+| Oyun eşyası (`PD_*`) | Model(ler) | Boyut |
+|---|---|---|
+| Şişe (`PD_Bottle`) | `bottle_A_*`, `bottle_B_*`, `bottle_C_*` | Small |
+| Mum (`PD_Candle`) | `candle_triple`, `candle_lit`, `candle_thin_lit` | Small (aynı zamanda lamba olabilir) |
+| Tabak (`PD_Plate`) | `plate_stack` | Small |
+| Tabure / Sandalye | `stool`, `chair` | Small (hareketli) |
+| Fıçı / Sandık / Masa | `barrel_large`, `chest`, `trunk_*`, `table_medium`, `table_long`, `table_small` | Large (kaydır) |
+| Raf (`PD_Shelf`) | `shelf_large`, `shelves`, `shelf_small` | Shelf (devril) |
+| Lamba (`PD_Lamp`) | `candle_triple` (masa), `torch_mounted` (duvar lambası yerine) | Lamp |
 
 ---
 
-## 4. Hedef Nesneleri — Ajan C
+## 4. Bulmacalar, Görev Eşyaları, Hedefler
 
-| Oyun nesnesi | Model |
-|---|---|
-| Altın Sandığı | `chest_gold` |
-| Hazine odası süsü | `coin_stack_large/medium/small`, `coin`, `sword_shield_gold` |
-| Mühür Parçası (görsel) | `key` (altın renk tint yoksa olduğu gibi) — HUD ikonu da buradan render |
-| Rün Taşı | ⚠️ Model yok → `floor_tile_small_decorated` duvara dikey + üstüne TMP sembol / basit quad |
-| Kazı Noktası | `floor_tile_small_broken_A` |
-| Rün İpucu Duvarı | Normal `wall` + SpiritOnly layer'da parlayan sembol quad'ları |
-| Anahtar halkası (dekor) | `keyring_hanging` |
-
----
-
-## 5. İnsan & Eşyalar — Ajan A
-
-| Nesne | Model |
-|---|---|
-| Fener (FPS elde) | `torch_lit` (sap aşağı, elde tutulur) |
-| Tuz (yerdeki pickup) | ⚠️ Model yok → `bottle_C_brown` beyaz tint veya `box_small` + "TUZ" etiketi |
-| Nazar (pickup) | ⚠️ Model yok → mavi küre primitive + beyaz/siyah iç küreler (kodla oluşturulabilir) |
-| İnsan karakteri | ⚠️ **YOK** — bkz. §6 |
+| Nesne | Model | Durum |
+|---|---|---|
+| Tablolar (P1) | — | ⚠️ Model yok → ince küp/quad çerçeve + desen texture |
+| Heykel (P2) | `pillar_decorated` / `sword_shield` üstte | ⚠️ Geçici; heykel modeli eksik |
+| Şalter kutusu + kablolar (P3) | — | ⚠️ Model yok → küp kutu + renkli silindir kablolar |
+| Büyü sembolü (P4) | `floor_tile_small_decorated` duvarda + LineRenderer çizgiler | Geçici |
+| Onay kolu | — | ⚠️ Küp + silindir kol |
+| Referanslar | Bulmacanın aynı görsel kodu, SpiritOnly yarı saydam materyal | Kodla |
+| Ev / Bodrum Anahtarı, Şalter Anahtarı | `key`, `keyring_hanging` | ✅ |
+| Fener | `torch_lit` (elde) | ✅ geçici |
+| Boya | `bottle_C_*` / `box_small` renk tint | Geçici |
+| Kürek | — | ⚠️ Model yok → silindir sap + düz küp |
+| Hazine | `chest_gold`, `coin_stack_*` | ✅ |
+| Kazı noktası | `floor_tile_small_broken_A`, `rubble_half` | ✅ |
 
 ---
 
-## 6. ⚠️ Eksik Asset Listesi (kullanıcı temin edecek)
+## 5. ⚠️ Eksik Asset Listesi
 
-| Öncelik | Asset | Neden | Öneri (ücretsiz) | Geçici çözüm |
+| Öncelik | Asset | Neden | Öneri (ücretsiz) | Geçici |
 |---|---|---|---|---|
-| 🔴 Yüksek | **İnsan karakter modeli + animasyonlar** (idle, yürü, koş, taşı, düş, kalk, ölüm) | Cinler insanı TPS/FPS'te görüyor | **KayKit Adventurers** (aynı stil, CC0) + KayKit Character Animations; alternatif Mixamo | Kapsül + şapka + fener (primitive) |
-| 🟠 Orta | **Ses efektleri** (gıcırtı, titreme, devrilme, yuvarlanma, ısırık, tıngırtı, patlama, cam kırılması, tekme, adım, cin fısıltısı, UI) | Telgraf adaleti sese bağlı | Kenney Audio packs (CC0), freesound.org (CC0 filtre) | Sessiz + log |
-| 🟠 Orta | **Türkçe karakterli font** | UI | Google Fonts: Nunito / Baloo 2 (stile uygun, yuvarlak) | TMP varsayılan (ğ/ş/ı eksik olabilir!) |
-| 🟡 Düşük | **Ayrı kapı modeli** | "Kapı" possessable (post-MVP) | KayKit Dungeon Remastered (kapı içerir) | Kapı possessable'ı erteleniyor |
-| 🟡 Düşük | **Tüfek / tromblon** | "Duvar Tüfeği" (post-MVP) | Quaternius / Kenney weapon packs | Erteleniyor |
-| 🟡 Düşük | **Müzik** (menü + gerilimli ambiyans) | Atmosfer | Incompetech / Pixabay Music | Yok |
-| 🟡 Düşük | **Cin VFX texture'ları** (duman, parıltı) | Cin görseli | Kenney Particle Pack (CC0) | URP default particle |
+| 🔴 | **İnsan karakteri + animasyon** | Cinler insanı görüyor | KayKit Adventurers + KayKit Character Animations (CC0) | Kapsül |
+| 🔴 | **Bahçe/orman**: ağaç, çit, kuyu, alet kulübesi, saksı | Bahçe aşaması | KayKit Forest Nature Pack / Quaternius (CC0) | Primitive |
+| 🟠 | **Tablo, heykel, şalter kutusu, kürek, kova** | Bulmacalar | Quaternius / Kenney Furniture Kit (CC0) | Primitive |
+| 🟠 | **Ev mobilyası** (yatak, dolap, şömine) | Ev hissi | Kenney Furniture Kit (CC0) | KayKit masa/sandık |
+| 🟠 | **Ses efektleri** | Telgraf + bulmaca geri bildirimi | Kenney Audio, freesound (CC0) | Sessiz + log |
+| 🟠 | **Türkçe karakterli font** | UI | Nunito / Baloo 2 | TMP varsayılan |
+| 🟡 | Müzik, cin VFX texture'ları | Atmosfer | Incompetech, Kenney Particle Pack | — |
 
-Yeni asset gelince: `Assets/_Project/Art/<Kategori>/` altına, lisans dosyasıyla birlikte, bu tabloya "✅ eklendi" notu.
+Yeni asset: `Assets/_Project/Art/<Kategori>/` altına, lisans dosyasıyla; bu tabloya "✅ eklendi".

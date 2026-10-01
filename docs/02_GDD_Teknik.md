@@ -1,8 +1,8 @@
 # CİNLİ MAHZEN — Teknik Tasarım Dokümanı
 
-> Hedef okuyucu: **Claude Code ajanları** (A, B, C) ve geliştiriciler.
-> Oyun kuralları için: `01_GDD_Oyun.md`. Görevler: `03_TODO.md`. Asset eşleştirme: `04_Asset_Eslestirme.md`.
-> Bu dokümandaki **kontratlar (§4, §8)** değiştirilmeden önce `docs/CONTRACT_CHANGES.md`'ye kayıt düşülür (bkz. `CLAUDE.md`).
+> Sürüm: **v2.0 — 2026-10-01** (tek geliştirici + Claude Code; ev + bulmaca tasarımı)
+> Oyun kuralları: `01_GDD_Oyun.md`. Görevler: `03_TODO.md`. Asset eşleştirme: `04_Asset_Eslestirme.md`.
+> Kontratlar (§4, §8) değişirse bu doküman **aynı commit'te** güncellenir.
 
 ---
 
@@ -10,870 +10,467 @@
 
 | Konu | Karar |
 |---|---|
-| Motor | **Unity 6 — 6000.3.x LTS** (makinede `6000.3.18f1` kurulu). **3 kişi de birebir aynı sürümü kullanır.** |
-| Render | **URP** (3D URP şablonu) |
-| Input | **Input System** paketi (Active Input Handling = Input System Package (New)) |
-| Network | **Photon PUN 2** — **en son fazda (M4)** entegre edilir. O zamana kadar oyun **offline** çalışır, ama kod **ilk günden network'e hazır** yazılır (§4 `INetBridge`). |
-| Otorite modeli | **Master Client otoriter**: hasar, can, possession, enerji, hedefler, maç durumu. Oyuncu hareketi **sahip-otoriter** (owner). |
-| Fizik | **Oyun sonucunu etkileyen hiçbir şey Rigidbody fiziğine bağlı değildir.** Saldırılar scripted (kinematik/animasyon) + otorite hit-check. Rigidbody sadece kozmetik (ragdoll, kırık parçalar) ve lokaldir. |
-| Level | `ILevelGenerator` arayüzü. Uygulaması `ProceduralLevelGenerator` (C yazar, kalıcı; v1 → v2 geliştirilir). **Seed ile deterministik.** |
-| Veri | Tüm denge değerleri **ScriptableObject** (`GameBalanceConfig`, `PossessableDefinition`, `ItemDefinition`). Kodda sihirli sayı yok. |
-| Test | Mantık düz C# sınıflarında (MonoBehaviour'suz) → **EditMode testleri**. Akışlar → PlayMode testleri + Unity MCP ile duman testi. |
-| Solo test | **Hotseat Debug Modu:** Tek editörde 4 piyon, F1-F4 ile rol değiştirme. Online olmadan tüm oyun test edilebilir. |
+| Motor | **Unity 6 — 6000.3.18f1**, URP, Input System |
+| Geliştirme | **Tek geliştirici + Claude Code (Unity MCP ile).** Ajan/sahiplik sistemi yok. |
+| Network | **Photon PUN 2 — en son fazda (M5).** O zamana kadar offline, ama kod ilk günden network'e hazır (§4.3 `INetBridge`). |
+| Otorite | **Master Client otoriter**: can/bayılma, possession, enerji, bulmaca durumları, ışıklar, envanter, maç. Oyuncu hareketi sahip-otoriter. |
+| Fizik | Oyun sonucunu etkileyen hiçbir şey Rigidbody'ye bağlı değil. Fırlatma/kaydırma kinematik + otorite hit-check. Rigidbody sadece kozmetik. |
+| Dünya | **Elle kurulmuş ev** (`P_House` prefabı). Rastgelelik = **seed'li yerleşim** (`RoundSetupPlanner`): bulmaca→oda, referans→oda, cevaplar, eşya ödülleri, anahtar/kazı noktası. Prosedürel harita üreticisi **yok**. |
+| Bulmacalar | Tek genel model: **N parça × K değer** (`PuzzleState`). Her bulmaca tipi = veri (`PuzzleDefinition` SO) + görsel (`PuzzleView`). |
+| Veri | Tüm denge değerleri **ScriptableObject** (`GameBalanceConfig`, `PossessableDefinition`, `ItemDefinition`, `PuzzleDefinition`). Sihirli sayı yok. |
+| Test | Mantık düz C# → **EditMode**. Akışlar → PlayMode + Unity MCP duman testi. |
+| Solo test | **Hotseat:** Tek editörde 4 piyon, F1-F4 ile rol değiştirme. |
 
-> **PUN 2 notu:** PUN 2, Photon tarafından bakım modunda (yeni projelere Fusion öneriliyor). Asset Store'dan hâlâ indirilebiliyorsa kullanılır. `INetBridge` soyutlaması sayesinde gerekirse sadece `Net/Pun` klasörü değiştirilerek Fusion/başka çözüme geçilebilir. Oyun kodu PUN tiplerini **asla** doğrudan kullanmaz.
+> **PUN 2 notu:** Bakım modunda. `INetBridge` sayesinde gerekirse sadece `Net/Pun` değiştirilerek Fusion/başka çözüme geçilebilir. Oyun kodu `Photon.*` tiplerini asla doğrudan kullanmaz.
 
 ---
 
 ## 1. Proje Yapısı
 
 ```
-Assets/
-└── _Project/
-    ├── Art/
-    │   ├── KayKit/            # (C) fbx(unity) klasöründen import, dokunulmaz
-    │   ├── Materials/         # (C) M_KayKit_Dungeon vb.
-    │   ├── VFX/               # (B) cin görselleri, telgraf efektleri
-    │   └── Characters/        # (A) insan modeli (placeholder → gerçek asset)
-    ├── Audio/                 # (C) placeholder SFX
-    ├── Prefabs/
-    │   ├── Player/            # (A) Human, SpiritBase (B'nin component'leri eklenir → bkz. §11)
-    │   ├── Jinn/              # (B) EvilJinn, GoodJinn, VFX prefabları
-    │   ├── Possessables/      # (B) P_Poss_Shelf, P_Poss_Barrel ...
-    │   ├── Environment/       # (C) duvar, zemin, modüller
-    │   ├── Objectives/        # (C) RuneStone, DigSpot, VaultDoor, GoldChest, Exit
-    │   ├── Items/             # (A) Salt, Nazar pickups
-    │   └── UI/                # her sahip kendi HUD'u
-    ├── ScriptableObjects/
-    │   ├── Config/            # (A) GameBalanceConfig.asset
-    │   ├── Possessables/      # (B) PD_Shelf.asset ...
-    │   ├── Items/             # (A)
-    │   └── Level/             # (C) LevelGenSettings, LootTable
-    ├── Scenes/
-    │   ├── Boot.unity         # (A)
-    │   ├── MainMenu.unity     # (A)
-    │   ├── Game.unity         # (A — entegrasyon sahnesi, sadece A düzenler)
-    │   ├── Sandbox_A.unity    # (A) kişisel test
-    │   ├── Sandbox_B.unity    # (B) kişisel test
-    │   └── Sandbox_C.unity    # (C) kişisel test
-    ├── Scripts/
-    │   ├── Core/              # (A) CM.Core — kontratlar, servisler, EventBus, Net soyutlaması
-    │   ├── Match/             # (A) CM.Match
-    │   ├── Player/            # (A) CM.Player — insan, ortak piyon, kamera, input
-    │   ├── Jinn/              # (B) CM.Jinn
-    │   ├── Possession/        # (B) CM.Possession
-    │   ├── Visibility/        # (B) CM.Visibility
-    │   ├── World/             # (C) CM.World — level kontratı, ProceduralLevelGenerator, populator
-    │   ├── Objectives/        # (C) CM.Objectives
-    │   ├── Audio/             # (C) CM.Audio
-    │   ├── UI/                # CM.UI — Common (A), Human (A), Jinn (B), Round (C)
-    │   ├── DebugTools/        # (A) CM.DebugTools
-    │   ├── Net/Pun/           # (A, M4) CM.Net.Pun
-    │   └── Editor/            # CM.Editor — menü komutları (her sahip kendi alt klasörü)
-    └── Tests/
-        ├── EditMode/          # CM.Tests.EditMode (her sahip kendi alt klasörü)
-        └── PlayMode/          # CM.Tests.PlayMode
+Assets/_Project/
+├── Art/KayKit/ (Models, Textures, License)   Art/Materials/   Art/VFX/   Art/Characters/
+├── Audio/
+├── Prefabs/
+│   ├── Player/        Human, SpiritBase, EvilJinn, GoodJinn
+│   ├── Possessables/  P_Poss_* (küçük/büyük/raf/lamba)
+│   ├── Environment/   Env_* (duvar, zemin, kapı, merdiven…)
+│   ├── Props/         Prop_* (possessable olmayan dekor)
+│   ├── Puzzles/       P_Puzzle_Paintings, P_Puzzle_Statue, P_Puzzle_Wires, P_Puzzle_Sigil + referans prefabları
+│   ├── World/         P_House (elle kurulmuş ev), P_Gate_*, P_Lamp_*, P_DigSpot, P_KeyHideSpot
+│   ├── Items/         P_Item_* (görev eşyaları, yerdeki hali)
+│   └── UI/
+├── ScriptableObjects/ Config/  Possessables/  Items/  Puzzles/  World/
+├── Scenes/            Boot, MainMenu, Game, Sandbox (serbest test)
+├── Scripts/
+│   ├── Core/          CM.Core — kontratlar, servisler, EventBus, Net soyutlaması
+│   ├── Match/         CM.Match — maç durum makinesi, rol rotasyonu, puan
+│   ├── Player/        CM.Player — insan, piyon tabanı, kamera, input, envanter
+│   ├── Jinn/          CM.Jinn — ruh formu, iyi cin yetenekleri, enerji
+│   ├── Possession/    CM.Possession — possession, eşya aksiyonları
+│   ├── Visibility/    CM.Visibility — rol bazlı görünürlük
+│   ├── World/         CM.World — ev kontratı (marker'lar), oda/ışık servisi, RoundSetupPlanner
+│   ├── Objectives/    CM.Objectives — bulmacalar, aşamalar, geçitler, eşya ödülleri, kazı
+│   ├── Audio/  UI/  DebugTools/  Net/Pun/ (M5)  Editor/
+└── Tests/ EditMode/  PlayMode/
 ```
 
-### 1.1 Assembly Definition'lar ve Bağımlılıklar
-
-Döngüsel bağımlılık **yasaktır**. Modüller birbirini **Core'daki arayüzler + EventBus** ile tanır.
-
+### 1.1 Assembly'ler ve Bağımlılıklar (değişmedi)
 ```
-CM.Core          → (hiçbiri)                       [Unity.InputSystem]
+CM.Core          → —                      [Unity.InputSystem]
 CM.Player        → CM.Core
 CM.Possession    → CM.Core
 CM.Jinn          → CM.Core, CM.Possession
 CM.Visibility    → CM.Core
-CM.World         → CM.Core                        [Unity.AI.Navigation]
+CM.World         → CM.Core                [Unity.AI.Navigation]
 CM.Objectives    → CM.Core, CM.World
-CM.Audio         → CM.Core
+CM.Audio / CM.UI → CM.Core
 CM.Match         → CM.Core, CM.World
-CM.UI            → CM.Core  (sadece Core arayüzleri + event'lerden okur)
 CM.DebugTools    → CM.Core, CM.Match, CM.Player, CM.Jinn, CM.World
-CM.Net.Pun       → CM.Core                        [PhotonUnityNetworking, PhotonRealtime]
+CM.Net.Pun       → CM.Core                [Photon]
 CM.Editor        → hepsi (Editor-only)
-CM.Tests.*       → ilgili modüller + test framework
 ```
+Döngüsel bağımlılık yasak. Modüller birbirini **Core arayüzleri + EventBus + `GameServices.Get<T>()`** ile tanır.
 
-**Kural:** `CM.Player` insan hasarını bilir ama raf kodunu bilmez. Raf (`CM.Possession`) insanı `IDamageable` üzerinden, `HumanHitbox` layer'ı ile bulur.
-
-### 1.2 Namespace & Kodlama Standartları
-- Namespace = asmdef adı: `CinliMahzen.Core`, `CinliMahzen.Possession`, ...
-- Bir dosya = bir public tip; dosya adı = tip adı.
-- `[SerializeField] private` alanlar; public alan yok (ScriptableObject tanım verileri hariç, onlar da property ile okunur).
-- `Update` içinde `Find*`, `GetComponent`, LINQ, `new` allocation **yok**.
-- Tüm zaman hesapları `Net.Time` (bkz. §4.3) üzerinden — `Time.time` doğrudan kullanılmaz (online'da senkron saat gerekiyor).
-- Rastgelelik: Oyun durumunu etkileyen her rastgelelik **seed'li `System.Random`** (`GameRandom` sarmalayıcı). `UnityEngine.Random` sadece kozmetik için.
-- Loglar: `CMLog.Info/Warn/Error("Possession", "mesaj")` — kategori etiketli.
-- Yorumlar İngilizce veya Türkçe olabilir; **tip/metot/değişken adları İngilizce**.
+### 1.2 Kodlama Standartları
+- Namespace = `CinliMahzen.<Modül>`. Bir dosya = bir public tip. Adlar İngilizce.
+- `[SerializeField] private`; public alan yok.
+- `Update` içinde `Find*`, `GetComponent`, LINQ, allocation yok.
+- Zaman: `GameServices.Net.Time` (`Time.time` oyun mantığında yok; `Time.deltaTime` serbest).
+- Rastgelelik: oyun durumunu etkileyen her şey `GameRandom` (seed'li). `UnityEngine.Random` sadece kozmetik.
+- Log: `CMLog.Info("Kategori", "mesaj")`. Kullanıcıya görünen metin: `Loc.T("anahtar")`.
 
 ---
 
-## 2. Tags, Layers, Fizik Matrisi (M0'da A tarafından **bir kez** kurulur)
-
-ProjectSettings çakışmasını önlemek için tüm layer'lar baştan tanımlanır. Sonradan layer eklemek **kontrat değişikliğidir**.
+## 2. Tags, Layers, Fizik Matrisi
 
 | # | Layer | Kullanım |
 |---|---|---|
 | 6 | `Environment` | Duvar, zemin, statik geometri |
-| 7 | `Possessable` | Cin girebilen eşyalar (collider) |
+| 7 | `Possessable` | Cin girebilen eşyalar |
 | 8 | `HumanPawn` | İnsanın CharacterController'ı |
-| 9 | `HumanHitbox` | İnsanın hasar alan trigger'ı (saldırılar bunu arar) |
-| 10 | `SpiritPawn` | Cin piyonları (collider'ları sadece bakış/etkileşim için) |
+| 9 | `HumanHitbox` | İnsanın hasar alan trigger'ı |
+| 10 | `SpiritPawn` | Cin piyonları |
 | 11 | `EvilJinnVisual` | Kötü cin görselleri |
-| 12 | `GoodJinnVisual` | İyi cin görselleri |
-| 13 | `SpiritOnly` | Ruh ipuçları (sadece iyi cin görür) |
-| 14 | `JinnOnlyFX` | Nişan okları, ısı izi, gürültü halkası (sadece kötü cinler) |
-| 15 | `Interactable` | Etkileşim raycast hedefleri |
-| 16 | `Projectile` | Kılıç, şişe mermileri |
-| 17 | `CosmeticPhysics` | Ragdoll, kırık parçalar |
-| 18 | `XRayOutline` | Duvar arkası outline render (URP Render Objects) |
+| 12 | `GoodJinnVisual` | İyi cin görselleri (insan da soluk görür) |
+| 13 | `SpiritOnly` | **Bulmaca referansları**, anahtar parıltısı, gerçek kazı noktası (iki cin de görür) |
+| 14 | `JinnOnlyFX` | Nişan okları vb. (sadece kötü cinler) |
+| 15 | `Interactable` | Etkileşim raycast hedefleri (bulmaca parçaları, kol, düğme, kapı) |
+| 16 | `Projectile` | Fırlatılan eşyalar |
+| 17 | `CosmeticPhysics` | Kırık parçalar |
+| 18 | `XRayOutline` | Duvar arkası outline |
 
-**Fizik Matrisi (sadece işaretli olanlar çarpışır):**
-- `HumanPawn` ↔ `Environment`, `Possessable`
-- `Projectile` ↔ `Environment`, `HumanHitbox`, `Possessable`
-- `CosmeticPhysics` ↔ `Environment`, `CosmeticPhysics`
-- `SpiritPawn` ↔ **hiçbiri** (noclip; sınırlar kodla kısıtlanır)
-- Diğer tüm kombinasyonlar kapalı.
+Fizik matrisi değişmedi: `HumanPawn ↔ Environment, Possessable` · `Projectile ↔ Environment, HumanHitbox, Possessable` · `CosmeticPhysics ↔ Environment, CosmeticPhysics` · `SpiritPawn ↔ hiçbiri`.
 
-**Tags:** `HumanSpawn`, `JinnSpawn`, `Exit`, `Vault` (marker bulma için yedek; asıl yol marker component'leri).
-
-**Kamera Culling Mask'leri (lokal role göre `CameraRig` ayarlar):**
-
-| Lokal Rol | Görür | Görmez |
+**Culling (lokal role göre `CameraRig`):**
+| Rol | Ek görür | Görmez |
 |---|---|---|
-| İnsan | Default, Environment, Possessable, Interactable, Projectile, CosmeticPhysics | EvilJinnVisual, GoodJinnVisual, SpiritOnly, JinnOnlyFX, XRayOutline |
-| İyi Cin | Yukarıdakiler + GoodJinnVisual, EvilJinnVisual*, SpiritOnly, XRayOutline | JinnOnlyFX |
-| Kötü Cin | Yukarıdakiler + EvilJinnVisual, GoodJinnVisual (soluk), JinnOnlyFX, XRayOutline | SpiritOnly |
+| İnsan | GoodJinnVisual (soluk materyal) | EvilJinnVisual, SpiritOnly, JinnOnlyFX, XRayOutline |
+| İyi Cin | GoodJinnVisual, EvilJinnVisual*, SpiritOnly, XRayOutline | JinnOnlyFX |
+| Kötü Cin | EvilJinnVisual, GoodJinnVisual (soluk), SpiritOnly, JinnOnlyFX, XRayOutline | — |
 
-\* Kötü cin görselleri iyi cin için ayrıca mesafe kurallarına göre `VisibilityService` tarafından açılıp kapanır (§6.6).
+\* Mesafe kuralları `VisibilityService` ile (§6.6).
 
 ---
 
 ## 3. Sahne & Uygulama Akışı
 
 ```
-Boot.unity ──► GameServices kurulur (DontDestroyOnLoad)
-   │            - Config yüklenir, NetBridge = OfflineNetBridge (M4'te seçilebilir)
-   ▼
-MainMenu.unity ──► "Test Oyunu" (offline hotseat)  /  "Online" (M4: Lobi → Oda)
-   ▼
-Game.unity ──► MatchController
-                 ├─ LevelService.Build(seed)   → ILevelGenerator + LevelPopulator
-                 ├─ PawnSpawner                → 4 piyon
-                 └─ MatchStateMachine          → Raund döngüsü
+Boot ──► GameServices (DontDestroyOnLoad), Config, NetBridge = Offline
+MainMenu ──► "Test Oyunu" (hotseat) / "Online" (M5)
+Game ──► MatchController
+           ├─ P_House (sahnede sabit, elle kurulmuş)
+           ├─ HouseService.Index()          → oda/marker/NetId kaydı (bir kez)
+           ├─ RoundSetupPlanner.Plan(seed)  → RoundPlan (her raund)
+           ├─ RoundSetupApplier.Apply(plan) → bulmaca/referans/eşya yerleşimi + reset
+           ├─ PawnSpawner                   → 4 piyon
+           └─ MatchStateMachine
 ```
-
-- `Game.unity` içinde sabit olan: `MatchController`, `LevelRoot` (boş), `UIRoot`, `AudioRoot`, `DebugRoot`, global ışık/post-process volume.
-- Harita her raund **silinir ve yeniden üretilir** (yeni seed). Piyonlar yeniden doğar.
-- Editörde doğrudan `Game.unity` açılıp Play'e basılırsa: `GameServices` yoksa **otomatik bootstrap** yapılır (`[RuntimeInitializeOnLoadMethod]`) ve **hotseat modunda** başlar. → Claude Code'un MCP ile hızlı test etmesi için kritik.
+- Ev **silinmez**; her raund `RoundSetupApplier` bulmacaları, kapıları, lambaları, eşyaları **sıfırlar** ve yeni plana göre kurar.
+- Editörde `Game.unity` doğrudan Play → otomatik bootstrap + hotseat (MCP testi için kritik).
 
 ---
 
-## 4. Core Kontratları (CM.Core) — M0'da A yazar, herkes bunlara göre kodlar
+## 4. Core Kontratları (CM.Core)
 
-> Aşağıdaki kod "iskelet"tir; imzalar bağlayıcıdır, gövdeler A'nın uygulamasıdır.
+### 4.1 Kimlikler ve Roller (mevcut, değişmedi)
+`Role {None, Human, GoodJinn, EvilJinn}`, `Team {None, Seekers, Jinns}`, `PlayerId(byte)`, `NetId(int)` — aralıklar: 1..999 piyon/sistem, 1000..59999 ev nesneleri (deterministik), 60000+ runtime spawn.
 
-### 4.1 Kimlikler ve Roller
-```csharp
-namespace CinliMahzen.Core
-{
-    public enum Role : byte { None = 0, Human = 1, GoodJinn = 2, EvilJinn = 3 }
-    public enum Team : byte { None = 0, Seekers = 1, Jinns = 2 }
+### 4.2 Oyuncu Kaydı (mevcut)
+`IPlayerRegistry { Players, LocalPlayer, GetRole, Get, LocalPlayerChanged, RolesChanged }`, `PlayerInfo { Id, Nickname, Role, Score }`.
 
-    public readonly struct PlayerId : IEquatable<PlayerId>
-    {
-        public readonly byte Value;          // 0..3 (offline hotseat) / Photon ActorNumber eşlemesi (M4)
-        public static readonly PlayerId None = new PlayerId(255);
-        // ctor, Equals, GetHashCode, ToString
-    }
-
-    public readonly struct NetId : IEquatable<NetId>
-    {
-        public readonly int Value;           // 0 = geçersiz
-        // Aralıklar: 1..999 piyonlar/sistem, 1000..59999 level nesneleri (deterministik),
-        //            60000+ runtime spawn (otorite atar: mermiler, tuz alanları)
-    }
-
-    public static class RoleUtil { public static Team TeamOf(Role r); }
-}
+### 4.3 Network Soyutlaması — EN ÖNEMLİ KURAL
 ```
-
-### 4.2 Oyuncu & Rol Kaydı
-```csharp
-public interface IPlayerRegistry
-{
-    IReadOnlyList<PlayerInfo> Players { get; }        // 4 oyuncu
-    PlayerId LocalPlayer { get; }                      // hotseat'te F1-F4 ile değişir
-    Role GetRole(PlayerId id);
-    PlayerInfo Get(PlayerId id);
-    event Action<PlayerId> LocalPlayerChanged;         // UI & kamera & visibility dinler
-    event Action RolesChanged;
-}
-public sealed class PlayerInfo { public PlayerId Id; public string Nickname; public Role Role; public int Score; }
+[İstemci] Request ──► [OTORİTE] doğrula + durumu değiştir ──► Broadcast ──► [Herkes] uygula
 ```
+Offline'da `OfflineNetBridge` aynı frame içinde döngüye sokar. `...Authority` ile biten metotlar sadece `Net.IsAuthority` iken çağrılır (başında `Debug.Assert`).
 
-### 4.3 Network Soyutlaması — **EN ÖNEMLİ KONTRAT**
+`INetBridge { IsOnline, IsAuthority, LocalPlayer, Time, SendToAuthority, Broadcast, Register, Unregister }` · `NetMsg { Code, Sender, SentTime, object[] Payload }` — payload sadece PUN-serileştirilebilir tipler.
 
-**Altın kural:** Oyun durumunu değiştiren **her** işlem şu akışı izler:
-
+**MsgCode aralıkları (v2):**
 ```
-[Herhangi bir istemci]  Request (NetMsg)  ──►  [OTORİTE] doğrula + durumu değiştir
-                                                   │
-                         Result Event (NetMsg) ◄───┘ Broadcast (herkese, otoritenin kendisi dahil)
-                                   │
-                  [Tüm istemciler] görseli/lokal durumu uygular
+1-29    Maç:        MatchStateChanged, RoundSetup{seed, roles}, RoundEnded, RolesAssigned, ScoreChanged
+30-59   İnsan:      ReqInteract, InteractResult, HumanDamaged, HumanFainted, HumanRevived,
+                    ReqKick, KickResult, StatusApplied, ReqLanternPulse, LanternPulsed,
+                    InventoryChanged, ReqDropItem, ItemDropped, ReqPush, PushResult
+60-99   Cinler:     ReqPossess, PossessBegan, PossessCompleted, PossessEnded, PossessDenied,
+                    ReqAction, ActionTelegraph, ActionResolved, ActionDenied, EnergyChanged,
+                    JinnStunned, ProjectileSpawned, ProjectileImpact, ReqExorcise, ExorciseProgress,
+                    ExorciseResult, ReqPing, PingPlaced, RageStarted, PossessedMove, ObjectStateChanged,
+                    ReqLampLight, ReqLampRepair
+100-139 Dünya/Bulmaca: HouseReady, ReqPuzzleOp, PuzzleStateChanged, ReqPuzzleConfirm, PuzzleConfirmResult,
+                    PuzzleCompleted, StageCompleted, GateOpened, ItemSpawned, ItemPickedUp,
+                    LightsChanged, KeyFound, DigProgress, TreasureDug, HouseHash
+200-254 Debug
 ```
+Her yeni mesaj için encode/decode yardımcısı + **EditMode round-trip testi** zorunlu.
 
-Offline'da `OfflineNetBridge` bu akışı **aynı frame içinde** döngüye sokar; kod aynı kalır. M4'te `PunNetBridge` aynı mesajları `PhotonNetwork.RaiseEvent` ile taşır.
+### 4.4 Varlık Kaydı (mevcut)
+`INetEntity`, `IEntityRegistry { Register, Unregister, TryGet<T>, AllocateRuntimeId }`. Ev nesnelerine NetId'yi `HouseService.Index()` **deterministik sırayla** atar (hiyerarşi yolu sıralı).
 
-```csharp
-namespace CinliMahzen.Core.Net
-{
-    public interface INetBridge
-    {
-        bool IsOnline { get; }
-        bool IsAuthority { get; }                 // offline: true. online: PhotonNetwork.IsMasterClient
-        PlayerId LocalPlayer { get; }
-        double Time { get; }                      // offline: Time.timeAsDouble. online: PhotonNetwork.Time
+### 4.5 Hasar, Durum, Etkileşim
+- `DamageInfo { Amount, Attacker, SourceObject, CauseId, Flags, KnockdownTime, Point, Direction }` — v2'de `Lethal` bayrağı kullanılmaz (ölüm yok); can 0 → **bayılma**.
+- `IDamageable.ApplyDamageAuthority`, `IStatusReceiver.ApplyStatusAuthority`.
+- `StatusType`: `Knockdown, Fainted, Stunned, Slowed` (+ eski değerler sıra bozulmasın diye korunur; `PD_*` asset'leri int saklar).
+- `IInteractable { NetId, PromptKey, HoldTime, CanInteract(who, role), ValidateAuthority(who), ExecuteAuthority(who), NoiseOnInteract }`.
+- **v2 eki:** `IInteractable.CanInteract` artık rol alır → bulmaca parçası insan için "çevir", kötü cin için "karıştır" olur (aynı bileşen).
 
-        void SendToAuthority(NetMsg msg);         // istek
-        void Broadcast(NetMsg msg);               // SADECE otorite çağırabilir (değilse hata logla)
-        void Register(MsgCode code, Action<NetMsg> handler);
-        void Unregister(MsgCode code, Action<NetMsg> handler);
-    }
-
-    /// Photon RaiseEvent ile birebir uyumlu olsun diye payload sadece PUN'un serileştirebildiği tipler:
-    /// byte, bool, short, int, long, float, double, string, Vector2/3, Quaternion, byte[], int[], float[], object[]
-    public struct NetMsg
-    {
-        public MsgCode Code;
-        public PlayerId Sender;                   // köprü doldurur
-        public double SentTime;                   // köprü doldurur
-        public object[] Payload;
-    }
-
-    public enum MsgCode : byte
-    {
-        // --- 1-29 Maç (A) ---
-        MatchStateChanged = 1, RoundSetup = 2, RoundEnded = 3, RolesAssigned = 4, ScoreChanged = 5,
-        // --- 30-59 İnsan (A) ---
-        ReqInteract = 30, InteractResult = 31, HumanDamaged = 32, HumanDied = 33,
-        ReqUseItem = 34, ItemUsed = 35, ReqKick = 36, KickResult = 37, StatusApplied = 38,
-        ReqLanternPulse = 39, LanternPulsed = 40, InventoryChanged = 41, HumanNoise = 42,
-        // --- 60-99 Possession & Cinler (B) ---
-        ReqPossess = 60, PossessBegan = 61, PossessCompleted = 62, PossessEnded = 63, PossessDenied = 64,
-        ReqAction = 65, ActionTelegraph = 66, ActionResolved = 67, ActionDenied = 68,
-        EnergyChanged = 69, JinnStunned = 70, ProjectileSpawned = 71, ProjectileImpact = 72,
-        ReqExorcise = 73, ExorciseProgress = 74, ExorciseResult = 75,
-        ReqPing = 76, PingPlaced = 77, ReqBless = 78, BlessApplied = 79, RageStarted = 80,
-        PossessedMove = 81, ObjectStateChanged = 82,
-        // --- 100-139 Dünya & Hedefler (C) ---
-        LevelBuilt = 100, ContainerSearched = 101, KeyFragmentCollected = 102,
-        RunePressed = 103, RuneResult = 104, DigProgress = 105, VaultOpened = 106,
-        GoldPickedUp = 107, GoldDropped = 108, PhaseChanged = 109, LightsChanged = 110, LevelHash = 111,
-        // --- 200-254 Debug ---
-        DebugCommand = 200,
-    }
-}
-```
-
-**Mesaj sahipliği:** Her MsgCode aralığının sahibi o aralığın ajanıdır. Yeni kod eklemek = kendi aralığında serbest; başkasının aralığına dokunmak = kontrat değişikliği.
-
-**Payload yardımcıları:** Her modül kendi mesajları için tip güvenli encode/decode sınıfı yazar:
-```csharp
-// Örnek (B yazar): CinliMahzen.Possession.Net.PossessionMsgs
-public static class PossessionMsgs
-{
-    public static NetMsg ReqPossess(NetId obj) => new NetMsg { Code = MsgCode.ReqPossess, Payload = new object[] { obj.Value } };
-    public static NetId ReadReqPossess(in NetMsg m) => new NetId((int)m.Payload[0]);
-    // ...
-}
-```
-→ Her encode/decode çifti için **EditMode round-trip testi** zorunlu.
-
-### 4.4 Varlık Kaydı
-```csharp
-public interface INetEntity { NetId NetId { get; } }
-public interface IEntityRegistry
-{
-    void Register(INetEntity e);   void Unregister(INetEntity e);
-    bool TryGet<T>(NetId id, out T entity) where T : class;
-    NetId AllocateRuntimeId();     // sadece otorite, 60000+
-}
-```
-- `NetEntity` MonoBehaviour'u: `[SerializeField] int netId` — level nesnelerine **populator deterministik atar**, piyonlara `PawnSpawner` atar.
-
-### 4.5 Hasar, Durum Etkileri, Etkileşim
-```csharp
-[Flags] public enum DamageFlags : byte { None = 0, Knockdown = 1, Grab = 2, Lethal = 4, IgnoreInvuln = 8 }
-
-public struct DamageInfo
-{
-    public int Amount;              // 3 = anında öldürür (HumanMaxHp)
-    public PlayerId Attacker;       // kötü cin
-    public NetId SourceObject;      // raf, fıçı...
-    public string CauseId;          // "shelf.topple" → Otopsi metni Loc anahtarı
-    public DamageFlags Flags;
-    public float KnockdownTime;     // Flags.Knockdown ise
-    public float GrabTime;          // Flags.Grab ise
-    public Vector3 Point, Direction;
-}
-
-public interface IDamageable { NetId NetId { get; } void ApplyDamageAuthority(in DamageInfo info); }   // SADECE otorite çağırır
-
-public enum StatusType : byte { None, Knockdown, Grabbed, Drunk, Darkness, Slowed, Stunned }
-public interface IStatusReceiver { void ApplyStatusAuthority(StatusType t, float duration, PlayerId source); }
-
-public interface IInteractable
-{
-    NetId NetId { get; }
-    string PromptKey { get; }                      // Loc anahtarı, ör. "interact.search"
-    float HoldTime { get; }                        // 0 = anında
-    bool CanInteract(PlayerId who, Role role);     // lokal tahmin (UI için)
-    bool ValidateAuthority(PlayerId who);          // otoritede tekrar kontrol
-    void ExecuteAuthority(PlayerId who);           // otoritede sonuç → Broadcast
-    float NoiseOnInteract { get; }                 // 0..1, gürültü sistemi için
-}
-```
-
-**Etkileşim akışı:** `Interactor` (A) → basılı tutma tamamlandı → `ReqInteract(netId)` → otorite `IInteractable.ValidateAuthority` + menzil kontrolü (`InteractRange + 0.5` tolerans) → `ExecuteAuthority` → ilgili modül kendi result mesajını yayınlar.
-
-### 4.6 EventBus (lokal, network'süz)
-```csharp
-public static class EventBus
-{
-    public static void Subscribe<T>(Action<T> h) where T : struct;
-    public static void Unsubscribe<T>(Action<T> h) where T : struct;
-    public static void Publish<T>(in T evt) where T : struct;
-    public static void ClearAll();   // sahne değişiminde
-}
-```
-- **Network mesajları** otorite kararlarını taşır. Mesaj alındığında modül **lokal EventBus event'i** yayınlar → UI, ses, VFX, istatistik bunları dinler.
-- Event'ler `CM.Core/Events/` altında (sahibi kim yazdıysa, dosya başında `// Owner: B` yorumu).
-- Ana event listesi:
-
+### 4.6 EventBus (lokal, mevcut)
+Ana event'ler (v2):
 | Event | Yayınlayan | Dinleyen |
 |---|---|---|
 | `RoundStartedEvt{roundIndex, seed}` | Match | herkes |
-| `PhaseChangedEvt{phase}` | Objectives | Match, UI, Audio, Jinn(Öfke) |
 | `HumanDamagedEvt{info, hpAfter}` | Player | UI, Audio, Stats |
-| `HumanDiedEvt{info}` | Player | Match, UI(Otopsi), Stats |
-| `PossessionChangedEvt{player, obj, state}` | Possession | UI, Visibility, Audio |
-| `ActionTelegraphEvt{obj, actionIdx}` | Possession | Audio, VFX, Visibility |
-| `ActionResolvedEvt{obj, actionIdx, hitHuman}` | Possession | Stats |
-| `KeyFragmentCollectedEvt{count}` | Objectives | UI, Match |
-| `GoldStateEvt{carried, carrier}` | Objectives | Player(hız), Jinn(Öfke), UI |
-| `NoiseEvt{pos, loudness}` | Player/Objectives | Visibility (kötü cin halkası) |
+| `HumanFaintedEvt{info, faintCount}` / `HumanRevivedEvt` | Player | Match, UI, Stats |
+| `PossessionChangedEvt{player, obj, state}` | Possession | UI, Visibility, Input, Audio |
+| `ActionTelegraphEvt` / `ActionResolvedEvt` | Possession | Audio, VFX, Stats |
+| `PuzzleStateChangedEvt{puzzle, byPlayer, scrambled}` | Objectives | Audio, VFX, Stats |
+| `PuzzleCompletedEvt{puzzle, stage}` / `StageCompletedEvt{stage}` | Objectives | UI, Match, Audio |
+| `RoomLightChangedEvt{room, state}` | World | Possession (eject), Visibility, UI |
+| `DigProgressEvt{progress}` / `TreasureDugEvt` | Objectives | Match, Jinn (Öfke), UI |
 | `LocalRoleChangedEvt{role}` | Core | Kamera, UI, Visibility, Input |
 | `RoundEndedEvt{result, reason}` | Match | UI, Stats |
 
-### 4.7 Servis Erişimi
+### 4.7 Servisler (mevcut)
+`GameServices { Net, Players, Entities, Config, Match, Level, Register<T>, Get<T>, TryGet<T> }`.
+
+### 4.8 Köprü Arayüzleri (v2)
 ```csharp
-public static class GameServices
-{
-    public static INetBridge Net { get; }
-    public static IPlayerRegistry Players { get; }
-    public static IEntityRegistry Entities { get; }
-    public static GameBalanceConfig Config { get; }
-    public static IMatchInfo Match { get; }         // faz, kalan süre, raund
-    public static ILevelInfo Level { get; }         // aktif level verisi (C)
-    public static void Register<T>(T service);      // modüller kendi servislerini kaydeder
-    public static T Get<T>();
-}
+// Possession uygular
+IKickable { NetId; OnKickedAuthority(PlayerId by) }
+IPossessionQuery { IsPossessed, PossessorOf, GetPossessedInCone(...) }
+
+// World uygular
+IRoomService   { int RoomOf(Vector3 p); RoomLightState LightOf(int room); }      // eski ILevelInfo yerine
+ILightService  { void SetLampAuthority(NetId lamp, LampState s); }              // Off / On / Broken
+IHouseInfo     { Bounds Bounds; Vector3 HumanSpawn; IReadOnlyList<Vector3> JinnSpawns; }
+
+// Objectives uygular
+IObjectiveInfo { int StageIndex; int StageCount; bool IsPuzzleDone(int slot); float DigProgress; ObjectivePhase Phase; }
+enum ObjectivePhase : byte { Garden = 0, House = 1, Cellar = 2, Done = 3 }
+
+// Match uygular
+IMatchInfo { MatchState State; int RoundIndex; double StateEndTime; bool JinnsAwake; int Faints; }
 ```
-
-### 4.8 Modüller Arası Köprü Arayüzleri (Core'da tanımlı, sahibi uygular)
-Modüller birbirinin somut sınıfını bilmez; bu arayüzleri `GameServices.Get<T>()` ile bulur.
-
-```csharp
-// Uygulayan: B (Possession)
-public interface IKickable            { NetId NetId { get; } void OnKickedAuthority(PlayerId by); }
-public interface IPossessionQuery     { bool IsPossessed(NetId obj); PlayerId PossessorOf(NetId obj);
-                                        void GetPossessedInCone(Vector3 origin, Vector3 dir, float range, float angleDeg, List<NetId> results); }
-public interface IInteractInterceptor { bool TryInterceptAuthority(NetId target, PlayerId who); } // true → etkileşim tüketildi (mimik)
-
-// Uygulayan: A (Player) — tuz alanları; tüketen: B (PossessionArbiter)
-public interface IPossessionBlocker   { bool Blocks(Vector3 worldPos); }
-public interface IPossessionBlockerRegistry { void Add(IPossessionBlocker b); void Remove(IPossessionBlocker b); bool IsBlocked(Vector3 p); }
-
-// Uygulayan: C (World)
-public interface ILightService        { int RoomOf(Vector3 worldPos); void SetRoomLightsAuthority(int roomId, bool on, float duration); }
-public interface ILevelInfo           { Bounds Bounds { get; } int RoomCount { get; } int RoomOf(Vector3 p); Vector3 HumanSpawn { get; } IReadOnlyList<Vector3> JinnSpawns { get; } }
-
-// Uygulayan: C (Objectives) — tüketen: A (HUD, Match), B (Öfke)
-public interface IObjectiveInfo       { int Fragments { get; } bool VaultOpen { get; } PlayerId GoldCarrier { get; } ObjectivePhase Phase { get; } }
-public enum ObjectivePhase : byte     { Explore = 0, Vault = 1, Escape = 2 }
-
-// Uygulayan: A (Match)
-public interface IMatchInfo           { MatchState State { get; } int RoundIndex { get; } double StateEndTime { get; } bool JinnsAwake { get; } }
-```
-M0'da A bu arayüzleri **boş (stub) uygulamalarıyla** birlikte yazar ki B ve C, diğerlerinin kodunu beklemeden derleyip test edebilsin (ör. `StubObjectiveInfo`, `StubLightService`).
+Kaldırılanlar: `IPossessionBlocker(Registry)` (tuz yok), `IInteractInterceptor` (mimik yok), `GoldStateEvt`, `KeyFragmentCollectedEvt`. Yerine **ışık kuralı** possession arbiter'a `IRoomService.LightOf` üzerinden girer.
 
 ### 4.9 Konfigürasyon
-- `GameBalanceConfig : ScriptableObject` — `01_GDD_Oyun.md §12` tablosundaki **her satır** bir alan, aynı isim.
-- `ItemDefinition : ScriptableObject` — `id, nameKey, icon, useType, prefab`.
-- `PossessableDefinition` — §6.3.
-- Debug overlay'de runtime değer ayarlama (M3, B3.2).
+`GameBalanceConfig` — `01_GDD_Oyun.md §14` her satır bir alan, aynı isim. `ItemDefinition { Id, NameKey, Icon, Prefab, IsQuestItem }`. `PossessableDefinition` (§6.3). `PuzzleDefinition` (§7.2).
 
 ---
 
-## 5. İnsan Sistemleri (CM.Player — Ajan A)
+## 5. İnsan Sistemleri (CM.Player)
 
-### 5.1 Piyon Mimarisi (tüm roller için ortak)
-```
-PawnBase (MonoBehaviour, NetEntity)
- ├─ PlayerId Owner, Role Role
- ├─ IPawnInput Input          ← LocalInputSource | NullInput | BotInput (Dummy İnsan)
- ├─ bool IsLocallyControlled   ← Owner == Players.LocalPlayer
- └─ PawnSync (M4)              ← owner pozisyon/rotasyon yayınlar (20 Hz), diğerleri interpolasyon
-```
-- **Hotseat:** 4 piyon aynı anda sahnede. Lokal olmayanlar `NullInput` alır (durur). F1-F4 → `Players.LocalPlayer` değişir → input/kamera/UI/visibility yeniden bağlanır.
-- `IPawnInput` arayüzü **Core'da** tanımlı ki B'nin Dummy botu insan piyonunu sürebilsin:
-```csharp
-public interface IHumanInput : IPawnInput
-{
-    Vector2 Move { get; } Vector2 Look { get; } bool Sprint { get; }
-    bool InteractHeld { get; } bool KickPressed { get; } bool LanternPressed { get; }
-    bool UseItemPressed { get; } int SelectSlot { get; } bool DropGoldPressed { get; }
-}
-```
+### 5.1 Piyon Mimarisi (mevcut tasarım)
+`PawnBase (NetEntity) { Owner, Role, IPawnInput Input, IsLocallyControlled }`. Hotseat: 4 piyon, lokal olmayanlar `NullInput`. `IHumanInput { Move, Look, Sprint, InteractHeld/Pressed, KickPressed, LanternPressed, SelectSlot(-1/0/1/2), DropPressed }`.
 
 ### 5.2 HumanController
-- `CharacterController` tabanlı. Yerçekimi, zıplama yok (MVP).
-- Durumlar (state machine, düz C# `HumanMotorState`): `Normal`, `Carrying`, `KnockedDown`, `Grabbed`, `Dead`.
-- Hız çarpanları status'lardan toplanır (`Slowed` vb.).
-- Baş sallanması, adım sesi event'i (`FootstepEvt`) → Audio.
-- **Hitbox:** Ayrı bir child, `HumanHitbox` layer'ı, CapsuleCollider trigger (yükseklik 1.8, yarıçap 0.35). Saldırılar `Physics.OverlapBox/Sphere` + `LayerMask(HumanHitbox)` ile bunu arar.
+CharacterController, zıplama yok, **merdiven = rampa collider** (çok katlı ev). Durumlar (`HumanMotorState`, düz C#): `Normal`, `Interacting` (kazı/itme — hareket yok), `KnockedDown`, `Fainted`.
 
-### 5.3 HumanHealth (otoriter)
-- `ApplyDamageAuthority`: dokunulmazlık kontrolü → Nazar kontrolü → HP düş → `HumanDamaged` broadcast → HP 0 ise `HumanDied` broadcast.
-- Knockdown/Grab bayrakları → `StatusApplied`.
-- Ölüm: tüm istemcilerde lokal **ragdoll** (CosmeticPhysics, darbe yönü ve noktası mesajda) + kill-cam 2 sn.
-- Taşınan altın varsa: hasarda `GoldDropped` isteği Objectives'e (event üzerinden, doğrudan referans değil).
+### 5.3 HumanHealth & Bayılma (otoriter)
+```
+ApplyDamageAuthority: dokunulmazlık? → HP -= dmg → HumanDamaged
+  HP == 0 → faints++ → HumanFainted{faints} → seçili eşyayı düşür (ItemDropped)
+           → faints >= FaintsToLose ? Match: JinnsWin(Faint) : FaintDuration sonra HumanRevived (HP = Max)
+```
+Bayılmışken hasar almaz. Kozmetik: kamera yere düşer, ekran kararır, kalp atışı sesi.
 
-### 5.4 Etkileşim, Tekme, Fener, Eşyalar
-- **Interactor:** Kamera merkezinden `Interactable` layer'ına raycast (`InteractRange`). Basılı tutma ilerlemesi lokal, tamamlanınca istek. Tutarken hareket ederse iptal (arama/kazma sırasında savunmasızlık = tasarım).
-- **Kick:** `ReqKick(lookDir)` → otorite 2 m'lik kutu ile `Possessable` layer'ı arar → `IKickable.OnKickedAuthority(by)` (Core'da arayüz; Possession uygular) → `KickResult{hitObj, hadJinn}`.
-- **Lantern:** `ReqLanternPulse(dir)` → otorite koni içindeki possessed nesneleri bulur (`IPossessionQuery` Core arayüzü, B uygular) → `LanternPulsed{netIds[]}` → **sadece insan istemcisinde** parıltı çizilir.
-- **Items:** `Inventory` (2 slot, otoriter). `ReqUseItem(slot, pos)`:
-  - Tuz → otorite `SaltZone` spawn (runtime NetId) → `IPossessionBlocker` olarak kaydolur (B'nin arbiter'ı sorar), içerideki cinleri çıkarır.
-  - Nazar → pasif, `HumanHealth` kontrol eder.
-- **Gürültü:** `NoiseEmitter` — koşu (0.4/sn), arama (0.6), kazma (1.0), tekme (0.8), yanlış rün (1.0, C yayınlar). `HumanNoise` mesajı ~4 Hz ile throttle.
-
-### 5.5 Status Etkileri (A)
-`StatusController` — süreli etkiler, otorite uygular, broadcast edilir, her istemci görselini gösterir.
-| Status | Etki |
-|---|---|
-| Knockdown | Hareket yok, kamera yere düşer, süre sonunda kalkar |
-| Grabbed | Hareket yok, bakış serbest |
-| Drunk | Kamera sallanır (sinüs), fare Y ters, 4 sn |
-| Darkness | Oda ışıkları kapalı — Objectives/World'ün `LightsChanged` mesajıyla (status değil, ortam) |
-| Slowed | Hız ×0.6 |
+### 5.4 Etkileşim, Envanter, Tekme, Fener
+- **Interactor:** kamera merkezinden `Interactable` raycast (`InteractRange`), basılı tutma lokal, tamamlanınca `ReqInteract(netId)`. Otorite menzil (`InteractRange + NetRangeTolerance`) + `ValidateAuthority` → `ExecuteAuthority`.
+- **Inventory (otoriter):** `ItemSlotCount` slot. Görev eşyaları `ItemDefinition.IsQuestItem`. Eşya gerektiren etkileşimler (`GateLock`, `PuzzleRequirement`) otoritede envanteri sorar. `ReqDropItem` → yerdeki `P_Item_*` runtime spawn (NetId 60000+) — **possessable küçük eşya**.
+- **Push:** büyük mobilya `PushHoldTime` → `ReqPush(obj, dir)` → otorite hücre kaydırma (Possession'ın kaydırma mantığını paylaşır).
+- **Kick / Lantern:** v1 ile aynı (`IKickable`, `IPossessionQuery.GetPossessedInCone`). Fener bir eşya; elde değilse Parlat yok.
 
 ---
 
-## 6. Cin & Possession Sistemleri (CM.Jinn, CM.Possession, CM.Visibility — Ajan B)
+## 6. Cin & Possession Sistemleri (CM.Jinn, CM.Possession, CM.Visibility)
 
-### 6.1 SpiritController (hem iyi hem kötü cin)
-- FPS uçuş: WASD + Space/Ctrl, Shift boost. Kinematik (`transform` hareketi), collider yok, **noclip**.
-- Level sınırları: `ILevelInfo.Bounds` içinde clamp + zemin altına inemez (y ≥ 0.3), tavan üstüne çıkamaz (y ≤ 3.5; asset ölçümüne göre güncellenir).
-- Görsel: yarı saydam küre + yüz + parçacık iz. Kötü: mor/kırmızı. İyi: turkuaz. (Placeholder: URP Unlit şeffaf materyal + primitive.)
+### 6.1 SpiritController
+FPS uçuş, noclip, kinematik. Sınır: `IHouseInfo.Bounds` (bahçe dahil) içinde clamp; zemin altına (mahzen hariç) inemez.
 
-### 6.2 Possession Durum Makinesi (düz C#, EditMode test edilebilir)
-
-**Nesne tarafı (`PossessableState`):**
+### 6.2 Possession Durum Makinesi (mevcut B0.1 kodu, uyarlanacak)
 ```
-Free ──ReqPossess(ok)──► Entering(1.2s) ──► Possessed(Lurking) ◄──► Possessed(Charging) ──► Possessed(Recovering)
-  ▲                          │ iptal                  │ çıkış / kovulma / tuz / tekme-sersem sonrası devam
-  └──────────────────────────┴────────────────────────┘
-Özel: Spent (tek kullanımlık bitti) — bir daha girilemez. Blessed(t) — süre bitene kadar girilemez.
+Free → Entering(PossessTime) → Possessed(Lurking ⇄ Charging → Recovering) → Free
+Özel: Spent (tek kullanımlık bitti)
 ```
+**`PossessionArbiter.TryPossess(player, obj)` kuralları (v2):**
+1. Rol `EvilJinn` **veya** `GoodJinn` (iyi cin sadece `AllowGoodJinn` işaretli eşyalara), sersem/kilitli değil
+2. `JinnsAwake`
+3. Nesne `Free`, `Spent` değil
+4. **Işık kuralı:** kötü cin ise ve nesnenin odası `On` → red (`PossessDenyReason.Lit`) — **istisna:** nesne `IsLamp`
+5. Mesafe ≤ `PossessRange + NetRangeTolerance`
+6. `ReenterCooldown` dolmuş, oyuncu başka nesnede değil
 
-**Otorite doğrulaması — `PossessionArbiter.TryPossess(player, obj)`:**
-1. Oyuncu rolü `EvilJinn` ve sersem/kilitli değil
-2. Faz `Playing` ve `JinnWakeDelay` geçti
-3. Nesne `Free`, `Spent` değil, `Blessed` değil, hiçbir `IPossessionBlocker` (tuz) engellemiyor
-4. Mesafe ≤ `PossessRange + 0.5`
-5. Bu oyuncu için bu nesnenin `ReenterCooldown`'ı dolmuş
-6. Oyuncu başka nesnede değil
-→ Geçerse `PossessBegan{player,obj,endTime}` broadcast; süre dolunca otorite `PossessCompleted`. Aksi halde `PossessDenied{reason}` (UI gösterir).
+**Aydınlanınca atılma:** `RoomLightChangedEvt(On)` → otorite o odadaki kötü cinli nesneler için `LitRoomEjectDelay` sonra `PossessEnded{reason=Lit}`.
 
-**Yarış durumu:** İki kötü cin aynı nesneye aynı anda → otoriteye ilk ulaşan kazanır (offline'da deterministik sıra).
+### 6.3 PossessableDefinition (mevcut SO, alan ekleri)
+Mevcut alanlar + `bool AllowGoodJinn`, `bool IsLamp`, `PossessableSize Size {Small, Large, Shelf, Lamp, QuestItem}`. Aksiyon `Id`'leri (v2): `throw`, `hop`, `lunge`, `slide`, `topple`, `burst`, `fling` (görev eşyası). İyi cin için hasarsız varyant: aksiyon `Damage` iyi cinde 0'a zorlanır.
 
-### 6.3 PossessableDefinition (ScriptableObject)
-```csharp
-[CreateAssetMenu(menuName = "CinliMahzen/Possessable Definition")]
-public class PossessableDefinition : ScriptableObject
-{
-    public string Id;                         // "shelf", "barrel" ...
-    public string NameKey;                    // Loc
-    public PossessableActionDef Primary;      // sol tık
-    public PossessableActionDef Secondary;    // sağ tık (opsiyonel, null olabilir)
-    public bool CanMove;                      // sandalye/tabure
-    public float HopDistance = 1f, HopInterval = 0.5f, HopEnergy = 2f;
-    public float YawLimitDeg;                 // 0 = döndürme yok, 35 = ±35°
-    public float YawSpeedDeg = 60f;
-    public bool IsSearchableContainer;        // sandık/fıçı/raf aynı zamanda aranabilir mi
-}
+`PD_*` asset'leri (v2): `PD_Bottle`, `PD_Candle`, `PD_Plate`, `PD_Stool`, `PD_Chair`, `PD_Barrel`, `PD_Chest`, `PD_Table`, `PD_Shelf`, `PD_Lamp`, `PD_QuestItem`. (Eski `PD_Keg`, `PD_SwordShield`, `PD_Torch` kaldırılır.)
 
-[Serializable]
-public class PossessableActionDef
-{
-    public string Id;                         // "topple", "roll", "mimic", "launch", "extinguish", "flame", "throw", "explode", "lunge"
-    public string CauseId;                    // Otopsi anahtarı "shelf.topple"
-    public ActionTrigger Trigger;             // Press | HoldToCharge | ToggleArm
-    public float TelegraphTime;               // saniye
-    public float EnergyCost;
-    public float Cooldown;
-    public bool SingleUse;
-    public int Damage;
-    public DamageFlags Flags;
-    public float KnockdownTime, GrabTime;
-    public ActionShape Shape;                 // Box | Sphere | Cone | Projectile | Custom
-    public Vector3 ShapeSize;                 // Box: boyut; Sphere: x=yarıçap; Cone: x=menzil y=açı
-    public Vector3 ShapeOffset;               // nesne local
-    public float ProjectileSpeed, ProjectileRange, ProjectileArc;
-    public StatusType ApplyStatus; public float StatusDuration;
-}
-```
-`01_GDD_Oyun.md §4` MVP tablosundaki **her satır** bir `PD_*.asset` dosyasıdır (`PD_Shelf`, `PD_Barrel`, `PD_Chair`, `PD_Stool`, `PD_Chest`, `PD_SwordShield`, `PD_Torch`, `PD_Candle`, `PD_Bottle`, `PD_Keg`).
-
-### 6.4 Aksiyon Akışı (network-hazır)
-```
-Kötü cin istemcisi:  ReqAction{obj, actionIdx, yaw, chargeT}
-Otorite:             doğrula (sahip mi, enerji, cooldown, spent, stun) → enerji düş
-                     → Broadcast ActionTelegraph{obj, idx, yaw, resolveAt = now + TelegraphTime}
-Tüm istemciler:      telgraf animasyonu + ses + (Visibility: Charging parlaması)
-Otorite (resolveAt): Shape'e göre hit-check (HumanHitbox) → IDamageable.ApplyDamageAuthority
-                     → Broadcast ActionResolved{obj, idx, hit, newObjState}
-Tüm istemciler:      sonuç animasyonu (raf yerde, fıçı yuvarlanıyor...), kozmetik fizik
-```
-- **Projectile (kılıç, şişe):** Otorite `ProjectileSpawned{runtimeId, origin, dir, speed, arc, t0}` yayınlar. Tüm istemciler aynı parametrelerle **görsel** simülasyon yapar. Otorite her FixedUpdate `SphereCast` ile ilerletir; çarpışınca `ProjectileImpact{runtimeId, point, hitHuman}`.
-- **Hareketli aksiyonlar (fıçı yuvarlanma, sandalye atılma):** Otorite kinematik yol hesaplar (yön × hız, duvara `SphereCast` ile durur); başlangıç + bitiş noktası + süre yayınlanır; istemciler aynı eğriyi oynatır. Yol boyunca insan hit-check'i otoritede her tick.
-- **Sandalye zıplama (WASD):** Sahip cin istemcisi `PossessedMove{obj, targetPos}` isteği (hop başına) → otorite doğrular (mesafe ≤ HopDistance, zemin var, duvar yok, enerji) → broadcast → herkes zıplama animasyonu (0.25 sn parabol).
-- **Mimik sandık:** `ToggleArm` → otorite "armed" durumunu tutar (yayınlanmaz! insan bilmemeli — sadece kötü cinlere ve 4 m'deki iyi cine görsel). İnsan `ReqInteract` ile sandığı açınca Objectives'in container mantığından **önce** `IInteractInterceptor` (Core arayüzü) sorulur → mimik tetiklenir.
-  > Online'da "yayınlanmaz" bilgisi: M4'te otorite armed bilgisini sadece Jinns takımına + menzildeki iyi cine hedefli gönderir (`RaiseEventOptions.TargetActors`). Offline'da hepsi aynı makinede olduğundan sadece görsel filtre uygulanır.
-- **Söndür:** `ILightService` (Core arayüzü, C uygular) → `SetRoomLights(roomId, off, duration)`.
+### 6.4 Aksiyon Akışı (mevcut tasarım)
+`ReqAction → otorite doğrula, enerji düş → ActionTelegraph{resolveAt} → hit-check → ActionResolved`. Fırlatma = otorite `ProjectileSpawned{runtimeId, origin, dir, speed, arc, t0}`, herkes görsel simüle eder, otorite `SphereCast` ile ilerletir. **Kaydırma (`slide`)** = hücre bazlı (1.5 m), hedefte `Environment`/başka mobilya varsa red; kapı geçidini tıkayabilir (tasarım).
+**Patlatma (`burst`)** → `ILightService.SetLampAuthority(lamp, Broken)`.
 
 ### 6.5 Enerji, Sersemlik, Öfke
-- `JinnEnergy` (otoriter, düz C# çekirdek + MonoBehaviour sarmalayıcı): regen × (Öfke ? RageRegenMult : 1). `EnergyChanged` yayını değişim ≥ 1 olduğunda veya 4 Hz.
-- Cooldown'lar `CooldownTracker` (düz C#) — Öfke çarpanı uygulanır.
-- `JinnStunned{player, until, lockUntil}`: sersem cin hareket edebilir ama eşyaya giremez/aksiyon yapamaz.
-- Öfke: `GoldStateEvt.carried == true` ilk kez → `RageStarted` (otorite).
+`JinnEnergyCore` (mevcut) — kötü ve iyi cin ayrı ayarlarla. Öfke: `DigProgressEvt` ilk > 0 → `RageStarted`.
 
-### 6.6 Görünürlük (CM.Visibility)
-Her istemci **lokal rolüne göre** her frame (veya 10 Hz) hesaplar:
-
-| Hedef | İnsan | İyi Cin | Kötü Cin |
-|---|---|---|---|
-| Kötü cin (ruh formu) | ❌ (3 m içinde soğuk nefes FX) | ≤ 20 m: görsel + XRay outline | Takım arkadaşı: her zaman + outline |
-| Kötü cin (eşyada, Lurking) | ❌ (fener parlatınca parıltı) | ≤ 4 m: nesne mor outline | Her zaman |
-| Kötü cin (eşyada, Charging) | Telgraf (herkes) | ≤ 25 m: kırmızı outline | Her zaman |
-| İyi cin | ❌ | Kendi | Soluk görsel (%30 alfa) |
-| Ruh ipuçları (SpiritOnly) | ❌ | ✅ | ❌ |
-| İşaret (ping) | ✅ | ✅ | ❌ |
-| Isı izi, gürültü halkası, nişan oku | ❌ | ❌ | ✅ |
-
-- **XRay outline:** URP Renderer Feature "Render Objects" — `XRayOutline` layer'ı, depth test `Always`, tek renk şeffaf materyal. Görünür yapılacak nesnenin outline child'ının layer'ı dinamik açılır/kapanır.
-- `VisibilityService` sadece **lokal** çalışır, network mesajı üretmez.
+### 6.6 Görünürlük (lokal, network'süz)
+`01_GDD_Oyun.md §12` tablosu. `SpiritOnly` artık **iki cin rolüne** de açık. İyi cin insana soluk görünür (ayrı materyal, `GoodJinnVisual`).
 
 ### 6.7 İyi Cin Yetenekleri
-- **Kov:** `ReqExorcise(obj)` başlat → otorite süreyi sayar, `ExorciseProgress` (içerideki cine uyarı), iyi cin menzilden çıkar/bakışı kaçırırsa iptal (istemci `ReqExorcise` cancel gönderir). Tamamlanınca: `PossessEnded{reason=Exorcised}` + `JinnStunned` + `BlessApplied(obj, BlessAfterExorcise)`.
-- **İşaret:** `ReqPing(pos, objId?)` → `PingPlaced{id, pos, until}` → insan ve iyi cin istemcisinde görsel.
-- **Kutsa:** `ReqBless(obj)` → `BlessApplied{obj, until}`; `PossessionArbiter` kontrol eder.
+- **Lamba Yak:** `ReqLampLight(lamp)` (menzil `LampLightRange`) → `SetLampAuthority(On)`. **Onar:** `ReqLampRepair` basılı tut `RepairHoldTime`.
+- **İşaret, Kov:** v1 ile aynı akış (`ReqPing`, `ReqExorcise`).
+- **Eşyaya Gir:** aynı arbiter (kural 1), aynı aksiyon akışı, hasarsız.
 
-### 6.8 Kötü Cin Algısı
-- **Isı izi:** Lokal. İnsan piyonunun (sync edilen) pozisyonundan her 0.3 sn bir iz noktası, `HeatTrailDuration` sonra söner. `JinnOnlyFX` layer.
-- **Gürültü halkası:** `HumanNoise` mesajı → kötü cin istemcisinde mesafe ≤ `NoisePingRange` ise o noktada genişleyen halka.
-
-### 6.9 Kameralar
-- `CameraRig` (A yazar, Core'a yakın, `CM.Player`): tek ana kamera, moda göre davranış:
-  - `FpsMode(targetHead)` — İnsan ve ruh formu
-  - `OrbitMode(target, distance, pitchClamp)` — Kötü cin eşyada (B `PossessionCameraBinder` ile modu değiştirir)
-  - `DeathCamMode(ragdoll)` — ölüm
-- Geçiş: 0.3 sn pozisyon/rotasyon lerp. Orbit çarpışma: `SphereCast` Environment'a karşı.
-- Culling mask lokal role göre (§2).
+### 6.8 Kameralar
+`CameraRig`: `FpsMode`, `OrbitMode` (eşya içi), `FaintMode` (yerde, kararan ekran). Geçiş 0.3 sn.
 
 ---
 
-## 7. Dünya & Hedefler (CM.World, CM.Objectives — Ajan C)
+## 7. Bulmacalar & İlerleme (CM.Objectives) ⭐
 
-### 7.1 LevelService Akışı
+### 7.1 Genel model — `PuzzleState` (düz C#)
+```csharp
+public sealed class PuzzleState
+{
+    public int PartCount { get; }
+    public int ValueCount(int part);          // her parçanın K değeri
+    public int Get(int part);
+    public IReadOnlyList<int> Solution { get; }
+    public bool IsSolved { get; }
+    public bool IsLocked { get; }             // onaylandıktan sonra true
+
+    // Op tipleri: Cycle(part, +1/-1), Set(part, value), Swap(a, b)
+    public bool TryApply(in PuzzleOp op);     // locked ise false
+    public void ResetToSolution();            // raund başı
+}
 ```
-Match (otorite): seed = GameRandom.NewSeed() → RoundSetup{seed, roles} broadcast
-Tüm istemciler:
-  1. LevelRoot temizlenir
-  2. ILevelGenerator.Generate(seed, settings, LevelRoot) → LevelLayout
-  3. LevelValidator.Validate(layout)  (eksik marker → hata + fallback)
-  4. NavMeshSurface.BuildNavMesh()   (Dummy bot için)
-  5. LevelPopulator.Populate(seed, layout) → eşyalar, kaplar, bulmacalar, altın, NetId atama
-  6. LevelHash hesapla → online'da otoriteye LevelHash gönder (M4: uyuşmazlık tespiti)
-  7. EventBus: LevelBuiltEvt
-```
-**Tüm istemciler aynı seed'den aynı haritayı üretir** → yüzlerce prop için network nesnesi gerekmez. Her prop'un NetId'si populator sırasıyla deterministik atanır.
-
-### 7.2 ProceduralLevelGenerator (C yazar — kalıcı)
-Tek başına harita üreticisi; C'nin diğer görevleriyle birlikte sürekli geliştirilir. Mantık düz C# (grid, oda grafı, rol atama) → Unity yerleştirmesi ince katman (EditMode testlenebilir).
-
-**v1 (C0.4 — M0, A/B'yi bloklamamak için hızlı):**
-- Grid tabanlı: hücre = KayKit duvar/zemin modül boyutu (**M0'da ölçülüp `04_Asset_Eslestirme.md`'ye yazılacak**, beklenti 4 m).
-- 7×7 grid'e 8-12 dikdörtgen oda (2×2 – 3×4 hücre) yerleştir, MST + %20 ekstra kenar ile koridorlar (döngü garantisi).
-- Duvar yerleştirme: kenar bazlı; kapı açıklığı `wall_doorway`, hazine girişi `wall_gated`.
-- Marker'ları (§8) kurallara göre yerleştirir.
-- **Deterministik:** Sadece `System.Random(seed)`. `Dictionary`/`HashSet` iterasyon sırasına güvenme — listeler sıralı.
-- Editör menüsü: `CinliMahzen/Level/Generate Map (Random Seed)` ve `(Seed=12345)`.
-
-**v2 (C3.4 — kalite & çeşitlilik):**
-- Dikdörtgen olmayan odalar (L/T) ve/veya elle hazırlanmış oda şablonları (room prefab + soket noktaları) + prosedürel yerleşim. Yaklaşımı C v2 başında seçer.
-- Oda rolleri graf/yol mesafesiyle: Start, Vault, Exit (vault→çıkış ≥ 35 m), bulmaca odaları (rün ↔ ipucu ≥ 2 oda) — `01_GDD_Oyun.md §11`.
-- Oynanış sezgileri: vault çevresinde döngü, çıkmaz sokak sınırı, koridor/oda oranı, eşya yoğunluğu hedefleri.
-- Tüm ayarlar `LevelGenSettings` (C'nin SO'su) içinde.
-- **Kalite aracı:** `CinliMahzen/Level/Batch Report (100 seeds)` → seed başına oda sayısı, en uzun yol, döngü, çıkmaz, validator sonucu.
-
-### 7.3 LevelPopulator (C yazar — kalıcı; her `ILevelGenerator` uygulamasıyla çalışır)
-Generator sadece **geometri + marker (soket)** üretir. Oynanış nesnelerini populator yerleştirir:
-1. Marker'ları deterministik sırala (oda indeksi → marker tipi → local pozisyon x,z).
-2. `GameRandom(seed ^ 0x5EED)` ile:
-   - Hazine odası → `VaultDoor` + `GoldChest`
-   - Çıkış → `ExitZone`
-   - Bulmaca soketleri → `RunePuzzle` (4 taş) + ayrı odada `RuneHintWall`; `FootprintPuzzle` (başlangıç + `DigSpot`)
-   - `PossessableSocket`'ler → kategoriye uygun possessable prefabları (§8.3)
-   - Aranabilir kaplardan biri → Mühür parçası; diğerlerine `LootTable`
-3. NetId: `1000 + sıra`.
-4. Oda başına ışıklar `LightService`'e kaydedilir.
-
-### 7.4 Hedef Nesneleri
-| Bileşen | Tip | Davranış |
+Her bulmaca bu modele indirgenir:
+| Tip | Parça × değer | Op |
 |---|---|---|
-| `SearchableContainer` | IInteractable | Arama (1 sn) → otorite loot verir → `ContainerSearched{obj, lootId}`. Bir kez aranır. Possessable olabilir (sandık/fıçı/raf): `IInteractInterceptor` önce sorulur (mimik) |
-| `KeyFragmentPickup` | — | Container loot'u olarak verilir, doğrudan envantere değil `ObjectiveState.fragments++` |
-| `RuneStone` ×4 | IInteractable | Anında bas. Otorite sırayı kontrol eder. Yanlış → sıfırla + `HumanNoise(1.0)` |
-| `RuneHintWall` | SpiritOnly görsel | 4 sembolün sırası (rastgele permütasyon, seed'li) |
-| `FootprintTrail` | SpiritOnly görsel | Başlangıçtan `DigSpot`'a nokta dizisi (NavMesh path veya düz çizgi + oda kapıları) |
-| `DigSpot` | IInteractable | 3 sn basılı, gürültü 1.0 → fragment |
-| `VaultDoor` | — | fragments == 3 → `VaultOpened` → kapı animasyonu (gate aşağı iner) |
-| `GoldChest` | IInteractable | 1 sn → `GoldPickedUp{carrier}`. Taşıyıcı hasar alırsa `GoldDropped{pos}` (otorite, insanın önüne) |
-| `ExitZone` | Trigger | Taşıyan insan girerse (otorite kontrol) → Match'e `SeekersWin` |
-| `ObjectiveState` | Otoriter servis | fragments, vaultOpen, goldCarrier, phase → `PhaseChanged` |
+| Paintings | 3 × 8 | Cycle |
+| Statue | 2 × {12, 4} | Cycle |
+| Wires | 4 × 4 | Cycle (renk) |
+| Sigil | 12 × 2 | Set (boya/sil) — Boya gerekli |
+| Books (sonra) | 5 permütasyon + 1 × 4 | Swap + Cycle |
+| Jigsaw (sonra) | 6 permütasyon | Swap |
 
-### 7.5 Işık & Atmosfer
-- URP, karanlık ambient (neredeyse siyah, hafif mavi), `torch_mounted`/`candle` başına Point Light (gölgesiz, performans), insan feneri Spot Light (gölgeli, tek gölgeli ışık).
-- `LightService : ILightService` — oda ID → ışık listesi; `SetRoomLights(roomId, on/off, duration)` → `LightsChanged` broadcast.
-- Hafif volumetric his: URP fog (Exponential Squared, koyu).
-- Performans hedefi: 1080p, orta sistem, **≥ 90 FPS** (tek gölgeli ışık kuralı bunun için).
-
-### 7.6 Ses (CM.Audio)
-- `AudioService` — `Play(SfxId, pos)`, `PlayUI(SfxId)`; `SfxLibrary` ScriptableObject (id → clip listesi, rastgele pitch).
-- **Telgraf sesleri 3D ve yüksek önceliklidir** (oyunun adaleti). Mixer grupları: Master / SFX / Telegraph / UI / Music.
-- Placeholder: Clip yoksa `CMLog.Warn` + sessiz devam (crash yok).
-
----
-
-## 8. Level Kontratı (Generator ↔ Oyun Sınırı) ⭐
-
-> `ProceduralLevelGenerator` (ve ileride denenebilecek başka her generator) **sadece bu arayüzü uygular**. Oynanış yerleşimini `LevelPopulator` yapar. A ve B yalnızca bu kontrata bağımlıdır.
-
-### 8.1 Arayüz
+### 7.2 PuzzleDefinition (SO)
 ```csharp
-namespace CinliMahzen.World
+public class PuzzleDefinition : ScriptableObject
 {
-    public interface ILevelGenerator
-    {
-        /// Deterministik olmak ZORUNDA: aynı seed + settings → birebir aynı hiyerarşi ve pozisyonlar.
-        /// UnityEngine.Random KULLANMA. Sadece verilen seed ile System.Random.
-        /// Tüm nesneleri 'root' altına oluştur. Senkron çalışmalı (tek frame) veya IEnumerator versiyonu kullan.
-        LevelLayout Generate(int seed, LevelGenSettings settings, Transform root);
-    }
-
-    [Serializable] public class LevelGenSettings { public int MinRooms = 8, MaxRooms = 14; public float CellSize = 4f; /* genişletilebilir */ }
-
-    public class LevelLayout
-    {
-        public Bounds Bounds;                          // cinlerin uçuş sınırı
-        public List<RoomInfo> Rooms;                   // index = RoomId
-        public List<LevelMarker> Markers;              // root altındaki tüm marker'lar
-        public int[,] RoomAdjacency;                   // opsiyonel: oda komşulukları (kapı sayısı)
-    }
-
-    public class RoomInfo { public int RoomId; public Bounds Bounds; public RoomTag Tags; public List<int> Neighbors; }
-
-    [Flags] public enum RoomTag { None = 0, Start = 1, Vault = 2, Exit = 4, Corridor = 8, PuzzleCandidate = 16, Large = 32 }
+    public PuzzleType Type;               // Paintings, Statue, Wires, Sigil, Books, Jigsaw
+    public string NameKey;
+    public int[] ValueCounts;             // parça başına K
+    public PuzzleOpKind OpKind;
+    public string RequiredItemId;         // "" = yok ("paint", "fusekey")
+    public GameObject InteractivePrefab;  // P_Puzzle_*
+    public GameObject ReferencePrefab;    // P_PuzzleRef_* (SpiritOnly)
+    public PuzzleSlotSize Size;           // Wall / Floor / Table — slot uyumu
 }
 ```
 
-### 8.2 Marker Bileşenleri (generator bunları prefablara/boş objelere ekler)
-| Marker | Adet | Zorunlu alanlar | Kural |
-|---|---|---|---|
-| `HumanSpawnMarker` | 1 | roomId | Start odasında |
-| `JinnSpawnMarker` | 3 | roomId | İnsana en az 25 m |
-| `ExitMarker` | 1 | roomId | Vault'tan ≥ 35 m yol |
-| `VaultMarker` | 1 | roomId, doorTransform | Vault odası tek girişli; `doorTransform` = mühürlü kapı yeri |
-| `GoldSpawnMarker` | 1 | roomId | Vault odası içinde |
-| `PossessableSocket` | 30-50 | roomId, `SocketCategory` (Flags), `wallFacing` (bool) | Populator doldurur (§8.3). Doldurulmayan soket boş kalır |
-| `ContainerSocket` | 10-16 | roomId | Aranabilir kap yeri (populator sandık/fıçı/raf seçer) |
-| `PuzzleSocket` | ≥ 3 | roomId, `PuzzleType` (RuneStones, RuneHint, FootprintStart, DigSpot) | RuneStones ve RuneHint farklı odalarda, aralarında ≥ 2 oda |
-| `LightSocket` | oda başına ≥ 1 | roomId, `wallMounted` | Meşale/mum yeri |
-| `DecorSocket` | serbest | — | Opsiyonel süs (populator dokunmaz) |
-
-```csharp
-[Flags] public enum SocketCategory
-{
-    None = 0, WallLarge = 1 /*raf*/, Floor = 2 /*fıçı, sandalye*/, Table = 4 /*şişe, mum*/,
-    WallMount = 8 /*kılıç-kalkan, meşale*/, Corner = 16 /*bira fıçısı*/, FloorTile = 32 /*diken - post MVP*/
-}
+### 7.3 Akış (network)
 ```
+İnsan / Kötü cin: ReqPuzzleOp{puzzleSlot, part, op}
+Otorite: rol kontrolü (insan: menzil + gerekli eşya; kötü cin: menzil ScrambleRange, oda karanlık,
+         enerji ScrambleEnergyCost, ScrambleInterval) → state.TryApply → PuzzleStateChanged{slot, values[], by}
+İnsan:   ReqPuzzleConfirm{slot} → otorite: IsSolved?
+           ✔ → Lock → PuzzleConfirmResult{ok} + PuzzleCompleted{slot} → ödül (ItemSpawned) → aşama kontrolü
+           ✘ → ConfirmFailDamage (IDamageable) + ConfirmFailCooldown → PuzzleConfirmResult{fail}
+Aşamadaki tüm slotlar tamam → StageCompleted{stage} → GateOpened{gate}
+```
+Bulmaca durumu **tam değer dizisi** olarak yayınlanır (küçük; geç gelen istemci için de doğru).
 
-### 8.3 Populator Eşleme
-| SocketCategory | Olası possessable'lar (ağırlık) |
-|---|---|
-| WallLarge | Raf (1.0) |
-| Floor | Fıçı (0.5), Sandalye (0.3), Tabure (0.2) |
-| Table | Şişe (0.6), Mum (0.4) |
-| WallMount | Kılıç-Kalkan (0.5), Meşale (0.5) |
-| Corner | Bira fıçısı (0.4), Fıçı (0.6) |
+### 7.4 Bileşenler
+| Bileşen | Tip | Görev |
+|---|---|---|
+| `PuzzleSystem` | servis (otoriter) | Slot → `PuzzleState`; mesaj handler'ları; `IObjectiveInfo` |
+| `PuzzleView` | MonoBehaviour | Değerleri görsele çevirir (tablo açısı, kablo rengi, çizgi). Telgraf: karıştırmada gıcırtı + titreme |
+| `PuzzlePart` | IInteractable | Parça başına; insan → çevir, kötü cin → karıştır |
+| `ConfirmLever` | IInteractable | Onay (insan) |
+| `PuzzleReference` | SpiritOnly görsel | Cevabı `PuzzleView` ile aynı kodla çizer (`values = Solution`) |
+| `StageGate` | — | `StageCompleted` → açılır (kapı animasyonu) |
+| `ItemReward` | — | Bulmaca tamamlanınca ödül eşyasını slotun `RewardPoint`'inde spawn eder |
+| `KeyHideSpot` | IInteractable | Arama; gerçeği plan seçer |
+| `DigSpot` | IInteractable | Kürek gerekli, ilerleme otoritede birikir, `DigTotalTime` → `TreasureDug` |
 
-### 8.4 Geometri Gereksinimleri
-- Zemin collider'ları `Environment` layer'ında, y = 0 düzleminde (tek kat).
-- Duvar collider'ları kapalı (insan dışarı çıkamaz).
-- Tüm yürünebilir alan NavMesh bake'e uygun (`NavMeshSurface` root'a eklenecek, `Environment` layer'ını kullanır).
-- Tavan: opsiyonel (`ceiling_tile`). Varsa `Environment` değil `Default` layer (insan fenerini engellemesin, cinler üstüne çıkamaz zaten).
+### 7.5 RoundSetupPlanner (düz C#, seed'li, EditMode test) ⭐
+Girdi: `HouseIndex` (odalar, slotlar), `PuzzleDefinition[]` havuzu, `GameBalanceConfig`, seed. Çıktı: `RoundPlan`.
+```
+1. Her aşama için (StagesActive kadar): o aşamanın PuzzleSlot'larından PuzzlesPerStage tanesini seç
+2. Her seçili slota uyumlu (Size, tip daha önce kullanılmamış) bir PuzzleDefinition ata
+3. Her bulmaca için ReferenceSlot seç: farklı oda (mümkünse farklı kat), tip uyumlu, tekrar yok
+4. Cevaplar: her parça için GameRandom.Range(0, K)
+5. Eşya ödülleri — bağımlılık çözümü:
+     gerekli eşyalar (RequiredItemId) + Kürek → her biri, ihtiyaç duyulduğu bulmacadan ÖNCEKİ aşamadaki
+     veya AYNI aşamadaki diğer bulmacanın ödülüne atanır; çözülemezse aşamadaki tip seçimini yeniden dene (max 20)
+6. Anahtar saklanma yeri, gerçek kazı noktası
+```
+**Doğrulama (`RoundPlanValidator`):** her gerekli eşya erişilebilir, referans ≠ bulmaca odası, tip tekrarı yok. **Test:** aynı seed → aynı plan (hash); 500 seed → hepsi geçerli.
 
-### 8.5 Doğrulama (`LevelValidator`)
-Zorunlu marker eksikse / kurallar tutmuyorsa → `CMLog.Error` + **aynı seed+1 ile yeniden dene** (max 5), sonra `LevelGenSettings.FallbackSeed` (bilinen iyi seed) ile üret. Editör menüsü: `CinliMahzen/Level/Validate Current Level` → rapor.
-
-### 8.6 Generator Değişikliği Kuralları (C0.4, C3.4 ve sonrası)
-1. Her generator değişikliğinden sonra determinizm testi: aynı seed ile 2 kez üret → `LevelHash` eşit (EditMode).
-2. Çoklu seed testi: v1'de 50, v2'de 100 seed → hepsi `LevelValidator`'dan geçer.
-3. Kontrat (§8.1–8.4) değişirse önce `CONTRACT_CHANGES.md` (A ve B etkilenir).
-4. Üretim + populate < 1.5 sn.
+### 7.6 RoundSetupApplier (MonoBehaviour)
+Plan'ı uygular: slotlara bulmaca prefabını yerleştirir (raund başında havuzdan / önceden instantiate edilmiş, aktif/pasif), referansları yerleştirir, `PuzzleState.ResetToSolution`, kapıları kapatır, lambaları `Off`, eşyaları kaldırır, possessable'ları başlangıç konumlarına döndürür. NetId: slot sırası + tip ile deterministik (`1000 + slotIndex*16 + part`).
 
 ---
 
-## 9. Maç Yönetimi (CM.Match — Ajan A)
+## 8. Ev Kontratı (Marker'lar) ⭐
 
-### 9.1 MatchStateMachine (düz C#, otoriter)
+Ev elle kurulur; oyun sistemleri evi **sadece marker bileşenleri** üzerinden tanır.
+
+| Marker | Alanlar | Kural |
+|---|---|---|
+| `RoomMarker` | roomId, floor (-1 mahzen, 0 bahçe/zemin, 1, 2), `BoxCollider` (trigger, oda hacmi) | Her oda 1 tane; `RoomOf(p)` bununla |
+| `StageZone` | stageIndex, roomIds[] | Aşama 0 = bahçe, 1.. = katlar |
+| `PuzzleSlot` | stageIndex, roomId, `PuzzleSlotSize`, allowedTypes (Flags), `RewardPoint` | Aşama başına ≥ 3 (çeşitlilik için) |
+| `ReferenceSlot` | roomId, `PuzzleSlotSize`, allowedTypes | Toplam ≥ 8 |
+| `StageGate` | stageIndex, door transform | Aşama sonunda açılır |
+| `GateLock` | requiredItemId | Ön kapı (ev anahtarı), mahzen kapağı (bodrum anahtarı) |
+| `LampMarker` + `LightSwitch` | roomId | Her oda ≥ 1 |
+| `KeyHideSpot` | — | Bahçede ≥ 5 |
+| `DigSpot` | — | Mahzende ≥ 3 |
+| `HumanSpawnMarker` / `JinnSpawnMarker` | — | 1 / 3 |
+| `ToolShedItemPoint` | itemId (fener) | Bahçede |
+
+**`HouseValidator`** (editör menüsü `CinliMahzen/House/Validate`): zorunlu marker sayıları, her aşamada yeterli slot, her bulmaca tipi için en az 2 uygun slot ve 2 uygun referans slotu, her oda lambalı, NavMesh bake edilmiş.
+
+**Geometri:** KayKit grid **4 m** hücre, duvar yüksekliği **4 m**, kalınlık 1 m (`04_Asset_Eslestirme.md`). Kat yüksekliği 4 m → kat k zemini y = 4k. Merdivenler `Env_Stairs` (5 m yükselme → kat arası için ölçeklenir/ara sahanlık). NavMesh: `NavMeshSurface` ev köküne.
+
+---
+
+## 9. Maç Yönetimi (CM.Match)
+
 ```
 Lobby → RoundSetup → RoleReveal(3s) → Intro(5s) → Playing → RoundEnd(8s) ─┬─► RoundSetup (raund < 4)
                                                                             └─► MatchEnd
 ```
-- `Playing` içinde alt faz `ObjectiveState.phase`: Explore → Vault → Escape (C yönetir, A dinler).
-- Bitiş koşulları (otorite): `HumanDiedEvt` → JinnsWin(Kill); `ExitReached` → SeekersWin; süre 0 → JinnsWin(Timeout).
-- `MatchStateChanged{state, endTime}` broadcast; herkes `endTime - Net.Time` ile sayaç gösterir.
-
-### 9.2 Rol Rotasyonu
-- Raund `r` (0..3): İnsan = `players[r]`, İyi Cin = `players[(r+1)%4]`, Kötü = diğer iki.
-- `RolesAssigned{byte[4] roles}`.
-
-### 9.3 Puan & İstatistik
-- `ScoreService` (otoriter) — §6 tablosu.
-- `StatsService` (her istemci lokal toplar, otorite nihai değerleri RoundEnd'de yayınlar): boşa tekme, düşme, ıskalama, kovma, tuz, hasar kaynakları.
-- Unvan hesaplama `TitleCalculator` (düz C#, test edilebilir) — C'nin Otopsi/MatchEnd UI'ı kullanır.
+- Bitiş (otorite): `TreasureDug` → SeekersWin · süre 0 → JinnsWin(Timeout) · `faints >= FaintsToLose` → JinnsWin(Faint).
+- `RoundEndReason { None, Treasure, Timeout, Faint }` (eski `Kill/Exit` değerleri yerine).
+- Rol rotasyonu: İnsan = `players[r]`, İyi = `players[(r+1)%4]`.
+- `ScoreService`: `01_GDD_Oyun.md §10`. `StatsService` + `TitleCalculator` (düz C#).
 
 ---
 
 ## 10. UI (CM.UI)
-
-- **uGUI + TextMeshPro** (Unity 6 dahili). UI Toolkit kullanılmaz (tutarlılık).
-- `UIRoot` prefabı: Canvas (Screen Space Overlay, 1920×1080 referans, Scale With Screen Size 0.5).
-- Her HUD bir `RoleHud` alt sınıfı; `LocalRoleChangedEvt` ile doğru olan aktif olur.
-- **Loc:** `Loc.T("key")` — `LocTable` ScriptableObject (key, tr, en). Eksik anahtar → `#key#` gösterir + uyarı.
-- Font: Türkçe karakterli TMP font asset (Noto Sans veya benzeri, `ğüşıöçİĞÜŞÖÇ` atlas'a dahil).
-
-| Ekran | Sahip |
-|---|---|
-| UI framework, Loc, MainMenu, Pause/Ayarlar, RoleReveal, Human HUD | A |
-| Evil HUD, Good HUD, possession ipuçları, possess/deny mesajları | B |
-| Otopsi, MatchEnd, hedef bildirimleri (Mühür 2/3, ALTIN ALINDI) | C |
-| Lobi (M4) | A |
+uGUI + TextMeshPro. `UIRoot` Canvas 1920×1080 referans. Her HUD bir `RoleHud`, `LocalRoleChangedEvt` ile değişir. Türkçe karakterli font. Ekranlar `01_GDD_Oyun.md §13`.
 
 ---
 
-## 11. Prefab Sahipliği & Bileşim
+## 11. Debug & Test Altyapısı
 
-Birden fazla ajanın aynı prefabı düzenlemesini önlemek için:
-- **Human prefabı (A):** Tüm bileşenler A'nın.
-- **Spirit prefabları (B):** `P_EvilJinn`, `P_GoodJinn` — B'nin. `PawnBase` (A'nın script'i) içerir; A'nın script'lerini kullanır ama prefab dosyası B'nin.
-- **Possessable prefabları (B):** Model referansları C'nin import ettiği modellerden. `P_Poss_Base` → varyantlar.
-- **Container (sandık/fıçı/raf aranabilir):** Possessable prefabına C'nin `SearchableContainer` bileşeni **eklenmez**; bunun yerine populator runtime'da `AddComponent` yapar. → prefab çakışması yok.
-- **Environment & Objectives prefabları (C).**
-- `Game.unity` sadece A; B ve C ihtiyaçlarını A'ya bildirir (ya da kendi sandbox sahnelerinde test eder).
+### 11.1 Hotseat
+**F1-F4** oyuncu değiştir · **F5** insan bayılmaz · **F6** sınırsız enerji · **F7** her şeyi göster (SpiritOnly herkese) · **F8** yeni seed ile raund · **F9** overlay · **F10** zaman ×2 · **F11** mevcut aşamayı tamamla · **F12** Dummy İnsan botu.
 
----
-
-## 12. Debug & Test Altyapısı (Claude Code için hayati)
-
-### 12.1 Hotseat Modu (offline varsayılan)
-- 4 `PlayerInfo`: "P1".."P4", roller rotasyona göre.
-- **F1-F4:** lokal oyuncuyu değiştir. **F5:** İnsan ölümsüz. **F6:** Sınırsız enerji. **F7:** Tüm cinleri/ipuçlarını göster. **F8:** Yeni seed ile raundu yeniden başlat. **F9:** Debug overlay. **F10:** Zaman ×2. **F11:** Tüm mühürleri ver. **F12:** Dummy İnsan botunu aç/kapa.
-- Debug overlay: FPS, lokal rol, faz, kalan süre, enerji, possession durumları listesi, son 10 NetMsg.
-
-### 12.2 Editör Menü Komutları (MCP `execute_menu_item` ile tetiklenebilir)
+### 11.2 Menü komutları (MCP `execute_menu_item`)
 ```
 CinliMahzen/Debug/Switch To Player 1..4
 CinliMahzen/Debug/Restart Round (New Seed)
-CinliMahzen/Debug/Kill Human
-CinliMahzen/Debug/Give All Fragments
-CinliMahzen/Debug/Toggle Dummy Human
-CinliMahzen/Debug/Possess Nearest (Evil P3)
-CinliMahzen/Debug/Trigger Action Primary (Evil P3)
-CinliMahzen/Debug/Dump State To Console
-CinliMahzen/Level/Generate Map (Random Seed)
-CinliMahzen/Level/Batch Report (100 seeds)
-CinliMahzen/Level/Validate Current Level
+CinliMahzen/Debug/Faint Human
+CinliMahzen/Debug/Complete Current Stage
+CinliMahzen/Debug/Solve Puzzle Under Cursor
+CinliMahzen/Debug/Scramble All Puzzles
+CinliMahzen/Debug/Give All Quest Items
+CinliMahzen/Debug/Toggle All Lights
+CinliMahzen/Debug/Dump State To Console      ← MCP doğrulaması buradan okunur
+CinliMahzen/House/Validate
+CinliMahzen/House/Print Round Plan (Seed=12345)
+CinliMahzen/House/Plan Batch Report (500 seeds)
 ```
-- `Dump State To Console`: Maç durumu, oyuncular, roller, HP, enerji, possession'lar, hedef durumu → tek JSON log. **Claude Code play mode doğrulamasını buradan okur.**
 
-### 12.3 Dummy İnsan Botu (B yazar, `BotInput : IHumanInput`)
-- NavMesh üzerinde rastgele oda gez, kapları ara, 20% ihtimalle koş. Kötü cin sistemlerini tek başına test etmek için.
-
-### 12.4 Testler
-- **EditMode (zorunlu):** `PossessionArbiter` kuralları, `JinnEnergy`, `CooldownTracker`, `HumanHealth` (nazar, dokunulmazlık), `MatchStateMachine` geçişleri, rol rotasyonu, `ObjectiveState`, rün sırası, `TitleCalculator`, tüm NetMsg encode/decode round-trip, `ProceduralLevelGenerator` determinizm (aynı seed → aynı hash), `LevelValidator`.
-- **PlayMode (önemli akışlar):** Raund başlar → insan doğar; cin rafa girer → devirir → insan ölür → RoundEnd; F11 + altın + çıkış → SeekersWin.
-- Her görevin kabul kriterinde hangi testin geçmesi gerektiği yazılıdır.
+### 11.3 Testler
+- **EditMode (zorunlu):** `PuzzleState` (op'lar, kilit, çözülme), `RoundSetupPlanner` (determinizm + 500 seed geçerlilik + eşya bağımlılığı), `PossessionArbiter` (ışık kuralı dahil), `JinnEnergy`, `HumanHealth` (bayılma, kaybetme), `MatchStateMachine`, rol rotasyonu, tüm NetMsg round-trip, `TitleCalculator`.
+- **PlayMode:** raund başlar → insan bahçede; F11 ile aşamalar → kazı → SeekersWin; Faint ×3 → JinnsWin.
 
 ---
 
-## 13. Online Entegrasyon (M4 — EN SON) — Photon PUN 2
+## 12. Online (M5 — EN SON) — Photon PUN 2
+- PUN 2 import → `Assets/Photon/`. AppId repo'ya commit edilmez. Region `eu`.
+- `PunNetBridge : INetBridge` (`MsgCode` 1:1 event code; `SendToAuthority` = MasterClient, `Broadcast` = All; `EnergyChanged`, `PossessedMove` unreliable).
+- `PunPlayerRegistry`, `PunPawnSync` (20 Hz, 100 ms interpolasyon), `PunPawnSpawner`, `PunLobbyUI`.
+- **Ev nesneleri PhotonView kullanmaz** — NetId + RaiseEvent. Raund planı tüm istemcilerde aynı seed'den üretilir (`HouseHash` + plan hash kontrolü).
+- Master ayrılırsa / oyuncu ayrılırsa: raund iptal → lobi.
+- Test: Unity Multiplayer Play Mode (paket kurulu).
 
-> M0-M3 boyunca bu bölüm **uygulanmaz**. Ama M0-M3'te yazılan her kod §4.3 kuralına uyduğu için M4 = "köprüyü değiştir + piyon senkronu ekle".
+---
 
-### 13.1 Kurulum
-- PUN 2 (Asset Store, ücretsiz) import → `Assets/Photon/` (repo'ya dahil).
-- `PhotonServerSettings`: AppId (PUN) — **AppId repo'ya commit edilmez**: `PhotonServerSettings.asset` `.gitignore`'a; her geliştirici kendi yerel kopyasına aynı AppId'yi girer (README'de yazılı). Region: `eu` (Türkiye için), Fixed Region.
-- `PhotonNetwork.SendRate = 30`, `SerializationRate = 20`.
+## 13. Performans & Build
+- ≥ 90 FPS @1080p orta sistem. Tek gölgeli ışık (insan feneri); lambalar gölgesiz point light.
+- Update'lerde GC allocation 0. Raund kurulumu < 1 sn.
+- Windows x64, `CinliMahzen/Build/Windows` menüsü → `Builds/`.
 
-### 13.2 Bileşenler (CM.Net.Pun)
-| Sınıf | Görev |
+---
+
+## 14. v1 → v2 Kod Geçişi (mevcut kodda değişecekler)
+Mevcut kod v1 tasarımına göre yazıldı. `03_TODO.md` **M0.5 Pivot** görevleri şunları yapar:
+| Alan | Değişiklik |
 |---|---|
-| `PunConnection` | Bağlan, nickname, oda oluştur/katıl (6 haneli kod = oda adı), MaxPlayers=4, `IsVisible=false`, late join kapalı (oyun başlayınca `IsOpen=false`) |
-| `PunNetBridge : INetBridge` | `MsgCode` → Photon event code (1:1, byte). `SendToAuthority` = `RaiseEvent(ReceiverGroup.MasterClient)`; `Broadcast` = `RaiseEvent(ReceiverGroup.All)`; hedefli gönderim için `SendTo(actors[])` ek metodu (mimik gizliliği). Reliable varsayılan; `EnergyChanged`, `HumanNoise`, `PossessedMove` unreliable |
-| `PunPlayerRegistry : IPlayerRegistry` | ActorNumber ↔ PlayerId (katılım sırasına göre 0-3, oda özelliği olarak saklanır) |
-| `PunPawnSync : IPunObservable` | Owner pozisyon/rotasyon/bakış yayını, diğerleri 100 ms gecikmeli interpolasyon |
-| `PunPawnSpawner` | Raund başında her istemci kendi piyonunu `PhotonNetwork.Instantiate("Pawns/Human" / "Pawns/EvilJinn"...)` |
-| `PunLobbyUI` | Oda kodu, oyuncu listesi, hazır, başlat (sadece master) |
-
-- **Oda Özellikleri:** `seed`, `round`, `roles` (byte[]), `playerOrder` (int[] ActorNumber).
-- **Level nesneleri PhotonView KULLANMAZ.** Hepsi NetId + `RaiseEvent` ile (§7.1 determinizm).
-- **Master ayrılırsa:** Raund iptal → herkes lobiye döner (host migration yok, MVP).
-- **Oyuncu ayrılırsa:** Raund iptal, lobiye dönüş, "X ayrıldı" mesajı.
-
-### 13.3 Online Test Yöntemi
-- **Unity 6 Multiplayer Play Mode** (paket: `com.unity.multiplayer.playmode`) ile tek makinede 4 sanal oyuncu, **veya** ParrelSync klonları.
-- Checklist M4 görevlerinde.
-
----
-
-## 14. Performans & Kalite Hedefleri
-- ≥ 90 FPS @1080p orta sistem, ≤ 1.5 GB RAM.
-- GC allocation Update'lerde 0 (Profiler ile kontrol M3'te).
-- Maç başına network trafiği: < 10 KB/s/oyuncu.
-- Harita üretimi + populate: < 1.5 sn.
-
----
-
-## 15. Build & Dağıtım
-- Hedef: Windows x64 (Mono veya IL2CPP — M3'te karar; varsayılan Mono, hızlı build).
-- Build: `CinliMahzen/Build/Windows` menü komutu → `Builds/CinliMahzen_<tarih>/`.
-- Steam: kapsam dışı (ileride).
+| `GameBalanceConfig` | Kaldır: tuz, nazar, altın, mühür, ısı izi, gürültü, kutsa alanları. Ekle: §14 GDD v2 alanları |
+| Core/Events | Kaldır: `GoldStateEvt`, `KeyFragmentCollectedEvt`, `HumanDiedEvt`, `NoiseEvt`. Ekle: §4.6 v2 event'leri |
+| Core/Bridges | Kaldır: `IPossessionBlocker(Registry)`, `IInteractInterceptor`, `ILevelInfo`. Ekle: `IRoomService`, `IHouseInfo`; `ILightService`, `IObjectiveInfo`, `ObjectivePhase`, `RoundEndReason`, `IMatchInfo` güncelle; stub'ları güncelle |
+| `MsgCode` | §4.3 v2 listesi |
+| `ItemDefinition` | `ID_Salt`, `ID_Nazar` sil; görev eşyaları ekle |
+| Possession | `PossessionArbiterCore`: tuz kuralı → ışık kuralı, iyi cin desteği. `PD_*` asset'leri §6.3 v2 listesi |
+| Input | `IHumanInput`: 3 slot, Drop; `ISpiritInput`: Bless → Exorcise/LampLight/PossessAsGood |
+| DebugTools | F11 / menüler §11 |
+| World (C dalı) | `agent-c/m0-assets-scene` dalından **sadece** KayKit import + `Env_*` / `Prop_*` prefabları + materyal alınır. `ProceduralLevelGenerator`, `LevelPlanner`, Level kontratı **alınmaz** |

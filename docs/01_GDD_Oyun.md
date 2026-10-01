@@ -1,348 +1,402 @@
-# CİNLİ MAHZEN — Oyun Tasarım Dokümanı (Oyuncu / Tasarım Tarafı)
+# CİNLİ MAHZEN — Oyun Tasarım Dokümanı
 
-> Çalışma adı: **Cinli Mahzen**. Sürüm: GDD v1.0 — 2026-09-30
+> Sürüm: **GDD v2.0 — 2026-10-01** (v1 "zindan + öldürme" tasarımının yerini alır)
 > Bu doküman "oyun ne, nasıl oynanır, nasıl hissettirir" sorularını cevaplar.
-> Teknik karşılıklar için: `02_GDD_Teknik.md`. Görev listesi: `03_TODO.md`.
-> **Buradaki tüm sayısal değerler `GameBalanceConfig` ScriptableObject'inde birebir aynı isimle bulunur.** Sayı değişirse önce config değişir, sonra bu doküman güncellenir.
+> Teknik karşılıklar: `02_GDD_Teknik.md`. Görev listesi: `03_TODO.md`. Asset eşleştirme: `04_Asset_Eslestirme.md`.
+> **Buradaki tüm sayısal değerler `GameBalanceConfig` içinde birebir aynı isimle bulunur.** Sayı değişirse önce config, sonra bu doküman.
 
 ---
 
 ## 1. Tek Cümlede Oyun
 
-Bir define avcısı, cinli bir mahzende altın arıyor; yanında onu koruyan **iyi bir cin** var, mahzendeki **iki kötü cin** ise eşyaların içine girip adamı "kaza süsü vererek" öldürmeye çalışıyor.
+Ormandaki terk edilmiş köy evinin **mahzeninde bir hazine** var; define avcısı gün doğmadan evin bulmaca zincirini çözüp hazineyi kazmaya çalışırken, **iyi cin** ona sadece kendisinin görebildiği cevapları fısıldar, **iki kötü cin** ise bulmacaları karıştırıp eşyaları üstüne fırlatarak onu durdurmaya çalışır.
 
-- **Tür:** Asimetrik 2v2 online co-op/PvP parti oyunu
-- **Oyuncu:** Tam 4 kişi (1 İnsan + 1 İyi Cin **vs** 2 Kötü Cin)
-- **Maç:** 4 raund, her raund ~10 dk. Her raundda insan rolü döner → herkes 1 kez insan olur.
-- **Ton:** Korku-komedi. Gergin ama salak. Ölümler komik, asla sinir bozucu değil.
-- **Kamera:** Herkes her zaman **FPS**. Kötü cin bir eşyanın içine girince **TPS** (eşyanın etrafında dönen kamera).
-- **İletişim:** Discord. **Takımlar ayrı ses kanalında olmalı** (İnsan+İyi Cin bir kanal, 2 Kötü Cin bir kanal). Oyun lobi ekranında bunu hatırlatır.
-- **Görsel:** KayKit Dungeon (low-poly, sevimli, renkli). Karanlık ama okunaklı.
+- **Tür:** Asimetrik 2v2 online parti oyunu (iletişim + bulmaca + kaos)
+- **Oyuncu:** Tam 4 kişi — **1 İnsan + 1 İyi Cin** (Arayıcılar) **vs** **2 Kötü Cin** (Cinler)
+- **Maç:** 4 raund, her raund en fazla 15 dk. İnsan rolü her raund döner → herkes 1 kez insan olur.
+- **Ton:** Korku-komedi. Gergin ama salak.
+- **Kamera:** Herkes **FPS**. Cin bir eşyanın içine girince **TPS** (eşyanın etrafında dönen kamera).
+- **İletişim:** Discord. **Takımlar ayrı ses kanalında** (İnsan + İyi Cin / 2 Kötü Cin). Lobi ekranı hatırlatır. Oyun içi "İşaret" sesi olmadan da oynanabilir kılar.
+- **Görsel:** KayKit Dungeon paketi (low-poly, sevimli). Karanlık ama okunaklı.
 
-### Tasarım Sütunları (her karar bunlara göre verilir)
-1. **Herkes her an meşgul.** Sıra beklemek yok. Kötü cin bile "boşta" iken tuzak kuruyor, iz sürüyor.
-2. **Adil telgraf (telegraph).** Her saldırının önceden bir işareti var (titreme, gıcırtı, parlama). Dikkatli insan hayatta kalır. Ölüm "haksızlık" değil "salaklık" hissettirmeli.
-3. **Kısıtlı kontrol = komedi.** Eşyalar nişan alamaz, beceriksizdir. Iskalamak da komiktir.
-4. **Bilgi asimetrisi.** Her rol farklı şey görür. Konuşmak zorunlu, konuşmak da tehlikeli (ses kanalı ayrı ama insan panik yapar).
+### İlham
+*Keep Talking and Nobody Explodes* (cevabı gören ≠ çözen) + *poltergeist kaosu* (eşyaya girip fırlatma) + *escape room* (kapı → eşya → sonraki kapı).
+
+### Tasarım Sütunları
+1. **Konuşmak zorunlu.** İnsan cevabı göremez, iyi cin bulmacaya dokunamaz. Takım ancak konuşarak ilerler.
+2. **Ezber yok.** Ev sabit, ama hangi odada hangi bulmacanın olduğu, cevaplar ve eşyaların yeri her raund **rastgele (seed'li)**.
+3. **Herkes her an meşgul.** Kötü cinler ya bulmaca karıştırıyor ya pusu kuruyor ya ışık söndürüyor. İyi cin ya cevap okuyor ya ışık yakıyor ya kovuyor.
+4. **Adil telgraf.** Her saldırının önceden işareti var (titreme, gıcırtı). Dikkatli insan kaçar.
+5. **İlerleme kaybolmaz.** Onaylanmış bulmaca kilitlenir; kötü cinler geri alamaz. Kaybettirdikleri şey **zaman**.
 
 ---
 
 ## 2. Hikaye & Tema
 
-Eski bir kervansarayın altındaki unutulmuş **zindan/mahzen**. Rivayete göre dipte bir **altın sandığı** var ama mahzen cinli. Oyuncu define avcısıdır; yanında dedesinden kalma, sevimli bir **iyi cin** dolaşır. Mahzendeki **kötü cinler** ise misafirlerini sevmez ve "kaza" süsü vermeyi çok sever.
+Orman içinde, köyden uzak, **3 katlı eski bir köy evi**. Rivayete göre evin sahibi büyücü dede, altınlarını **mahzene** gömmüş ve evi cinlere emanet etmiş. Define avcısı gece yarısı bahçe kapısından girer; **gün doğunca köylüler gelecek**.
 
-- Türk folkloru tatları: **tuz** (cin kovar), **nazar boncuğu** (bir kere korur), **define**, **mühür**.
-- Süre dolarsa: *"Bekçi geldi — define avcısı kaçak kazıdan gözaltına alındı."* (Kötü cinler kazanır.)
-- Ölüm sonrası **Otopsi Raporu**: *"Ölüm sebebi: Kendiliğinden devrilen raf. Şahitler: 1 fıçı, 2 şişe."*
+- Yanında dedesinden kalma, sevimli bir **iyi cin** vardır (ruh dünyasını görür, fiziksel dünyaya zor dokunur).
+- Evin **iki kötü cini** misafir sevmez; bulmacaları bozar, eşyaları fırlatır.
+- Türk folkloru tatları: büyü sembolü, büyücü kitapları, şömine, mahzen, define kazısı.
+- Süre dolarsa: *"Horoz öttü. Köylüler kazmalarla geldi. Define avcısı kaçak kazıdan gözaltında."*
+- Çok bayılırsa: *"Define avcısı üçüncü kez bayıldı ve bu sefer kalkmamaya karar verdi."*
 
 ---
 
-## 3. Roller
+## 3. Raund Akışı (Oyun Döngüsü) ⭐
 
-### 3.1 🧔 İNSAN — Define Avcısı (Takım: Arayıcılar)
-**Amaç:** 3 mühür parçasını topla → hazine odasını aç → altın sandığını al → çıkışa ulaş.
+```
+[Rol Açıklama 3 sn] → [Giriş 5 sn]
+   → AŞAMA 0: BAHÇE        — ev anahtarını bul → ön kapıyı aç
+   → AŞAMA 1: ZEMİN KAT    — 2 paralel bulmaca (ikisi de gerekli, sıra serbest) → merdiven kapısı
+   → AŞAMA 2: 1. KAT       — 2 paralel bulmaca → çatı katı kapısı
+   → AŞAMA 3: ÇATI KATI    — 2 paralel bulmaca → bodrum anahtarı
+   → FİNAL:   MAHZEN       — kürekle hazineyi kaz (uzun basılı tutma, en gergin an)
+   → [Raund Sonu 8 sn: rapor] → sonraki raund
+```
 
-| Özellik | Değer (`config` adı) |
+- **Sayaç (gün doğumu):** `RoundDuration` = 900 sn. Herkesin ekranında güneş/ay göstergesi.
+- **Cinler Uyanıyor:** İlk `JinnWakeDelay` = 10 sn kötü cinler hiçbir şeye dokunamaz (konumlanma süresi).
+- **İnsan bahçede başlar.** Bahçe aşaması kötü cinlere doğal bir hazırlık süresi verir: bu sırada evin içinde bulmacaları karıştırır, mobilyaları kapı önlerine iterler.
+- **Kazanma:**
+  - **Arayıcılar:** Hazine tamamen kazıldı.
+  - **Cinler:** Gün doğdu (süre bitti) **veya** insan `FaintsToLose` = 3 kez bayıldı.
+
+### 3.1 Aşama yapısı
+- Her aşama bir **kat/bölge** ile eşleşir ve **kilitli bir geçitle** biter (kapı / merdiven kapısı / bodrum kapağı).
+- Her aşamada **2 bulmaca** aynı anda açıktır. **İkisi de çözülmeli**, sıra serbest. İnsan hangisine gideceğini seçer → kötü cinler bölünmek zorunda kalır.
+- Bir bulmaca çözülünce **ödül** verir: bir **görev eşyası** (bkz. §6) ve/veya geçidin kilit parçası. Aşamadaki iki bulmaca da çözülünce geçit açılır.
+- Bazı bulmacalar başlamak için **eşya ister** (ör. Sembol Boyama → Boya). Rastgele dağıtım, gerekli eşyanın **daha önceki bir aşamada** veya **aynı aşamadaki diğer bulmacanın ödülü** olarak verilmesini garanti eder.
+
+> MVP (ilk oynanabilir sürüm): Bahçe + **2 aşama** (zemin kat + 1. kat, toplam 4 bulmaca) + Mahzen. Çatı katı aşaması bulmaca havuzu büyüyünce açılır.
+
+---
+
+## 4. Bulmaca Sistemi ⭐
+
+### 4.1 Her bulmacanın iki hali
+| Hal | Ne | Nerede | Kim görür |
+|---|---|---|---|
+| **Referans** | Doğru çözülmüş hal (cevap) | Evin **başka bir odasında** (aynı odada asla; mümkünse başka katta) | **Sadece cinler** (ruh gözü — iyi ve kötü) |
+| **Etkileşimli** | Oynanabilen bulmaca (parçalar döner, yer değiştirir, boyanır) | Aşamanın odasında | Herkes |
+
+### 4.2 Bulmacanın yaşam döngüsü
+```
+Raund başı: Etkileşimli bulmaca ÇÖZÜLMÜŞ halde başlar (= referansla aynı)
+   │
+   ├─ Kötü cinler parçaları istedikleri gibi karıştırır (ruh formunda, parçaya bakıp E)
+   ├─ İnsan parçaları çevirir/yerleştirir; iyi cin referansa bakıp tarif eder
+   │      (kötü cinler bu sırada da karıştırmaya devam edebilir!)
+   ▼
+İnsan ONAY KOLUNU çeker
+   ├─ Doğruysa → TAMAMLANDI: bulmaca kilitlenir, kimse dokunamaz, ödül çıkar
+   └─ Yanlışsa → CEZA: elektrik çarpar (1 hasar) + yüksek ses + `ConfirmFailCooldown` 5 sn kol kilitli
+```
+- **Neden çözülmüş başlıyor?** Kötü cinlerin işi bozmak. Hiç karıştırmadıkları bulmacayı insan doğrudan onaylayıp geçer → kötü cinler enerjilerini ve zamanlarını nereye harcayacaklarına karar vermek zorunda.
+- **Karıştırma telgraflıdır:** Parça dönerken gıcırdar, kısa süre titrer. İnsan "biri bunu bozuyor" anlar.
+- **Karıştırmanın bedeli:** Her işlem `ScrambleEnergyCost` = 4 enerji, aynı bulmacada cin başına `ScrambleInterval` = 0.4 sn aralık. Aydınlık odada karıştırma **yapılamaz** (bkz. §7).
+- İyi cin referansı görmek için **o odaya uçmalıdır**; referans ile bulmaca arasında gidip gelmek iyi cinin ana döngüsüdür.
+
+### 4.3 Bulmaca havuzu
+Hepsi aynı modele oturur: **N parça × her parçanın K olası değeri**. Cevap = her parçanın doğru değeri.
+
+| # | Bulmaca | Parçalar / değerler | İnsan ne yapar | Referans neye benzer | Gereken eşya | MVP |
+|---|---|---|---|---|---|---|
+| P1 | **Resimler** | 3 tablo × 8 açı (45°) | Tabloya bakıp E → 45° döndürür | Başka odada aynı 3 tablonun ruhani kopyası, doğru açılarda | — | ✅ |
+| P2 | **Heykel Açısı** | 1 heykel × 12 yön (yatay) + 1 × 4 eğim | E / Shift+E ile yön/eğim değiştirir | Heykelin gölgesi duvarda doğru yönü gösterir | — | ✅ |
+| P3 | **Kablolar (Şalter)** | 4 soket × 4 renk kablo | Sokete bakıp E → kablo rengini değiştirir | Ruhani devre şeması (renk sırası) | **Şalter Anahtarı** (kutuyu açar) | ✅ |
+| P4 | **Büyü Sembolü** | 3×3 nokta ızgarası, 12 çizgi × (boyalı/boş) | Boyayla çizgi çeker/siler | Ruhani tamamlanmış sembol | **Boya** | ✅ |
+| P5 | **Kitaplar & Şömine** | 5 kitap sırası (permütasyon) + 1 okunacak sayfa (4 seçenek) | Kitap yer değiştirir, sayfa seçer | Ruhani raf + parlayan sayfa | — | sonra |
+| P6 | **Yapboz** | 6 parça × 6 yuva | Parçaları yerleştirir | Ruhani tamamlanmış resim | — | sonra |
+
+- Bulmaca her raund **farklı bir odaya** düşer (oda o tipe uygunsa — bkz. §9 Harita).
+- Cevap her raund **rastgele** (seed); etkileşimli bulmacanın başlangıç hali = cevap.
+- **Yapboz (P6) özel:** iyi cin de parça taşıyabilir (eşyaya girme ile) → iki takımın aynı bulmaca üzerinde kapıştığı tek bulmaca.
+
+### 4.4 Bahçe aşaması (özel, bulmaca değil)
+- **Ev anahtarı** bahçedeki `KeyHideSpot` adaylarından birinde (saksı, kova, kuyu kenarı, odun yığını…). Seed seçer.
+- Aranan yer basılı tut `SearchHoldTime` = 1.0 sn.
+- **İyi cin** anahtarın bulunduğu yeri ruh parıltısı olarak `KeySenseRange` = 10 m içinden görür.
+- **Kötü cinler** de görür; anahtarın saklandığı kabın içine girip onu sürükleyebilir/fırlatabilir.
+- **Fener** alet kulübesinde, garanti (başlangıçtan ~15 m).
+
+### 4.5 Final: Mahzen kazısı
+- Mahzen kapağı bodrum anahtarıyla açılır. Mahzende `DigSpot` adaylarından biri gerçek (iyi cin görür).
+- **Kürek** gerekli. Kazı toplam `DigTotalTime` = 20 sn; basılı tutarken ilerler, bırakınca **ilerleme kalır**.
+- Kazarken insan savunmasız (bakış serbest, hareket yok) ve çok gürültülü.
+- Kazı başladığında kötü cinlere **ÖFKE**: enerji dolumu ×2, bekleme süreleri ×0.6.
+
+---
+
+## 5. Roller
+
+### 5.1 🧔 İNSAN — Define Avcısı
+**Amaç:** Bulmaca zincirini çözüp hazineyi kazmak. **3 kez bayılma.**
+
+| Özellik | Değer (`config`) |
 |---|---|
 | Can | 3 (`HumanMaxHp`) |
+| Bayılma | Can 0 → `FaintDuration` = 12 sn yerde; elindeki eşyayı düşürür; kalkınca can dolu. Sayaç +1 |
+| Kaybetme | `FaintsToLose` = 3 bayılma |
 | Hasar sonrası dokunulmazlık | 1.5 sn (`HumanInvulnAfterHit`) |
-| Yürüme / Koşma | 3.5 / 5.5 m/s (`HumanWalkSpeed`, `HumanSprintSpeed`) |
-| Sandık taşırken | 2.4 m/s, koşamaz (`HumanCarrySpeed`) |
-| Stamina | 100, koşu −20/sn, dolum +15/sn (1 sn bekleme sonra) |
+| Yürüme / Koşma | 3.5 / 5.5 m/s, stamina 100 (koşu −20/sn, dolum +15/sn, 1 sn gecikme) |
 | Etkileşim menzili | 2.2 m (`InteractRange`) |
-| Arama süresi (sandık/raf/fıçı arama) | basılı tut 1.0 sn (`SearchHoldTime`) |
+| Envanter | 3 slot görev eşyası (`ItemSlotCount`) — 1/2/3 ile seç |
 
 **Yetenekleri**
-- **Fener (her zaman elinde):** Ortamı aydınlatır. **Sağ tık = Parlat:** 8 m'lik koni içinde cin girmiş eşyalar 3 sn boyunca hafif titreşen bir parıltı gösterir. Bekleme 12 sn. (`LanternPulseRange`, `LanternPulseDuration`, `LanternPulseCooldown`)
-- **Tekme (F):** 2 m menzil. Cin girmiş eşyaya vurursa içindeki cin 2.5 sn **sersemler** (eşya aksiyon yapamaz). Bekleme 6 sn. Cin yokken tekme atarsa sadece komik ses + istatistiğe "Boşa Tekme" yazılır.
-- **Envanter:** 2 eşya slotu (1/2 ile seç, Q ile kullan).
-  - 🧂 **Tuz:** Yere serper. 3 m yarıçap, 25 sn: alandaki eşyalara cin **giremez**, içeride olan cin **dışarı fırlar**. (`SaltRadius`, `SaltDuration`)
-  - 🧿 **Nazar Boncuğu:** Pasif. İlk ölümcül darbede canı 1'de bırakır, kırılır. (Taşınan anda aktif.)
-- **Gürültü:** Koşmak, tekme, arama ve kazma **gürültü** üretir → kötü cinler gürültüyü uzaktan görür (bkz. 3.3 Algı).
+- **Etkileşim (E):** Bulmaca parçası çevir, onay kolu çek, kapı aç, ara, kaz, ışık düğmesi, mobilya it.
+- **Mobilya itme (E basılı, `PushHoldTime` = 1.5 sn):** Kapı önüne çekilmiş mobilyayı 1 hücre iter.
+- **Tekme (F):** 2 m. İçinde kötü cin olan eşyaya vurursa cin `KickStun` = 2.5 sn sersemler. Bekleme 6 sn.
+- **Fener (eşya, bulunduktan sonra):** Karanlıkta görmeyi sağlar. **Sağ tık = Parlat:** 8 m konide cin girmiş eşyalar 3 sn parlar. Bekleme 12 sn.
+- **Işık düğmeleri:** Odadaki lambayı açar/kapatır (patlak lambayı açamaz).
 
-**His:** Paranoya. Her rafa şüpheyle bakmak. Sonra bir tabureye 10 sn boyunca tekme atmak.
+**His:** "Tamam söyle… ikinci tablo kaç derece? DUR, biri tabloyu çeviriyor!"
 
-### 3.2 😇 İYİ CİN — Koruyucu (Takım: Arayıcılar)
-**Amaç:** İnsanı hayatta tutmak, mühür bulmacalarını çözdürmek.
+### 5.2 😇 İYİ CİN — Rehber
+**Amaç:** Cevapları okuyup insana anlatmak, yol göstermek, ışık tutmak.
 
 | Özellik | Değer |
 |---|---|
 | Hareket | FPS uçuş, 7 m/s, duvarlardan geçer (`GoodJinnSpeed`) |
-| Fiziksel etkileşim | Yok (eşya taşıyamaz, kapı açamaz) |
+| İnsan görür mü? | **Soluk bir parıltı** olarak (konum belli, ifade yok) |
 
-**Görüş (en önemli gücü):**
-- Ruh formundaki kötü cinleri **20 m** içinde duvar arkasından (outline) görür. (`GoodSightSpiritRange`)
-- Eşyanın içinde **hareketsiz bekleyen** (sinsi) kötü cini sadece **4 m** içinden sezer. (`GoodSightLurkRange`)
-- **Aksiyon şarj eden** (saldırmak üzere olan) eşyayı **25 m** içinden parlak kırmızı görür. (`GoodSightChargeRange`)
-- **Ruh İpuçlarını** görür: duvar yazıları, hayalet ayak izleri, parlayan sandıklar (sadece o görür).
+**Görüşü:**
+- Bulmaca **referanslarını**, anahtar saklanma yerini, gerçek kazı noktasını görür (`SpiritOnly`).
+- Ruh formundaki kötü cinleri 20 m içinde duvar arkasından görür; eşyada sinsi bekleyeni 4 m, aksiyon şarj edeni 25 m.
 
 **Yetenekleri:**
-- **Kov (E basılı tut 1.5 sn, 3 m):** İçerideki kötü cini dışarı fırlatır: 4 sn sersem + 4 sn eşyaya giremez. Eşya 15 sn **kutsanır**. Bekleme 18 sn. *(Basılı tutarken içerideki cin uyarı görür ve kaçabilir → akıl oyunu.)* (`ExorciseHoldTime`, `ExorciseCooldown`, `ExorciseStun`)
-- **İşaret (Q):** Baktığı noktaya/eşyaya 8 sn boyunca insanın da gördüğü bir parıltı koyar. Max 2 aktif, bekleme 3 sn. Discord'da "şurası" demenin kesin hali.
-- **Kutsa (R):** Bir eşyayı 20 sn boyunca cin giremez yapar. Max 1 aktif, bekleme 25 sn.
+- **Işık Yak / Onar (E, lambaya bakarak, 8 m):** Kapalı lambayı uzaktan yakar (anında). Patlak lambayı onarır (basılı tut `RepairHoldTime` = 2 sn).
+- **İşaret (Q):** Bir noktaya/eşyaya 8 sn insanın da gördüğü parıltı. Max 2 aktif.
+- **Kov (R basılı 1.5 sn, 3 m):** Eşyadaki kötü cini dışarı atar → 4 sn sersem + 4 sn eşyaya giremez. Bekleme 18 sn.
+- **Eşyaya Gir (Shift+E):** Kötü cinlerle aynı possession sistemi, ama aksiyonları **hasar vermez**: eşyayı it/kaydır (kapı önünü açmak), küçük eşyayı insana doğru fırlat/taşı (yere düşmüş görev eşyasını getirmek). Enerji kullanır (`GoodEnergy*`).
 
-**His:** Kaotik taktisyen. "Bodruma bakıyorum… DUR O RAFA YAKLAŞMA!"
+**His:** Uçan bir navigasyon cihazı. "Referans üst katta, bekle uçuyorum… Tamam: soldaki tablo baş aşağı!"
 
-### 3.3 😈 KÖTÜ CİN ×2 — Eşya Canlandırıcılar (Takım: Cinler)
-**Amaç:** Süre bitmeden insanı öldürmek.
+### 5.3 😈 KÖTÜ CİN ×2 — Bozguncular
+**Amaç:** Gün doğana kadar oyalamak veya insanı 3 kez bayıltmak.
 
 | Özellik | Değer |
 |---|---|
-| Ruh formu hareketi | FPS uçuş, 6.5 m/s, duvarlardan geçer (`EvilJinnSpeed`) |
-| İnsan görebilir mi? | Hayır (ruh formunda görünmez) |
-| Enerji | Max 100, başlangıç 50, dolum 5/sn (`EnergyMax`, `EnergyStart`, `EnergyRegen`) |
-| Eşyaya girme | 3 m menzil, 1.2 sn (`PossessRange`, `PossessTime`) — **bu sürede eşya titrer ve gıcırdar** |
-| Aynı eşyaya tekrar girme | 10 sn bekleme (`ReenterCooldown`) |
-| Eşyadan çıkma | Anında |
+| Ruh formu | FPS uçuş, 6.5 m/s, duvarlardan geçer; insana görünmez |
+| Enerji | Max 100, başlangıç 50, dolum 5/sn |
+| Eşyaya girme | 3 m, 1.2 sn — bu sırada eşya titrer ve gıcırdar |
+| Aydınlık oda | Eşyaya **giremez**, bulmaca **karıştıramaz**. İçerideyken oda aydınlanırsa 2 sn sonra dışarı fırlar |
 
-**Kurallar:**
-- Aynı eşyada aynı anda **tek** cin olabilir.
-- Eşyanın içindeyken **sinsi mod**: aksiyon yapmıyorsan iyi cin seni sadece 4 m içinden sezer.
-- Aksiyon şarj ederken parlarsın ve telgraf verirsin (ses + titreme + ışık).
-- İyi cin kötü cini **hasar veremez**, sadece kovar. Kötü cinler de iyi cine bir şey yapamaz. İyi cini **soluk** görürler (koruyucunun nerede olduğunu bilirler).
+**Yaptıkları:**
+1. **Bulmaca karıştırma** (ruh formu, parçaya bakıp E) — §4.2.
+2. **Eşya fırlatma** — küçük eşyalara girip insana fırlat (hasar).
+3. **Mobilya itme** — büyük eşyaya girip kapı önüne/koridora kaydır (yol tıkar).
+4. **Devirme** — rafı insanın üstüne devir (hasar + yere düşürme).
+5. **Işık patlatma** — lambaya girip patlat → oda karanlık, sadece iyi cin onarabilir.
+6. **Görev eşyası saklama** — yerdeki (bayılınca düşmüş) eşyaya girip uzağa fırlat.
 
-**Algı (insanı nasıl buluyorlar):**
-- İnsanı normal görüş hattında görürler.
-- İnsan **5 sn süren sıcak bir iz** bırakır (sadece kötü cinler görür).
-- İnsanın ürettiği **gürültü** 15 m içindeki kötü cinlerde bir halka olarak görünür (`NoisePingRange`).
-- **Takım arkadaşı** her zaman işaretli görünür.
-
-**ÖFKE modu:** İnsan altın sandığını aldığı anda: enerji dolumu ×2, tüm bekleme süreleri ×0.6. (`RageRegenMult`, `RageCooldownMult`)
-
-**His:** Pusu kuran, beceriksiz bir poltergeist. "Sen halıyla… yok halı yok. Sen fıçıyla it, ben raftan düşüreyim!"
-
-**Boş kalmama garantisi:** Enerji dolarken bile yapılacak iş var: tuzak kurmak (sandık mimiği kurmak), eşyayı pozisyona taşımak (tabure/fıçı), iz sürmek, ışık söndürmek, iyi cini oyalamak.
+**His:** Beceriksiz poltergeist ekibi. "Sen resimleri karıştır, ben lambayı patlatıp sandalyeyle kafasına atlıyorum!"
 
 ---
 
-## 4. Eşyalar (Possessable) — MVP Listesi
+## 6. Görev Eşyaları
 
-Tüm eşyaların **kısıtlı kontrolü** var. Nişan yok; en fazla sınırlı yön ayarı var.
-Kontroller eşyanın içindeyken: **Sol tık = Aksiyon 1**, **Sağ tık = Aksiyon 2**, **A/D = sınırlı döndürme** (izin varsa), **W/A/S/D = hareket** (sadece hareketli eşyalarda), **Space veya E = çık**.
-
-| # | Eşya (asset) | Aksiyon | Telgraf | Etki | Enerji | Bekleme | Tek kullanımlık? |
-|---|---|---|---|---|---|---|---|
-| 1 | **Raf** (`shelf_large`, `shelves`) | **Devril** (sol tık) | 1.0 sn öne eğilme + gıcırtı | Önündeki 2×1.5 m alan: **3 hasar (öldürür)** | 40 | — | ✅ Devrildi mi yerde kalır |
-| 2 | **Fıçı** (`barrel_large`, `barrel_small`) | **Yuvarlan** (sol tık basılı şarj) | 0.8 sn şarj, titreme | A/D ile yön (sadece cinler ok görür). 8 m/s, 12 m menzil. 1 hasar + 1.5 sn yere düşürme | 20 | 6 sn | ❌ Durduğu yerde kalır, tekrar kullanılabilir |
-| 3 | **Sandalye / Tabure** (`chair`, `stool`) | **Zıpla** (WASD) / **Çarp** (sol tık) | Çarp: 0.4 sn geri çekilme | Zıpla: 0.5 sn'de 1 m, 2 enerji/zıplama. Çarp: 2 m atılma, 1 hasar | 2 / 15 | — / 5 sn | ❌ Cinin "arabası" |
-| 4 | **Sandık** (`chest`, `trunk_*`) | **Mimik Kur** (sol tık: kur/boz) | Sadece girerken titreme; kurulunca sessiz | İnsan açarsa: ısırır, 1 hasar + 2 sn tutar (hareket edemez) | 25 (tetiklenince) | 15 sn | ❌ |
-| 5 | **Kılıç-Kalkan** (`sword_shield`) | **Fırla** (sol tık) | 0.7 sn tıngırdama | A/D ±35°. 14 m/s düz mermi, 15 m menzil, 1 hasar | 25 | — | ✅ Yere düşer |
-| 6 | **Meşale / Mum** (`torch_mounted`, `candle_triple`) | **Söndür** (sol tık) / **Alev** (sağ tık) | Söndür: 0.3 sn cızırtı. Alev: 0.6 sn parlama | Söndür: odanın ışıkları 20 sn kapanır. Alev: 2 m koni, 1 hasar | 15 / 30 | 30 sn / 12 sn | ❌ |
-| 7 | **Şişe** (`bottle_*`) | **Fırlat** (sol tık) | 0.5 sn sallanma | A/D ±45°, yay çizen atış. İsabet: **Sarhoş** 4 sn (ekran sallanır, fare ters) — hasar yok | 10 | — | ✅ Kırılır |
-| 8 | **Bira Fıçısı** (`keg`, `keg_decorated`) | **Patla** (sol tık basılı 3.5 sn) | Çok belirgin: tıslama, kırmızı parlama, şişme | 0-3 m: **3 hasar**, 3-5 m: 1 hasar + düşürme | 60 | — | ✅ Paramparça |
-
-### MVP Sonrası Eşyalar
-| Eşya | Aksiyon | Not |
+| Eşya | Nereden çıkar | Ne işe yarar |
 |---|---|---|
-| Masa (`table_*`) | **Kay** — 3 m iter, duvara sıkıştırırsa 1 hasar | Asset var |
-| Diken zemin (`floor_tile_big_spikes`) | **Tetikle** — 0.6 sn sonra dikenler çıkar, 1 hasar | Asset var |
-| Tabak yığını (`plate_stack`) | **Gürültü** — 10 m içinde telgraf seslerini bastırır, 6 sn | Asset var, destek eşyası |
-| Duvar Tüfeği | **Ateş** — sabit yön, sadece ateş eder, hafif sekme | ⚠️ **Asset gerekli** |
-| Kapı | **Çarp / 5 sn Kilitle** | ⚠️ **Ayrı kapı asset'i gerekli** (KayKit'te kapı duvarla bir parça) |
+| **Ev Anahtarı** | Bahçe (saklanma yeri) | Ön kapıyı açar |
+| **Fener** | Alet kulübesi (garanti) | Karanlıkta görme + Parlat |
+| **Şalter Anahtarı** | Bir bulmaca ödülü | Kablo bulmacasının (P3) kutusunu açar |
+| **Boya** | Bir bulmaca ödülü | Büyü sembolü (P4) |
+| **Kürek** | Bir bulmaca ödülü (son aşama) | Mahzende kazı |
+| **Bodrum Anahtarı** | Son aşamanın geçidi | Mahzen kapağını açar |
 
-### Kombo Örnekleri (cinlerin keşfedeceği)
-- Şişe (sarhoş) → Raf devril (sarhoş insan telgrafı göremez)
-- Meşale söndür → Fıçı yuvarla (karanlıkta fark etmez)
-- Sandık mimik (tutar 2 sn) → Bira fıçısı patlat (tutulan insan kaçamaz… ama 3.5 sn şarj, iyi cin görür ve kovar → dengeli)
-
----
-
-## 5. Hedefler, Bulmacalar ve Maç Akışı
-
-### 5.1 Raund Akışı
-
-```
-[Rol Açıklama 3 sn] → [Giriş 5 sn geri sayım]
-      → KEŞİF FAZI  (0 → 3 mühür parçası)
-      → HAZİNE FAZI (mühürlü kapı açıldı, sandığa ulaş)
-      → KAÇIŞ FAZI  (sandık alındı → ÖFKE modu → çıkışa koş)
-      → [Raund Sonu: Otopsi Raporu 8 sn] → sonraki raund
-```
-
-- **Raund süresi:** 10 dk (`RoundDuration`). Sayaç herkesin ekranında.
-- **Cinler Uyanıyor:** İlk 20 sn kötü cinler eşyaya giremez (`JinnWakeDelay`). İnsan nefes alsın.
-- **Kazanma:**
-  - **Arayıcılar:** Altın sandığıyla çıkışa ulaşmak.
-  - **Cinler:** İnsanın ölmesi **veya** sürenin dolması ("Bekçi geldi").
-
-### 5.2 Mühür Parçaları (3 adet, sırası serbest)
-
-| Parça | Nasıl alınır | İyi cinin rolü | İnsanın rolü |
-|---|---|---|---|
-| **1. Kayıp Parça** | Haritadaki ~8-12 aranabilir kaptan (sandık, fıçı, raf) **birinin** içinde | Doğru kabı 6 m içinden **ruh parıltısıyla** görür | Aramak (1 sn basılı tut, gürültü yapar). Mimik sandık riski! |
-| **2. Rün Bulmacası** | Bir odada 4 rün taşı (duvarda). Doğru sırayla basılmalı | Sıralama **başka bir odadaki** duvarda ruh yazısı olarak yazılı. Sadece o görür | Taşlara basar. **Yanlış basış:** sıfırlanır + büyük gürültü (cinlere konum verir) |
-| **3. Hayalet İzleri** | Bir odadaki heykel/sütundan başlayan **hayalet ayak izleri**, gevşek bir zemin taşına gider | İzleri görür, insanı yönlendirir | Doğru taşı **kazar** (3 sn basılı tut — savunmasız, çok gürültülü) |
-
-- Her parça alındığında herkes bildirim görür ("Mühür parçası: 2/3").
-- **3/3 → Mühürlü kapı** (`wall_gated`) açılır. Hazine odasında **Altın Sandığı** (`chest_gold`) var.
-
-### 5.3 Altın Sandığı (Kaçış Fazı)
-- İnsan sandığı iki eliyle taşır: **eşya kullanamaz, tekme atamaz, fener parlatamaz**, hız 2.4 m/s.
-- Hasar alırsa sandığı **düşürür**; tekrar almak 1 sn.
-- G ile isteyerek bırakabilir (ör. önce yolu temizlemek için).
-- Çıkış noktası (merdiven, `stairs`) hazine odasından **en uzak** bölgede seçilir.
-- Sandık alındığı anda: tüm oyunculara "ALTIN ALINDI!" + kötü cinlere **ÖFKE**.
+- Eşyalar yere düşebilir (bayılma, bilerek bırakma G). Yerdeki eşya **küçük possessable**'dır: kötü cin içine girip fırlatabilir.
+- Gerekli olmayan eşya raunda konmaz (ör. P3 yoksa şalter anahtarı yok).
+- *(Sonra)* **Büyü craftı:** etraftan toplanan malzemelerle koruyucu muska (MVP dışı).
 
 ---
 
-## 6. Puanlama & Maç Sonu
+## 7. Işık Mekaniği ⭐
 
-| Olay | Puan |
+Ev karanlık başlar (sadece ay ışığı). Her odada 1+ lamba ve duvarda düğme var.
+
+| Durum | Ne olur |
 |---|---|
-| Arayıcılar kazandı | İnsan +3, İyi Cin +2 |
-| Cinler kazandı (öldürme) | Her kötü cin +2, öldürücü darbeyi vuran +1 bonus |
-| Cinler kazandı (süre) | Her kötü cin +1 |
-| Mühür parçası alındı | İnsan +0 (sadece istatistik) |
+| **Aydınlık oda** | Kötü cinler bu odada eşyaya giremez, bulmaca karıştıramaz. İnsan rahat görür. |
+| **Karanlık oda** | Her şey serbest. İnsan fenersiz neredeyse kör; bulmaca detayları zor seçilir. |
+| **Patlak lamba** | Düğmeyle açılmaz. Sadece iyi cin onarır (2 sn). |
 
-4 raund sonunda **Maç Sonu Ekranı**: puan sıralaması + komik unvanlar (istatistikten hesaplanır):
-- **"Mobilya Katili"** — en çok hasar veren eşya kullanıcısı
-- **"Tekmeci Dayı"** — en çok boşa tekme atan
-- **"Tuz Baba"** — en çok tuz kullanan
-- **"Sigortacı"** — en çok kovma yapan iyi cin
-- **"Kör Bekçi"** — en çok ıskalayan cin
-- **"Kendi Kendine"** — kendi tuzağına en çok takılan (ör. kendi fıçısıyla takım arkadaşını kovdurtan)
-
-### Otopsi Raporu (her raund sonu, 8 sn)
-- Ölüm sebebi (eşya + aksiyon + katil cin adı), ölüm anının küçük özeti.
-- Raund istatistikleri: düşme sayısı, boşa tekme, ıskalanan atış, kovma sayısı, süre.
-- İnsan kazandıysa: "Define avcısı zengin oldu. Cinler vergi dairesine şikayet etti."
+- **İnsan:** düğmeyle açar/kapar (düğmeye gitmesi lazım).
+- **İyi cin:** uzaktan yakar, patlak lambayı onarır.
+- **Kötü cin:** lambaya girip **patlatır** (`LampBurstEnergy` = 30 enerji, oda karanlık + lamba patlak). Aydınlık odadaki lambanın kendisine girebilir (tek istisna) ama girerken 1.2 sn titreme telgrafı herkese görünür.
+- **Sonuç:** Işık bir **bölge kontrolü** çekişmesi: iyi cin insanın çalıştığı odayı aydınlık tutmaya, kötü cinler karartmaya çalışır.
 
 ---
 
-## 7. Kontroller
+## 8. Eşyalar (Possessable)
+
+Kontroller eşyanın içindeyken: **Sol tık = Aksiyon 1**, **Sağ tık = Aksiyon 2**, **A/D = sınırlı yön**, **WASD = hareket** (sadece hareketli eşyalarda), **Space/E = çık**.
+
+| # | Eşya (KayKit) | Kötü cin aksiyonu | Telgraf | Etki | Enerji | Bekleme |
+|---|---|---|---|---|---|---|
+| 1 | **Şişe / Mum / Tabak** (küçük) | **Fırlat** | 0.5 sn sallanma | A/D ±45°, yay atış. İsabet: 1 hasar | 15 | — (kırılır / yere düşer) |
+| 2 | **Tabure / Sandalye** | **Zıpla** (WASD) / **Çarp** | Çarp: 0.4 sn geri çekilme | Zıpla 1 m/0.5 sn, 2 enerji. Çarp 2 m atılma, 1 hasar | 2 / 15 | — / 5 sn |
+| 3 | **Fıçı / Sandık / Masa** (büyük) | **Kaydır** | 0.6 sn sürtünme sesi | 1 hücre (yaklaşık 1.5 m) kayar; kapı önünü tıkar | 10 | 3 sn |
+| 4 | **Raf** | **Devril** | 1.0 sn öne eğilme + gıcırtı | Önündeki alan: 1 hasar + `KnockdownTime` 2 sn yere düşme | 35 | tek kullanım |
+| 5 | **Lamba** (mum / avize / duvar lambası) | **Patlat** | 1.2 sn titreme + vızıltı | Oda karanlık, lamba patlak | 30 | 20 sn |
+| 6 | **Görev eşyası** (yerdeyken) | **Fırlat** | 0.5 sn | Eşyayı 8 m uzağa fırlatır, hasar yok | 10 | 8 sn |
+
+- Aynı eşyada aynı anda tek cin. Aynı eşyaya tekrar girme bekleme 10 sn.
+- İyi cin aynı eşyalara girebilir ama sadece **Kaydır** ve hasarsız **Taşı/Fırlat** yapabilir.
+- Kombo örneği: Lamba patlat → karanlıkta resimleri karıştır → insan dönerken raf devril.
+
+---
+
+## 9. Dünya & Harita Kuralları
+
+**Mekân:** Orman içinde **3 katlı köy evi** + bahçe + **mahzen**.
+
+| Bölge | İçerik |
+|---|---|
+| **Bahçe** | Ön kapı, alet kulübesi, kuyu, odun yığını, saksılar (anahtar saklanma adayları), çit, ağaçlar (sınır) |
+| **Zemin kat** | Giriş holü, mutfak, oturma odası (şömine), kiler, merdiven |
+| **1. kat** | Yatak odaları, banyo, koridor, çalışma odası |
+| **Çatı katı** | Tavan arası, büyü odası |
+| **Mahzen** | Hazine kazı alanı (bodrum kapağıyla girilir) |
+
+- **Ev elle tasarlanır** (oda konumları, kapılar, merdivenler sabit). Claude Code mümkün olduğunca kurar, ince işler elle.
+- **Her raund rastgele (seed) olanlar:**
+  1. Hangi bulmacanın hangi odada olduğu (odadaki `PuzzleSlot`'lar hangi tipleri kabul ettiğini söyler)
+  2. Her bulmacanın referansının hangi odada olduğu (`ReferenceSlot`'lar; bulmacayla aynı oda olamaz)
+  3. Bulmaca cevapları
+  4. Ev anahtarının saklandığı yer, gerçek kazı noktası
+  5. Hangi bulmacanın hangi eşyayı ödül verdiği (bağımlılık kurallarına uyarak)
+- Her odada ≥ 1 lamba + düğme. Her katta en az 1 döngü (kaçış yolu), çıkmaz koridor sınırlı.
+- Possessable eşyalar elle yerleştirilir (kat başına ~10-15).
+
+---
+
+## 10. Puanlama & Maç Sonu
+
+- **Arayıcılar kazanırsa:** İnsan ve iyi cin, **kalan saniye** kadar puan alır.
+- **Cinler kazanırsa:** Her kötü cin `JinnWinPoints` = 300 puan alır (+ bayıltarak kazandılarsa `FaintWinBonus` = 60).
+- 4 raund sonunda en yüksek puanlı oyuncu kazanır (roller döndüğü için puan bireyseldir).
+- **Rol rotasyonu:** Raund r: İnsan = oyuncu r, İyi Cin = oyuncu r+1, diğer ikisi kötü cin.
+
+**Raund raporu (8 sn):** Süre, çözülen bulmacalar, bayılma sayısı ve sebepleri ("2. bayılma: Uçan tabure"), yanlış onay sayısı, karıştırma sayısı, patlatılan lamba.
+**Maç sonu unvanları:** "Elektrikçi" (en çok yanlış onay), "Ressam" (en çok karıştırma), "Ampul Katili", "Navigasyon" (en çok işaret), "Tekmeci Dayı" (boşa tekme).
+
+---
+
+## 11. Kontroller
 
 ### İnsan (FPS)
 | Tuş | Eylem |
 |---|---|
 | WASD / Fare | Hareket / Bakış |
 | Shift | Koş |
-| E (basılı) | Etkileşim / Ara / Kaz / Al |
+| E (bas / basılı) | Etkileşim / döndür / ara / kaz / it |
 | F | Tekme |
 | Sağ Tık | Fener Parlat |
-| 1 / 2 | Eşya slotu seç |
-| Q | Seçili eşyayı kullan |
-| G | Altın sandığını bırak |
-| Tab | Skor / hedef |
-| Esc | Menü |
+| 1 / 2 / 3 | Eşya slotu seç |
+| G | Seçili eşyayı bırak |
+| Tab | Hedefler / skor |
 
 ### Cin — Ruh Formu (FPS uçuş)
 | Tuş | Eylem |
 |---|---|
 | WASD / Fare | Uç / Bak |
 | Space / Ctrl | Yüksel / Alçal |
-| Shift | Hızlı uçuş (×1.5, sadece ruh formu) |
-| E | **Kötü:** Eşyaya gir (bakılan, 3 m içi) / **İyi:** Kov (basılı) |
-| Q | **İyi:** İşaret koy |
-| R | **İyi:** Kutsa |
+| Shift | Hızlı uçuş |
+| E | **Kötü:** Eşyaya gir / bulmaca parçasını karıştır · **İyi:** Lamba yak/onar |
+| Shift+E | **İyi:** Eşyaya gir |
+| Q | **İyi:** İşaret |
+| R (basılı) | **İyi:** Kov |
 
-### Kötü Cin — Eşyanın İçinde (TPS)
+### Eşyanın İçinde (TPS)
 | Tuş | Eylem |
 |---|---|
-| Fare | Kamerayı eşyanın etrafında döndür (nişan **değil**) |
+| Fare | Kamerayı eşyanın etrafında döndür |
 | Sol / Sağ Tık | Aksiyon 1 / 2 |
-| A / D | Sınırlı döndürme (izin varsa) |
+| A / D | Sınırlı yön |
 | WASD | Hareket (sadece sandalye/tabure) |
-| Space / E | Eşyadan çık |
+| Space / E | Çık |
 
 ---
 
-## 8. Kamera & His
+## 12. Kamera, Telgraf & Görünürlük
 
-| Durum | Kamera | FOV | Not |
+| Durum | İnsan | İyi Cin | Kötü Cin |
 |---|---|---|---|
-| İnsan | FPS, hafif baş sallanması | 75 | Elinde fener modeli (`torch_lit`) görünür |
-| Cin ruh formu | FPS, hafif süzülme, renkli vinyet (kötü: mor, iyi: turkuaz) | 85 | Dünya hafif desature |
-| Kötü cin eşyada | TPS orbit, eşyaya 3.5 m, çarpışmadan kaçan | 70 | Geçiş: 0.3 sn yumuşak lerp. Aksiyon yönü okla gösterilir (sadece cinler görür) |
-| İnsan ölümü | Ragdoll + 2 sn yavaş çekim kill-cam, sonra Otopsi | — | Komik ses efekti |
+| Kötü cin ruh formunda | ❌ (3 m içinde soğuk nefes) | ≤ 20 m görür | Takım arkadaşı her zaman |
+| Kötü cin eşyada bekliyor | ❌ (Fener Parlat ile parlar) | ≤ 4 m | ✅ |
+| Aksiyon şarjı | Telgraf (herkes) | ≤ 25 m kırmızı | ✅ |
+| İyi cin | **Soluk parıltı** | Kendi | Soluk |
+| Bulmaca referansı | ❌ | ✅ | ✅ |
+| Anahtar yeri / gerçek kazı noktası | ❌ | ✅ | ✅ |
+| İşaret (ping) | ✅ | ✅ | ❌ |
+| Bulmaca karıştırılıyor | Parça döner + gıcırtı | ✅ | ✅ |
+
+FOV: İnsan 75, ruh formu 85 (renkli vinyet: iyi turkuaz, kötü mor), eşya içi TPS 70.
 
 ---
 
-## 9. Görsel & İşitsel İpuçları (Telgraf Sistemi — oyunun adaleti buna bağlı)
+## 13. UI Ekranları
 
-| Durum | İnsan ne görür/duyar | İyi cin | Kötü cin |
-|---|---|---|---|
-| Kötü cin ruh formunda yakında (3 m) | Hafif **soğuk nefes** buğusu + ürperti sesi | Kötü cini görür | — |
-| Eşyaya girme (1.2 sn) | Eşya **titrer + gıcırdar** (3D ses) | Görür | — |
-| Eşyada sinsi bekleme | Hiçbir şey (fener parlatınca parıltı) | Sadece 4 m içi | Takım arkadaşı görür |
-| Aksiyon şarjı | Eşyaya özel telgraf (tablodaki) | Parlak kırmızı, 25 m | — |
-| Kovma basılı tutuluyor | — | İlerleme çubuğu | İçerideki cine **"KOVULUYORSUN!"** uyarısı |
+1. **Ana Menü:** Oyna (Online — sonra), Test Oyunu (offline hotseat), Ayarlar, Çıkış
+2. **Lobi:** Oda kodu, 4 slot, hazır, Discord takım kanalı hatırlatması
+3. **Rol Açıklama (3 sn)**
+4. **HUD — İnsan:** Can (3 kalp), bayılma sayacı (☠ 1/3), stamina, 3 eşya slotu, aşama ilerlemesi (Zemin Kat: ✔ Resimler · ◻ Kablolar), gün doğumu göstergesi, etkileşim ipucu
+5. **HUD — İyi Cin:** Yetenek bekleme süreleri, enerji, insanın canı/bayılma, aşama ilerlemesi, insanın yönü
+6. **HUD — Kötü Cin:** Enerji, aksiyon kartları, takım arkadaşı, aşama ilerlemesi, ÖFKE
+7. **Raund Raporu**, **Maç Sonu**, **Duraklat/Ayarlar**
 
----
-
-## 10. UI Ekranları
-
-1. **Ana Menü:** Oyna (Online — M4), Test Oyunu (offline), Ayarlar, Çıkış
-2. **Lobi (M4):** Oda kodu, 4 oyuncu slotu, hazır butonu, Discord takım kanalı hatırlatması
-3. **Rol Açıklama (3 sn):** Büyük yazı "SEN İNSANSIN / SEN İYİ CİNSİN / SEN KÖTÜ CİNSİN" + takım arkadaşının adı
-4. **HUD — İnsan:** Can (3 kalp), stamina, 2 eşya slotu, fener bekleme, tekme bekleme, mühür 0/3, sayaç, etkileşim ipucu (ortada)
-5. **HUD — İyi Cin:** Kov/İşaret/Kutsa bekleme süreleri, insanın canı, mühür 0/3, sayaç, insanın yönünü gösteren kenar oku
-6. **HUD — Kötü Cin:** Enerji barı, aksiyon kartları (tuş + maliyet + bekleme), takım arkadaşı durumu, sayaç, ÖFKE göstergesi
-7. **Otopsi Raporu** (raund sonu)
-8. **Maç Sonu** (puanlar + unvanlar)
-9. **Duraklatma / Ayarlar:** Fare hassasiyeti, FOV, ses seviyeleri, grafik kalitesi
-
-Dil: **Türkçe** öncelikli. Tüm metinler anahtar tabanlı (`Loc`) — İngilizce sonra eklenebilir. Font Türkçe karakter (ğüşıöçİ) desteklemeli.
+Dil: Türkçe öncelikli, tüm metinler `Loc` anahtarlı.
 
 ---
 
-## 11. Harita Kuralları (Level Generator için tasarım gereksinimleri)
+## 14. Denge — Tek Tablo (ilk değerler)
 
-Prosedürel harita üreticisini (`ProceduralLevelGenerator`) Ajan C yazar. Oyun tasarımı açısından haritanın sağlaması gerekenler:
-
-- **Boyut:** 8-14 oda, tek kat (MVP). Toplam yürüme mesafesi uçtan uca ~60-90 m.
-- **Başlangıç odası:** İnsan burada doğar. Cinler haritanın öteki yarısında doğar.
-- **Hazine odası:** Tek girişli, girişi **mühürlü kapı** (`wall_gated`).
-- **Çıkış:** Hazine odasından en uzak odalardan biri (min 35 m yol mesafesi).
-- **Bulmaca odaları:** Rün odası, rün ipucu odası (farklı oda, en az 2 oda uzakta), hayalet iz odası.
-- **Eşya yoğunluğu:** Oda başına 2-5 possessable, koridorlarda 0-1. Toplam ~30-45.
-- **Aranabilir kaplar:** 8-12 (bir kısmı possessable sandık/fıçı).
-- **Işık:** Her odada en az 1 meşale/mum (Söndür aksiyonu için).
-- **Döngü (loop) koridorlar:** En az 1 döngü olmalı ki insan kovalamaca sırasında çıkmaza sıkışmasın.
-
-Teknik kontrat: `02_GDD_Teknik.md` → §8 Level Kontratı.
-
----
-
-## 12. Denge — Tek Tablo (ilk değerler, playtest ile değişecek)
-
-| Config adı | Değer | Açıklama |
+| Config adı | Değer | Not |
 |---|---|---|
-| `RoundDuration` | 600 | sn |
-| `JinnWakeDelay` | 20 | sn |
-| `IntroCountdown` | 5 | sn |
+| `RoundDuration` | 900 | sn (gün doğumu) |
+| `JinnWakeDelay` / `IntroCountdown` | 10 / 5 | sn |
 | `RoundsPerMatch` | 4 | |
-| `KeyFragmentsRequired` | 3 | |
-| `HumanMaxHp` | 3 | |
-| `HumanInvulnAfterHit` | 1.5 | sn |
-| `HumanWalkSpeed` / `HumanSprintSpeed` / `HumanCarrySpeed` | 3.5 / 5.5 / 2.4 | m/s |
-| `StaminaMax` / `StaminaDrain` / `StaminaRegen` / `StaminaRegenDelay` | 100 / 20 / 15 / 1.0 | |
+| `StagesActive` | 2 | MVP: 2 aşama (4 bulmaca); tam oyun 3 |
+| `PuzzlesPerStage` | 2 | |
+| `HumanMaxHp` / `HumanInvulnAfterHit` | 3 / 1.5 | |
+| `FaintDuration` / `FaintsToLose` | 12 / 3 | |
+| `KnockdownTime` | 2 | sn (raf devrilmesi) |
+| `HumanWalkSpeed` / `HumanSprintSpeed` | 3.5 / 5.5 | m/s |
+| `StaminaMax` / `StaminaDrain` / `StaminaRegen` / `StaminaRegenDelay` | 100 / 20 / 15 / 1 | |
 | `InteractRange` | 2.2 | m |
-| `SearchHoldTime` / `DigHoldTime` / `PickupGoldTime` | 1.0 / 3.0 / 1.0 | sn |
-| `KickRange` / `KickCooldown` / `KickStun` | 2.0 / 6 / 2.5 | |
+| `SearchHoldTime` / `PushHoldTime` / `DigTotalTime` | 1 / 1.5 / 20 | sn |
+| `ConfirmFailDamage` / `ConfirmFailCooldown` | 1 / 5 | |
+| `KickRange` / `KickCooldown` / `KickStun` | 2 / 6 / 2.5 | |
 | `LanternPulseRange` / `LanternPulseDuration` / `LanternPulseCooldown` | 8 / 3 / 12 | |
-| `SaltRadius` / `SaltDuration` / `SaltStartCount` | 3 / 25 / 0 | Tuz kaplardan bulunur |
-| `NazarStartCount` | 0 | Kaplardan bulunur |
-| `ItemSlotCount` | 2 | |
+| `ItemSlotCount` | 3 | |
 | `EvilJinnSpeed` / `GoodJinnSpeed` / `SpiritBoostMult` | 6.5 / 7 / 1.5 | |
-| `EnergyMax` / `EnergyStart` / `EnergyRegen` | 100 / 50 / 5 | |
+| `EnergyMax` / `EnergyStart` / `EnergyRegen` | 100 / 50 / 5 | kötü cin |
+| `GoodEnergyMax` / `GoodEnergyRegen` | 100 / 8 | iyi cin |
 | `PossessRange` / `PossessTime` / `ReenterCooldown` | 3 / 1.2 / 10 | |
-| `ExorciseRange` / `ExorciseHoldTime` / `ExorciseCooldown` / `ExorciseStun` / `ExorcisePossessLock` / `BlessAfterExorcise` | 3 / 1.5 / 18 / 4 / 4 / 15 | |
+| `LitRoomEjectDelay` | 2 | sn |
+| `ScrambleEnergyCost` / `ScrambleInterval` / `ScrambleRange` | 4 / 0.4 / 3 | |
+| `LampBurstEnergy` / `LampLightRange` / `RepairHoldTime` | 30 / 8 / 2 | |
+| `ExorciseRange` / `ExorciseHoldTime` / `ExorciseCooldown` / `ExorciseStun` / `ExorcisePossessLock` | 3 / 1.5 / 18 / 4 / 4 | |
 | `PingDuration` / `PingCooldown` / `PingMaxActive` | 8 / 3 / 2 | |
-| `BlessDuration` / `BlessCooldown` / `BlessMaxActive` | 20 / 25 / 1 | |
 | `GoodSightSpiritRange` / `GoodSightLurkRange` / `GoodSightChargeRange` | 20 / 4 / 25 | m |
-| `HeatTrailDuration` / `NoisePingRange` | 5 / 15 | |
+| `KeySenseRange` | 10 | m |
 | `ColdBreathRange` | 3 | m |
-| `RageRegenMult` / `RageCooldownMult` | 2.0 / 0.6 | |
-| `LootTable`: Tuz %25, Nazar %10, Boş %65 | | Mühür parçası kabı hariç |
+| `RageRegenMult` / `RageCooldownMult` | 2 / 0.6 | kazı başlayınca |
+| `JinnWinPoints` / `FaintWinBonus` | 300 / 60 | |
 
-Possessable değerleri §4 tablosundadır ve her birinin `PossessableDefinition` asset'inde tutulur.
+Possessable değerleri §8 tablosundadır ve her birinin `PossessableDefinition` asset'inde tutulur.
 
 ---
 
-## 13. Kapsam Dışı (MVP'de YOK)
-- Oyun içi sesli sohbet (Discord kullanılıyor; ileride Photon Voice eklenebilir)
-- Çok katlı haritalar
-- Kozmetik / kilit açma / ilerleme sistemi
-- Bot oyuncular (sadece geliştirme amaçlı "Dummy İnsan" botu var)
-- Matchmaking (sadece oda koduyla arkadaş odası)
-- Ortada oyuna katılma (late join)
+## 15. Kapsam Dışı (şimdilik)
+- Büyü craftı, Kitaplar & Şömine (P5), Yapboz (P6) — MVP sonrası
+- Oyun içi sesli sohbet (Discord)
+- Kozmetik / ilerleme sistemi, matchmaking (sadece oda kodu), late join
+- Bot oyuncular (sadece geliştirme amaçlı "Dummy İnsan")
+
+## 16. Açık Sorular (playtest ile netleşecek)
+- 15 dk raund çok mu uzun? (4 raund = 1 saat maç)
+- Kötü cinler bulmacaları çok hızlı bozuyor mu? (`ScrambleEnergyCost` ile ayarlanır)
+- İnsan fenersiz bahçede başlamalı mı, fener başlangıç eşyası mı olmalı?
+- Puanlama: kalan saniye ile sabit cin puanı dengeli mi?
