@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CM.Possession::CinliMahzen.Possession.PossessableDefinition
   id: chair
   nameKey: poss.chair
-  size: 2
+  size: 0
   allowGoodJinn: 0
   isLamp: 0
   primary:

@@ -5,6 +5,7 @@ namespace CinliMahzen.Core
     {
         /// <summary>Current stage: 0 = garden, 1.. = house floors.</summary>
         int StageIndex { get; }
+        /// <summary>Total stages including the garden (StagesActive + 1).</summary>
         int StageCount { get; }
         bool IsPuzzleDone(int slot);
         /// <summary>True while the puzzle in <paramref name="slot"/> cannot be scrambled again; <paramref name="remaining"/> in seconds.</summary>

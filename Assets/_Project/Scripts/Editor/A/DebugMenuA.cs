@@ -3,7 +3,7 @@ using UnityEditor;
 
 namespace CinliMahzen.Editor
 {
-    /// <summary>Owner: A. CinliMahzen/Debug/* menu commands (Teknik §12.2) — MCP execute_menu_item equivalents of F1-F12.</summary>
+    /// <summary>CinliMahzen/Debug/* menu commands (Teknik §12.2) — MCP execute_menu_item equivalents of F1-F12.</summary>
     public static class DebugMenuA
     {
         private const string Root = "CinliMahzen/Debug/";

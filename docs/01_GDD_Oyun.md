@@ -94,7 +94,7 @@ Raund başı: Etkileşimli bulmaca ÇÖZÜLMÜŞ halde başlar (= referansla ayn
 ```
 - **Neden çözülmüş başlıyor?** Kötü cinlerin işi bozmak. Hiç sabote etmedikleri bulmacayı insan doğrudan onaylayıp geçer → kötü cinler enerjilerini ve zamanlarını nereye harcayacaklarına karar vermek zorunda.
 - **Toplu Sabotaj (E-Spam Önleme):** Kötü cin parçaları tek tek çevirmek yerine bulmacaya bakıp `ScrambleHoldTime` = 1.5 sn `E` basılı tutarak tüm bulmacayı tek seferde rastgele bir dizilime sokar (`ScrambleEnergyCost` = 25 enerji). Sabote edilen bulmacaya `ScramblePuzzleCooldown` = 15 sn boyunca tekrar sabotaj yapılamaz. Sabotaj sırasında tüm parçalar sesli şekilde gıcırdar ve titrer.
-- **Fener Koruması (Yakın Alan Kilidi):** İnsan bulmacaya `LanternSafeZoneRadius` = 2.5 m mesafedeyken ve feneri açıksa, kötü cinler o bulmacayı **ruh formunda doğrudan sabote edemez**. Kötü cinin önce insanı oradan uzaklaştırması (eşya fırlatma, raf devirme, sandalye ile çarpma) veya odayı karartıp dikkatini dağıtması gerekir. Aydınlık odada da sabotaj **yapılamaz** (bkz. §7).
+- **Fener Koruması (Yakın Alan Kilidi):** İnsan bulmacaya `LanternSafeZoneRadius` = 2.5 m mesafedeyken ve feneri Kutsanmış Yağ ile güçlendirilmişse (Güçlü Mod), kötü cinler o bulmacayı **ruh formunda doğrudan sabote edemez**. Kötü cinin önce insanı oradan uzaklaştırması (eşya fırlatma, raf devirme, sandalye ile çarpma) veya odayı karartıp dikkatini dağıtması gerekir. Aydınlık odada da sabotaj **yapılamaz** (bkz. §7).
 - **Ruh Perdesi (Referans Okuma ve Kovalamaca):** Referanslar duvarda sürekli açık durmaz. İyi cin referansın olduğu odada **Sağ Tık (Ruh Görüşü Odakla)** basılı tutarak (`FocusReferenceCost` = 2 enerji/sn) referansı görünür kılar. Bu sırada iyi cin parlar. Kötü cin ruh formundayken referans okuyan iyi cinin içinden hızla (`Shift` ile) geçerse **Ruh Çarpışması** yaşanır: iyi cinin görüşü `SpiritBumpBlurTime` = 2 sn bulanıklaşır ve referans kapanır.
 
 ### 4.3 Bulmaca havuzu (Korku-Komedi İletişim Odaklı)
@@ -234,7 +234,7 @@ Ev karanlık başlar (sadece ay ışığı). Her odada 1+ lamba ve duvarda düğ
 
 - **İnsan:** düğmeyle açar/kapar (düğmeye gitmesi lazım).
 - **İyi cin:** uzaktan yakar, patlak lambayı onarır.
-- **Kötü cin:** lambaya girip **patlatır** (`LampBurstEnergy` = 30 enerji, oda karanlık + lamba patlak). Aydınlık odadaki lambanın kendisine girebilir (tek istisna) ama girerken 1.2 sn titreme telgrafı herkese görünür.
+- **Kötü cin:** lambaya girip **patlatır** (30 enerji, `PD_Lamp`, oda karanlık + lamba patlak). Aydınlık odadaki lambanın kendisine girebilir (tek istisna) ama girerken 1.2 sn titreme telgrafı herkese görünür.
 - **Sonuç:** Işık bir **bölge kontrolü** çekişmesi: iyi cin insanın çalıştığı odayı aydınlık tutmaya, kötü cinler karartmaya çalışır.
 
 ---
@@ -380,6 +380,7 @@ Dil: Türkçe öncelikli, tüm metinler `Loc` anahtarlı.
 | `BaseRoundDuration` | 360 | sn (Başlangıç süresi: 6 dk) |
 | `StageTimeBonus` | 90 | sn (Her aşama kapısı açıldığında eklenen süre) |
 | `JinnWakeDelay` / `IntroCountdown` | 10 / 5 | sn |
+| `RoleRevealDuration` / `RoundEndDuration` | 3 / 8 | sn (Rol Açıklama / Raund Sonu raporu) |
 | `RoundsPerMatch` | 4 | |
 | `StagesActive` | 2 | MVP: 2 aşama (4 bulmaca); tam oyun 3 |
 | `PuzzlesPerStage` | 2 | |
@@ -393,7 +394,7 @@ Dil: Türkçe öncelikli, tüm metinler `Loc` anahtarlı.
 | `DigTotalTime` / `DigCheckpoints` | 18 / 3 | sn / katman (her 6 sn'de bir güvenli kayıt) |
 | `ConfirmFailDamage` / `ConfirmFailCooldown` | 1 / 5 | |
 | `KickRange` / `KickCooldown` / `KickStun` | 2 / 6 / 2.5 | |
-| `LanternSafeZoneRadius` | 2.5 | m (Fener açıkken ruh formunda sabotajı engelleyen yarıçap) |
+| `LanternSafeZoneRadius` | 2.5 | m (Kutsanmış Yağ sonrası güçlü fenerin, ruh formunda sabotajı engellediği yarıçap) |
 | `LanternPulseRange` / `LanternPulseDuration` / `LanternPulseCooldown` | 8 / 3 / 12 | |
 | `ItemSlotCount` | 3 | (Sabit fener hariç görev eşyası slotu) |
 | `EvilJinnSpeed` / `GoodJinnSpeed` / `SpiritBoostMult` | 6.5 / 7 / 1.5 | |
@@ -407,7 +408,7 @@ Dil: Türkçe öncelikli, tüm metinler `Loc` anahtarlı.
 | `LitRoomEjectDelay` | 2 | sn |
 | `ScrambleEnergyCost` / `ScrambleHoldTime` / `ScrambleRange` | 25 / 1.5 / 3 | Toplu bulmaca sabotajı değerleri |
 | `ScramblePuzzleCooldown` | 15 | sn (Sabote edilen bulmacanın tekrar bozulamama süresi) |
-| `LampBurstEnergy` / `LampLightRange` / `RepairHoldTime` | 30 / 8 / 2 | |
+| `LampLightRange` / `RepairHoldTime` | 8 / 2 | Lamba patlatma enerjisi `PD_Lamp` asset'inde (§8: 30) |
 | `ExorciseRange` / `ExorciseHoldTime` / `ExorciseCooldown` / `ExorciseStun` / `ExorcisePossessLock` | 3 / 1.5 / 18 / 4 / 4 | |
 | `PingDuration` / `PingCooldown` / `PingMaxActive` | 8 / 3 / 2 | |
 | `GoodSightSpiritRange` / `GoodSightLurkRange` / `GoodSightChargeRange` | 20 / 4 / 25 | m |

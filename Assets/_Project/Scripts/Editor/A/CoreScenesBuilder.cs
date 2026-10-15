@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 namespace CinliMahzen.Editor
 {
     /// <summary>
-    /// Owner: A. Creates Boot / MainMenu / Game / Sandbox scenes (only the missing ones — existing scenes are never
+    /// Creates Boot / MainMenu / Game / Sandbox scenes (only the missing ones — existing scenes are never
     /// overwritten), Resources/CM_BootSettings.asset and the build scene list (Boot, MainMenu, Game).
     /// MCP: execute_menu_item("CinliMahzen/Setup A/Build Core Scenes").
     /// </summary>

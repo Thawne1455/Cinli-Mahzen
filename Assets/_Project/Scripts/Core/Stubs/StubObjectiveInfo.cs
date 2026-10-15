@@ -4,7 +4,8 @@ namespace CinliMahzen.Core
     public sealed class StubObjectiveInfo : IObjectiveInfo
     {
         public int StageIndex { get; set; }
-        public int StageCount { get; set; } = 3;
+        /// <summary>0 until a test/sandbox sets it.</summary>
+        public int StageCount { get; set; }
         public float DigProgress { get; set; }
         public int DigCheckpoint { get; set; }
         public ObjectivePhase Phase { get; set; } = ObjectivePhase.Garden;

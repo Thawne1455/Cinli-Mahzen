@@ -1,4 +1,3 @@
-// Owner: A
 namespace CinliMahzen.Core.Events
 {
     /// <summary>Published by Match when a round ends.</summary>

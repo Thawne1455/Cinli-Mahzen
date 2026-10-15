@@ -17,6 +17,8 @@ namespace CinliMahzen.Core
         [SerializeField] private int roundsPerMatch = 4;
         [SerializeField] private int stagesActive = 2;
         [SerializeField] private int puzzlesPerStage = 2;
+        [SerializeField] private float roleRevealDuration = 3f;
+        [SerializeField] private float roundEndDuration = 8f;
 
         [Header("Human")]
         [SerializeField] private int humanMaxHp = 3;
@@ -91,7 +93,6 @@ namespace CinliMahzen.Core
         [SerializeField] private float scrambleHoldTime = 1.5f;
         [SerializeField] private float scrambleRange = 3f;
         [SerializeField] private float scramblePuzzleCooldown = 15f;
-        [SerializeField] private float lampBurstEnergy = 30f;
         [SerializeField] private float lampLightRange = 8f;
         [SerializeField] private float repairHoldTime = 2f;
 
@@ -120,6 +121,10 @@ namespace CinliMahzen.Core
         /// <summary>Stages in play (MVP: 2; full game: 3).</summary>
         public int StagesActive => stagesActive;
         public int PuzzlesPerStage => puzzlesPerStage;
+        /// <summary>s</summary>
+        public float RoleRevealDuration => roleRevealDuration;
+        /// <summary>s</summary>
+        public float RoundEndDuration => roundEndDuration;
 
         // ---- Human ----
 
@@ -258,8 +263,6 @@ namespace CinliMahzen.Core
         public float ScrambleRange => scrambleRange;
         /// <summary>A scrambled puzzle cannot be scrambled again for this long (s).</summary>
         public float ScramblePuzzleCooldown => scramblePuzzleCooldown;
-        /// <summary>Energy cost of bursting a lamp.</summary>
-        public float LampBurstEnergy => lampBurstEnergy;
         /// <summary>Range at which the good jinn lights or repairs a lamp (m).</summary>
         public float LampLightRange => lampLightRange;
         /// <summary>s</summary>
@@ -280,7 +283,7 @@ namespace CinliMahzen.Core
 
         // ---- Network ----
 
-        /// <summary>Slack the authority grants on range checks (possess, interact, exorcise) — CONTRACT_CHANGES 2026-09-30.</summary>
+        /// <summary>Slack the authority grants on range checks (possess, interact, exorcise).</summary>
         public float NetRangeTolerance => netRangeTolerance;
     }
 }

@@ -1,4 +1,3 @@
-// Owner: A
 namespace CinliMahzen.Core.Events
 {
     /// <summary>Published by Player on every client when the authority confirmed damage.</summary>

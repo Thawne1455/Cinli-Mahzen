@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 namespace CinliMahzen.Editor
 {
     /// <summary>
-    /// Owner: B. Builds the B0.2 placeholder jinn visuals and the Sandbox_B test scene through the
+    /// Builds the B0.2 placeholder jinn visuals and the Sandbox_B test scene through the
     /// Unity API (so the serialized assets are always valid). Idempotent: re-running updates the
     /// materials, overwrites the prefabs and rebuilds the scene.
     /// MCP: execute_menu_item("CinliMahzen/Sandbox B/Build Sandbox_B Scene").

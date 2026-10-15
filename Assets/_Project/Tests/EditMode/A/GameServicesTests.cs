@@ -1,3 +1,4 @@
+using System;
 using CinliMahzen.Core;
 using CinliMahzen.Core.Net;
 using NUnit.Framework;
@@ -48,6 +49,25 @@ namespace CinliMahzen.Tests.EditMode.A
 
             GameServices.Unregister<IMatchInfo>(m);
             Assert.IsInstanceOf<StubMatchInfo>(GameServices.Match);
+        }
+
+        private static void AssertUnregisterRestoresStub<T>(T registered, Type expectedStubType) where T : class
+        {
+            GameServices.Register<T>(registered);
+            GameServices.Unregister<T>(registered);
+
+            T restored = GameServices.Get<T>();
+            Assert.IsNotNull(restored, typeof(T).Name);
+            Assert.IsInstanceOf(expectedStubType, restored, typeof(T).Name);
+            Assert.AreNotSame(registered, restored, typeof(T).Name);
+        }
+
+        [Test]
+        public void Unregister_RestoresStub_ForNewBridges()
+        {
+            AssertUnregisterRestoresStub<IRoomService>(new StubRoomService(), typeof(StubRoomService));
+            AssertUnregisterRestoresStub<IHumanStatusQuery>(new StubHumanStatusQuery(), typeof(StubHumanStatusQuery));
+            AssertUnregisterRestoresStub<IHouseInfo>(new StubHouseInfo(), typeof(StubHouseInfo));
         }
 
         [Test]

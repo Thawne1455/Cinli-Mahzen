@@ -1,4 +1,3 @@
-// Owner: A
 using UnityEngine;
 namespace CinliMahzen.Core.Events
 {

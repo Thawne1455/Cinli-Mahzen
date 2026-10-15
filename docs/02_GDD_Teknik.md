@@ -224,7 +224,7 @@ IHumanStatusQuery
 // World uygular
 IRoomService
 {
-    int RoomOf(Vector3 p);
+    int RoomOf(Vector3 p);   // -1 = hiçbir odada değil; LightOf(-1) == Off
     RoomLightState LightOf(int room);       // enum RoomLightState : byte { Off = 0, On = 1 }
     bool IsNoiseSuppressed(int room); // Eski Radyo çalıyorsa true (12 sn)
 }

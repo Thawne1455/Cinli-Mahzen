@@ -14,6 +14,18 @@ namespace CinliMahzen.Core
     {
         private static readonly Dictionary<Type, object> Services = new Dictionary<Type, object>();
 
+        /// <summary>Single source of truth for the bridge interfaces that fall back to a stub. Keep in sync with <see cref="CreateStub"/>.</summary>
+        private static readonly Type[] StubTypes =
+        {
+            typeof(IMatchInfo),
+            typeof(IHouseInfo),
+            typeof(IRoomService),
+            typeof(IObjectiveInfo),
+            typeof(ILightService),
+            typeof(IHumanStatusQuery),
+            typeof(IPossessionQuery),
+        };
+
         static GameServices()
         {
             ResetToStubs();
@@ -71,13 +83,7 @@ namespace CinliMahzen.Core
         public static void ResetToStubs()
         {
             Services.Clear();
-            Services[typeof(IMatchInfo)] = new StubMatchInfo();
-            Services[typeof(IHouseInfo)] = new StubHouseInfo();
-            Services[typeof(IRoomService)] = new StubRoomService();
-            Services[typeof(IObjectiveInfo)] = new StubObjectiveInfo();
-            Services[typeof(ILightService)] = new StubLightService();
-            Services[typeof(IHumanStatusQuery)] = new StubHumanStatusQuery();
-            Services[typeof(IPossessionQuery)] = new StubPossessionQuery();
+            foreach (Type t in StubTypes) Services[t] = CreateStub(t);
         }
 
         private static object CreateStub(Type t)

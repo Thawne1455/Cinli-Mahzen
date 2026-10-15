@@ -19,6 +19,8 @@ MonoBehaviour:
   roundsPerMatch: 4
   stagesActive: 2
   puzzlesPerStage: 2
+  roleRevealDuration: 3
+  roundEndDuration: 8
   humanMaxHp: 3
   humanInvulnAfterHit: 1.5
   faintDuration: 12
@@ -83,7 +85,6 @@ MonoBehaviour:
   scrambleHoldTime: 1.5
   scrambleRange: 3
   scramblePuzzleCooldown: 15
-  lampBurstEnergy: 30
   lampLightRange: 8
   repairHoldTime: 2
   scorePerPuzzle: 50

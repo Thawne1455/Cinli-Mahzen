@@ -1,4 +1,3 @@
-// Owner: B (drafted by A in A0.5)
 namespace CinliMahzen.Core.Events
 {
     /// <summary>Published by Possession when an object's possession state changes.</summary>
