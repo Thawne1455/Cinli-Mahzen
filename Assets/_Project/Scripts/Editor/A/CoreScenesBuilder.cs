@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 namespace CinliMahzen.Editor
 {
     /// <summary>
-    /// Owner: A. Creates Boot / MainMenu / Game / Sandbox_A scenes (only the missing ones — existing scenes are never
+    /// Owner: A. Creates Boot / MainMenu / Game / Sandbox scenes (only the missing ones — existing scenes are never
     /// overwritten), Resources/CM_BootSettings.asset and the build scene list (Boot, MainMenu, Game).
     /// MCP: execute_menu_item("CinliMahzen/Setup A/Build Core Scenes").
     /// </summary>
@@ -34,7 +34,7 @@ namespace CinliMahzen.Editor
             string boot = BuildIfMissing("Boot", BuildBoot);
             string menu = BuildIfMissing("MainMenu", BuildMainMenu);
             string game = BuildIfMissing("Game", BuildGame);
-            BuildIfMissing("Sandbox_A", BuildSandboxA);
+            BuildIfMissing("Sandbox", BuildSandbox);
 
             var scenes = new List<EditorBuildSettingsScene>
             {
@@ -95,7 +95,7 @@ namespace CinliMahzen.Editor
             new GameObject("AudioRoot");
         }
 
-        private static void BuildSandboxA()
+        private static void BuildSandbox()
         {
             AddCamera(new Color(0.2f, 0.2f, 0.25f)).transform.SetPositionAndRotation(new Vector3(0f, 6f, -10f), Quaternion.Euler(30f, 0f, 0f));
             AddSun();

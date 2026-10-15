@@ -8,7 +8,7 @@ namespace CinliMahzen.Core
     /// <summary>
     /// Auto-bootstrap (Teknik §3): before the first scene loads, GameServices is filled for offline hotseat
     /// (OfflineNetBridge, EntityRegistry, GameBalanceConfig), then module hooks run (input, debug tools, ...).
-    /// Works for every scene — Boot, Game, Sandbox_* — so Play can be pressed anywhere.
+    /// Works for every scene — Boot, Game, Sandbox — so Play can be pressed anywhere.
     /// Modules add hooks from [RuntimeInitializeOnLoadMethod(AfterAssembliesLoaded)] via <see cref="AddHook"/>.
     /// </summary>
     public static class GameBootstrap
