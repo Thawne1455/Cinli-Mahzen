@@ -28,12 +28,24 @@ MonoBehaviour:
   - key: team.jinns
     tr: Cinler
     en: Jinns
-  - key: item.salt
-    tr: Tuz
-    en: Salt
-  - key: item.nazar
-    tr: "Nazar Boncu\u011Fu"
-    en: Evil Eye Bead
+  - key: item.house_key
+    tr: "Ev Anahtar\u0131"
+    en: House Key
+  - key: item.blessed_oil
+    tr: "Kutsanm\u0131\u015F Ya\u011F"
+    en: Blessed Oil
+  - key: item.fuse_key
+    tr: "\u015Ealter Anahtar\u0131"
+    en: Fuse Key
+  - key: item.paint
+    tr: Boya
+    en: Paint
+  - key: item.shovel
+    tr: "K\u00FCrek"
+    en: Shovel
+  - key: item.cellar_key
+    tr: "Bodrum Anahtar\u0131"
+    en: Cellar Key
   - key: interact.hold
     tr: "[E] bas\u0131l\u0131 tut: {0}"
     en: 'Hold [E]: {0}'

@@ -25,8 +25,8 @@ namespace CinliMahzen.Editor
         [MenuItem(Root + "Restart Round (New Seed)")]
         public static void RestartRound() => DebugCommands.RestartRound();
 
-        [MenuItem(Root + "Give All Fragments")]
-        public static void GiveAllFragments() => DebugCommands.GiveAllFragments();
+        [MenuItem(Root + "Complete Current Stage")]
+        public static void CompleteCurrentStage() => DebugCommands.CompleteCurrentStage();
 
         [MenuItem(Root + "Dump State To Console", true)]
         [MenuItem(Root + "Toggle Debug Overlay (F9)", true)]
@@ -36,7 +36,7 @@ namespace CinliMahzen.Editor
         [MenuItem(Root + "Switch To Player 3", true)]
         [MenuItem(Root + "Switch To Player 4", true)]
         [MenuItem(Root + "Restart Round (New Seed)", true)]
-        [MenuItem(Root + "Give All Fragments", true)]
+        [MenuItem(Root + "Complete Current Stage", true)]
         private static bool PlayingOnly() => EditorApplication.isPlaying;
     }
 }

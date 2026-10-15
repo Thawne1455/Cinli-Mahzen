@@ -49,6 +49,9 @@ namespace CinliMahzen.DebugTools
                 sb.Append(",\"match\":{\"state\":").Append(DebugState.Quote(m.State.ToString()))
                   .Append(",\"round\":").Append(m.RoundIndex)
                   .Append(",\"jinnsAwake\":").Append(m.JinnsAwake ? "true" : "false")
+                  .Append(",\"faints\":").Append(m.Faints)
+                  .Append(",\"stateEndTime\":").Append(m.StateEndTime < double.MaxValue
+                      ? m.StateEndTime.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) : "null")
                   .Append(",\"stub\":").Append(m is StubMatchInfo ? "true" : "false").Append('}');
             }
 
@@ -56,9 +59,10 @@ namespace CinliMahzen.DebugTools
             if (o != null)
             {
                 sb.Append(",\"objective\":{\"phase\":").Append(DebugState.Quote(o.Phase.ToString()))
-                  .Append(",\"fragments\":").Append(o.Fragments)
-                  .Append(",\"vaultOpen\":").Append(o.VaultOpen ? "true" : "false")
-                  .Append(",\"goldCarrier\":").Append(DebugState.Quote(o.GoldCarrier.ToString()))
+                  .Append(",\"stage\":").Append(o.StageIndex)
+                  .Append(",\"stageCount\":").Append(o.StageCount)
+                  .Append(",\"digProgress\":").Append(o.DigProgress.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))
+                  .Append(",\"digCheckpoint\":").Append(o.DigCheckpoint)
                   .Append(",\"stub\":").Append(o is StubObjectiveInfo ? "true" : "false").Append('}');
             }
 

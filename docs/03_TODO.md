@@ -47,9 +47,9 @@
 |---|---|---|---|---|
 | [x] | P.1 | Dokümanları v2.1'e yaz (GDD, Teknik, TODO, CLAUDE.md, README), ajan dosyalarını kaldır | — | S |
 | [x] | P.2 | KayKit import + prefablar (C dalından al) | — | S |
-| [~] | P.3 | Core kontratları v2.1 (config, event, bridge, MsgCode, stub, ItemDefinition) | P.1 | M |
+| [x] | P.3 | Core kontratları v2.1 (config, event, bridge, MsgCode, stub, ItemDefinition) | P.1 | M |
 | [ ] | P.4 | Possession v2.1 (ışık kuralı, iyi cin, PD_* özel eşyalar) + Input v2.1 | P.3 | M |
-| [ ] | P.5 | Eski dalları temizle + Sandbox sahnesi | P.2 | S |
+| [x] | P.5 | Eski dalları temizle + Sandbox sahnesi | P.2 | S |
 
 ### P.2 — KayKit import
 - `origin/agent-c/m0-assets-scene` dalından **sadece** şunları `main`'e al (`git checkout <dal> -- <yol>`): `Assets/_Project/Art/KayKit/**`, `Art/Materials/M_KayKit_Dungeon.mat`, `Prefabs/Environment/Env_*`, `Prefabs/Props/Prop_*` (+ .meta'lar), `docs/04_Asset_Eslestirme.md` ölçü tablosu.
@@ -75,7 +75,7 @@
 
 ### P.5 — Temizlik
 - Kullanıcıya sor, onay verirse: `agent-c/*` ve `claude/gracious-euler-dewg8h` uzak dallarını sil.
-- `Sandbox.unity` (serbest test sahnesi, düz zemin + birkaç prop). `Sandbox_A` → `Sandbox` olarak yeniden adlandırılabilir.
+- `Sandbox.unity` (serbest test sahnesi, düz zemin + birkaç prop). `Sandbox_A` → `Sandbox` olarak yeniden adlandırıldı (2026-10-15).
 
 ---
 

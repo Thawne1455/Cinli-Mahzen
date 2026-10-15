@@ -176,7 +176,7 @@ Her yeni mesaj için encode/decode yardımcısı + **EditMode round-trip testi**
 ### 4.5 Hasar, Durum, Etkileşim
 - `DamageInfo { Amount, Attacker, SourceObject, CauseId, Flags, KnockdownTime, Point, Direction }` — v2.1'de ölüm yok; can 0 -> **bayılma**.
 - `IDamageable.ApplyDamageAuthority`, `IStatusReceiver.ApplyStatusAuthority`.
-- `StatusType`: `Knockdown, Fainted, Stunned, Slowed, CameraSpin180 (Anne Terliği), VisionBlurred (Ruh Çarpışması)`.
+- `StatusType`: `Knockdown, Stunned, Slowed, CameraSpin180 (Anne Terliği), VisionBlurred (Ruh Çarpışması)`. v1'den kalan `Grabbed, Drunk, Darkness` int kararlılığı için enum'da durur, kullanılmaz. Bayılma bir durum efekti değildir: `HumanMotorState.Fainted` + `HumanFaintedEvt`.
 - `IInteractable { NetId, PromptKey, HoldTime, CanInteract(who, role), ValidateAuthority(who), ExecuteAuthority(who), NoiseOnInteract }`.
 - **v2.1 kuralı:** Bulmaca parçası (`PuzzlePart`) sadece `Role.Human` için `CanInteract` döner; Kötü Cinler parçaları tek tek çevirmez, bulmacanın ana gövdesindeki `PuzzleScrambleTarget` bileşenine `1.5 sn` basılı tutarak toplu sabotaj yapar.
 
@@ -188,7 +188,7 @@ Ana event'ler (v2.1):
 | `RoundTimeAddedEvt{bonusSeconds, newEndTime}` | Match | UI, Audio |
 | `HumanDamagedEvt{info, hpAfter}` | Player | UI, Audio, Stats |
 | `HumanFaintedEvt{info, faintCount}` / `HumanRevivedEvt{byCologne}` | Player | Match, UI, Stats |
-| `BlessedOilCollectedEvt` | Player | UI, Audio, Objectives |
+| `BlessedOilCollectedEvt{collector}` | Player | UI, Audio, Objectives |
 | `PossessionChangedEvt{player, obj, state}` | Possession | UI, Visibility, Input, Audio |
 | `ActionTelegraphEvt` / `ActionResolvedEvt` | Possession | Audio, VFX, Stats |
 | `PuzzleStateChangedEvt{puzzle, byPlayer}` | Objectives | Audio, VFX |
@@ -199,12 +199,12 @@ Ana event'ler (v2.1):
 | `ReferenceFocusChangedEvt{jinn, isFocusing}` | Jinn | Visibility, UI |
 | `SpiritBumpedEvt{evilJinn, goodJinn}` | Jinn | CameraRig (bulanıklık), UI, Audio |
 | `SpiritBlockedEvt{goodJinn, projectileId}` | Possession | Jinn, UI, Audio, Stats |
-| `DigProgressEvt{progress, checkpoint}` / `TreasureDugEvt` | Objectives | Match, Jinn (Öfke), UI |
+| `DigProgressEvt{progress, checkpoint}` / `TreasureDugEvt{digger}` | Objectives | Match, Jinn (Öfke), UI |
 | `LocalRoleChangedEvt{role}` | Core | Kamera, UI, Visibility, Input |
 | `RoundEndedEvt{result, reason}` | Match | UI, Stats |
 
 ### 4.7 Servisler
-`GameServices { Net, Players, Entities, Config, Match, Level, Register<T>, Get<T>, TryGet<T> }`.
+`GameServices { Net, Players, Entities, Config, Match, House, Register<T>, Get<T>, TryGet<T> }`. Modül kendi uygulamasını kaydedene kadar köprü arayüzleri stub'a çözülür: `StubMatchInfo`, `StubHouseInfo`, `StubRoomService` (her yer oda 0, karanlık), `StubObjectiveInfo`, `StubLightService`, `StubHumanStatusQuery`, `StubPossessionQuery`.
 
 ### 4.8 Köprü Arayüzleri (v2.1)
 ```csharp
@@ -225,10 +225,10 @@ IHumanStatusQuery
 IRoomService
 {
     int RoomOf(Vector3 p);
-    RoomLightState LightOf(int room);
+    RoomLightState LightOf(int room);       // enum RoomLightState : byte { Off = 0, On = 1 }
     bool IsNoiseSuppressed(int room); // Eski Radyo çalıyorsa true (12 sn)
 }
-ILightService  { void SetLampAuthority(NetId lamp, LampState s); } // Off / On / Broken
+ILightService  { void SetLampAuthority(NetId lamp, LampState s); } // enum LampState : byte { Off = 0, On = 1, Broken = 2 }
 IHouseInfo     { Bounds Bounds; Vector3 HumanSpawn; IReadOnlyList<Vector3> JinnSpawns; }
 
 // Objectives uygular
@@ -246,10 +246,13 @@ enum ObjectivePhase : byte { Garden = 0, House = 1, Cellar = 2, Done = 3 }
 
 // Match uygular
 IMatchInfo { MatchState State; int RoundIndex; double StateEndTime; bool JinnsAwake; int Faints; }
+enum RoundEndReason : byte { None = 0, Faint = 1, TreasureDug = 2, Timeout = 3 }
 ```
 
 ### 4.9 Konfigürasyon
-`GameBalanceConfig` — `01_GDD_Oyun.md §14` tablosundaki her satır birebir aynı isimle yer alır (`BaseRoundDuration`, `StageTimeBonus`, `LanternSafeZoneRadius`, `ScrambleHoldTime`, `ScramblePuzzleCooldown`, `FocusReferenceCost`, `SpiritBumpBlurTime`, `SpiritBlockEnergyCost`, `DigCheckpoints`, `ScorePerPuzzle`, `ScoreBasementOpen`, `ScoreTreasureWin`, `ScorePerFaint`, `ScorePerUnfinishedPuzzle` dahil).
+`GameBalanceConfig` — `01_GDD_Oyun.md §14` tablosundaki her satır birebir aynı isimle yer alır (`BaseRoundDuration`, `StageTimeBonus`, `LanternSafeZoneRadius`, `ScrambleHoldTime`, `ScramblePuzzleCooldown`, `FocusReferenceCost`, `SpiritBumpBlurTime`, `SpiritBumpRange`, `SpiritBlockEnergyCost`, `SpiritBlockRadius`, `CologneReviveRange`, `DigCheckpoints`, `ScorePerPuzzle`, `ScoreBasementOpen`, `ScoreTreasureWin`, `ScorePerFaint`, `ScorePerUnfinishedPuzzle` dahil).
+
+`ItemDefinition` (`ID_*`) — `{ Id, NameKey, Icon, Kind, Prefab }`; `ItemKind { QuestItem = 0, LanternUpgrade = 1 }`. Asset'ler: `ID_HouseKey` (`house_key`), `ID_BlessedOil` (`blessed_oil`, LanternUpgrade — slot kaplamaz), `ID_FuseKey` (`fuse_key`), `ID_Paint` (`paint`), `ID_Shovel` (`shovel`), `ID_CellarKey` (`cellar_key`). `NameKey = "item." + Id`.
 
 ---
 
@@ -370,7 +373,7 @@ public class PuzzleDefinition : ScriptableObject
     public string NameKey;
     public int[] ValueCounts;             // parça başına K
     public PuzzleOpKind OpKind;
-    public string RequiredItemId;         // "" = yok ("paint", "fusekey")
+    public string RequiredItemId;         // "" = yok ("paint", "fuse_key")
     public GameObject InteractivePrefab;  // P_Puzzle_*
     public GameObject ReferencePrefab;    // P_PuzzleRef_* (SpiritOnly, Ruh Perdesi destekli)
     public PuzzleSlotSize Size;           // Wall / Floor / Table — slot uyumu

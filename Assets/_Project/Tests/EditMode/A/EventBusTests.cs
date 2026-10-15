@@ -17,10 +17,10 @@ namespace CinliMahzen.Tests.EditMode.A
         public void Subscribe_Publish_Delivers()
         {
             int got = -1;
-            Action<KeyFragmentCollectedEvt> h = e => got = e.Count;
+            Action<StageCompletedEvt> h = e => got = e.Stage;
             EventBus.Subscribe(h);
 
-            EventBus.Publish(new KeyFragmentCollectedEvt(2));
+            EventBus.Publish(new StageCompletedEvt(2));
 
             Assert.AreEqual(2, got);
         }
@@ -55,8 +55,8 @@ namespace CinliMahzen.Tests.EditMode.A
         {
             int a = 0, b = 0;
             EventBus.Subscribe<PhaseChangedEvt>(_ => a++);
-            EventBus.Subscribe<GoldStateEvt>(_ => b++);
-            EventBus.Publish(new PhaseChangedEvt(ObjectivePhase.Vault));
+            EventBus.Subscribe<TreasureDugEvt>(_ => b++);
+            EventBus.Publish(new PhaseChangedEvt(ObjectivePhase.Cellar));
             Assert.AreEqual(1, a);
             Assert.AreEqual(0, b);
         }
@@ -89,10 +89,10 @@ namespace CinliMahzen.Tests.EditMode.A
         {
             int calls = 0;
             EventBus.Subscribe<RoundEndedEvt>(_ => calls++);
-            EventBus.Subscribe<HumanDiedEvt>(_ => calls++);
+            EventBus.Subscribe<HumanFaintedEvt>(_ => calls++);
             EventBus.ClearAll();
-            EventBus.Publish(new RoundEndedEvt(RoundResult.JinnsWin, RoundEndReason.Kill));
-            EventBus.Publish(new HumanDiedEvt(default));
+            EventBus.Publish(new RoundEndedEvt(RoundResult.JinnsWin, RoundEndReason.Faint));
+            EventBus.Publish(new HumanFaintedEvt(default, 1));
             Assert.AreEqual(0, calls);
         }
     }

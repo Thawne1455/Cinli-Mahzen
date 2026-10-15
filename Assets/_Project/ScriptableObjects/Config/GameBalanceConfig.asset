@@ -12,35 +12,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2cffb4da4099ce4f99fc8dfd0deda1b, type: 3}
   m_Name: GameBalanceConfig
   m_EditorClassIdentifier: CM.Core::CinliMahzen.Core.GameBalanceConfig
-  roundDuration: 600
-  jinnWakeDelay: 20
+  baseRoundDuration: 360
+  stageTimeBonus: 90
+  jinnWakeDelay: 10
   introCountdown: 5
   roundsPerMatch: 4
-  keyFragmentsRequired: 3
+  stagesActive: 2
+  puzzlesPerStage: 2
   humanMaxHp: 3
   humanInvulnAfterHit: 1.5
+  faintDuration: 12
+  faintsToLose: 3
+  knockdownTime: 2
   humanWalkSpeed: 3.5
   humanSprintSpeed: 5.5
-  humanCarrySpeed: 2.4
   staminaMax: 100
   staminaDrain: 20
   staminaRegen: 15
   staminaRegenDelay: 1
   interactRange: 2.2
   searchHoldTime: 1
-  digHoldTime: 3
-  pickupGoldTime: 1
+  pushHoldTime: 1.5
+  digTotalTime: 18
+  digCheckpoints: 3
+  confirmFailDamage: 1
+  confirmFailCooldown: 5
   kickRange: 2
   kickCooldown: 6
   kickStun: 2.5
+  lanternSafeZoneRadius: 2.5
   lanternPulseRange: 8
   lanternPulseDuration: 3
   lanternPulseCooldown: 12
-  saltRadius: 3
-  saltDuration: 25
-  saltStartCount: 0
-  nazarStartCount: 0
-  itemSlotCount: 2
+  itemSlotCount: 3
   evilJinnSpeed: 6.5
   goodJinnSpeed: 7
   spiritBoostMult: 1.5
@@ -50,24 +54,42 @@ MonoBehaviour:
   possessRange: 3
   possessTime: 1.2
   reenterCooldown: 10
+  litRoomEjectDelay: 2
+  coldBreathRange: 3
+  rageRegenMult: 2
+  rageCooldownMult: 0.6
+  goodEnergyMax: 100
+  goodEnergyRegen: 8
+  focusReferenceCost: 2
+  spiritBumpBlurTime: 2
+  spiritBumpRange: 1.5
+  spiritBumpCooldown: 6
+  spiritBlockEnergyCost: 30
+  spiritBlockRadius: 1
+  cologneReviveRange: 3
   exorciseRange: 3
   exorciseHoldTime: 1.5
   exorciseCooldown: 18
   exorciseStun: 4
   exorcisePossessLock: 4
-  blessAfterExorcise: 15
   pingDuration: 8
   pingCooldown: 3
   pingMaxActive: 2
-  blessDuration: 20
-  blessCooldown: 25
-  blessMaxActive: 1
   goodSightSpiritRange: 20
   goodSightLurkRange: 4
   goodSightChargeRange: 25
-  heatTrailDuration: 5
-  noisePingRange: 15
-  coldBreathRange: 3
-  rageRegenMult: 2
-  rageCooldownMult: 0.6
+  keySenseRange: 10
+  scrambleEnergyCost: 25
+  scrambleHoldTime: 1.5
+  scrambleRange: 3
+  scramblePuzzleCooldown: 15
+  lampBurstEnergy: 30
+  lampLightRange: 8
+  repairHoldTime: 2
+  scorePerPuzzle: 50
+  scoreBasementOpen: 50
+  scoreTreasureWin: 150
+  scorePerFaint: 50
+  jinnWinPoints: 200
+  scorePerUnfinishedPuzzle: 40
   netRangeTolerance: 0.5

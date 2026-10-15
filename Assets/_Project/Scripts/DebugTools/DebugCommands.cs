@@ -11,15 +11,15 @@ namespace CinliMahzen.DebugTools
     {
         public static void SwitchToPlayer(int index)
         {
-            Todo("F" + (index + 1) + " Switch To Player " + (index + 1), "A1.5 PlayerRegistry");
+            Todo("F" + (index + 1) + " Switch To Player " + (index + 1), "1.3 Hotseat");
         }
 
-        public static void ToggleImmortalHuman() => Todo("F5 Immortal Human", "A1.4 HumanHealth");
-        public static void ToggleInfiniteEnergy() => Todo("F6 Infinite Energy", "B JinnEnergy");
-        public static void ToggleRevealAll() => Todo("F7 Reveal All", "B Visibility");
-        public static void RestartRound() => Todo("F8 Restart Round (New Seed)", "A1.6 Match");
-        public static void GiveAllFragments() => Todo("F11 Give All Fragments", "C Objectives");
-        public static void ToggleDummyHuman() => Todo("F12 Toggle Dummy Human", "B BotInput");
+        public static void ToggleImmortalHuman() => Todo("F5 Immortal Human", "1.5 HumanHealth");
+        public static void ToggleInfiniteEnergy() => Todo("F6 Infinite Energy", "1.7 Possession");
+        public static void ToggleRevealAll() => Todo("F7 Reveal All", "3.9 Visibility");
+        public static void RestartRound() => Todo("F8 Restart Round (New Seed)", "1.10 Match");
+        public static void CompleteCurrentStage() => Todo("F11 Complete Current Stage (+StageTimeBonus)", "2.7 StageGate");
+        public static void ToggleDummyHuman() => Todo("F12 Toggle Dummy Human", "3.12 Dummy bot");
 
         public static void ToggleOverlay()
         {

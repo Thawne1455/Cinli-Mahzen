@@ -7,7 +7,7 @@ namespace CinliMahzen.Core
 {
     /// <summary>
     /// Service locator (Teknik §4.7). Modules register their implementations; until they do,
-    /// the bridge interfaces resolve to stubs (StubMatchInfo, StubLevelInfo, ...) so every module compiles and runs alone.
+    /// the bridge interfaces resolve to stubs (StubMatchInfo, StubHouseInfo, ...) so every module compiles and runs alone.
     /// Cache results outside Update — Get is a dictionary lookup.
     /// </summary>
     public static class GameServices
@@ -25,8 +25,8 @@ namespace CinliMahzen.Core
         public static GameBalanceConfig Config => Get<GameBalanceConfig>();
         /// <summary>Phase, remaining time, round.</summary>
         public static IMatchInfo Match => Get<IMatchInfo>();
-        /// <summary>Active level data (C).</summary>
-        public static ILevelInfo Level => Get<ILevelInfo>();
+        /// <summary>Static house data (World).</summary>
+        public static IHouseInfo House => Get<IHouseInfo>();
 
         /// <summary>Registers <paramref name="service"/> under <typeparamref name="T"/>, replacing any previous one (stub included).</summary>
         public static void Register<T>(T service)
@@ -72,9 +72,11 @@ namespace CinliMahzen.Core
         {
             Services.Clear();
             Services[typeof(IMatchInfo)] = new StubMatchInfo();
-            Services[typeof(ILevelInfo)] = new StubLevelInfo();
+            Services[typeof(IHouseInfo)] = new StubHouseInfo();
+            Services[typeof(IRoomService)] = new StubRoomService();
             Services[typeof(IObjectiveInfo)] = new StubObjectiveInfo();
             Services[typeof(ILightService)] = new StubLightService();
+            Services[typeof(IHumanStatusQuery)] = new StubHumanStatusQuery();
             Services[typeof(IPossessionQuery)] = new StubPossessionQuery();
             Services[typeof(IPossessionBlockerRegistry)] = new StubPossessionBlockerRegistry();
         }
@@ -82,9 +84,11 @@ namespace CinliMahzen.Core
         private static object CreateStub(Type t)
         {
             if (t == typeof(IMatchInfo)) return new StubMatchInfo();
-            if (t == typeof(ILevelInfo)) return new StubLevelInfo();
+            if (t == typeof(IHouseInfo)) return new StubHouseInfo();
+            if (t == typeof(IRoomService)) return new StubRoomService();
             if (t == typeof(IObjectiveInfo)) return new StubObjectiveInfo();
             if (t == typeof(ILightService)) return new StubLightService();
+            if (t == typeof(IHumanStatusQuery)) return new StubHumanStatusQuery();
             if (t == typeof(IPossessionQuery)) return new StubPossessionQuery();
             if (t == typeof(IPossessionBlockerRegistry)) return new StubPossessionBlockerRegistry();
             return null;

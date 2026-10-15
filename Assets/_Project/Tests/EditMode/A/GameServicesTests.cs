@@ -12,6 +12,7 @@ namespace CinliMahzen.Tests.EditMode.A
             public int RoundIndex => 2;
             public double StateEndTime => 5d;
             public bool JinnsAwake => false;
+            public int Faints => 1;
         }
 
         [SetUp]
@@ -24,9 +25,11 @@ namespace CinliMahzen.Tests.EditMode.A
         public void Stubs_AreDefault()
         {
             Assert.IsInstanceOf<StubMatchInfo>(GameServices.Match);
-            Assert.IsInstanceOf<StubLevelInfo>(GameServices.Level);
+            Assert.IsInstanceOf<StubHouseInfo>(GameServices.House);
+            Assert.IsInstanceOf<StubRoomService>(GameServices.Get<IRoomService>());
             Assert.IsInstanceOf<StubObjectiveInfo>(GameServices.Get<IObjectiveInfo>());
             Assert.IsInstanceOf<StubLightService>(GameServices.Get<ILightService>());
+            Assert.IsInstanceOf<StubHumanStatusQuery>(GameServices.Get<IHumanStatusQuery>());
             Assert.IsInstanceOf<StubPossessionQuery>(GameServices.Get<IPossessionQuery>());
             Assert.IsInstanceOf<StubPossessionBlockerRegistry>(GameServices.Get<IPossessionBlockerRegistry>());
             Assert.IsNull(GameServices.Net);

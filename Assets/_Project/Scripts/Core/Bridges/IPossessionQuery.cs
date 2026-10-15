@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CinliMahzen.Core
 {
-    /// <summary>Implemented by B (Possession). Consumed by A (lantern, HUD).</summary>
+    /// <summary>Implemented by Possession. Consumed by Player (lantern pulse), HUD.</summary>
     public interface IPossessionQuery
     {
         bool IsPossessed(NetId obj);

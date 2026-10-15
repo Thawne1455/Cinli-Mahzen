@@ -53,7 +53,8 @@ namespace CinliMahzen.DebugTools
             if (match != null)
             {
                 _sb.Append("Match ").Append(match.State.ToString()).Append("  round ").Append(match.RoundIndex)
-                   .Append("  jinnsAwake ").Append(match.JinnsAwake ? "yes" : "no");
+                   .Append("  jinnsAwake ").Append(match.JinnsAwake ? "yes" : "no")
+                   .Append("  faints ").Append(match.Faints);
                 if (net != null && match.StateEndTime < double.MaxValue)
                     _sb.Append("  left ").Append(Mathf.Max(0f, (float)(match.StateEndTime - net.Time)).ToString("0.0")).Append('s');
                 _sb.Append(match is StubMatchInfo ? "  (stub)" : string.Empty).Append('\n');
@@ -62,8 +63,9 @@ namespace CinliMahzen.DebugTools
             IObjectiveInfo obj = GameServices.Get<IObjectiveInfo>();
             if (obj != null)
             {
-                _sb.Append("Objective ").Append(obj.Phase.ToString()).Append("  fragments ").Append(obj.Fragments)
-                   .Append("  vault ").Append(obj.VaultOpen ? "open" : "closed")
+                _sb.Append("Objective ").Append(obj.Phase.ToString()).Append("  stage ").Append(obj.StageIndex)
+                   .Append('/').Append(obj.StageCount)
+                   .Append("  dig ").Append(obj.DigProgress.ToString("0.00")).Append(" cp ").Append(obj.DigCheckpoint)
                    .Append(obj is StubObjectiveInfo ? "  (stub)" : string.Empty).Append('\n');
             }
 

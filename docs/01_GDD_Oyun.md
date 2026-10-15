@@ -400,7 +400,9 @@ Dil: Türkçe öncelikli, tüm metinler `Loc` anahtarlı.
 | `EnergyMax` / `EnergyStart` / `EnergyRegen` | 100 / 50 / 5 | kötü cin |
 | `GoodEnergyMax` / `GoodEnergyRegen` | 100 / 8 | iyi cin |
 | `FocusReferenceCost` / `SpiritBumpBlurTime` | 2 / 2 | enerji/sn (referans okuma) / sn (ruh çarpışması bulanıklığı) |
-| `SpiritBlockEnergyCost` | 30 | İyi cinin mahzende uçan eşyayı göğüsleme bedeli |
+| `SpiritBumpRange` / `SpiritBumpCooldown` | 1.5 / 6 | m (hızlı uçan kötü cinin odaklanan iyi cine çarpma mesafesi) / sn |
+| `SpiritBlockEnergyCost` / `SpiritBlockRadius` | 30 / 1 | İyi cinin mahzende uçan eşyayı göğüsleme bedeli / Ruh Siperi çarpışma yarıçapı (m) |
+| `CologneReviveRange` | 3 | m (iyi cinin kolonyayla baygın insanı ayıltma mesafesi) |
 | `PossessRange` / `PossessTime` / `ReenterCooldown` | 3 / 1.2 / 10 | |
 | `LitRoomEjectDelay` | 2 | sn |
 | `ScrambleEnergyCost` / `ScrambleHoldTime` / `ScrambleRange` | 25 / 1.5 / 3 | Toplu bulmaca sabotajı değerleri |
@@ -414,6 +416,7 @@ Dil: Türkçe öncelikli, tüm metinler `Loc` anahtarlı.
 | `RageRegenMult` / `RageCooldownMult` | 2 / 0.6 | kazı başlayınca |
 | `ScorePerPuzzle` / `ScoreBasementOpen` / `ScoreTreasureWin` | 50 / 50 / 150 | Arayıcı kademeli puanları (+ kalan sn) |
 | `ScorePerFaint` / `JinnWinPoints` / `ScorePerUnfinishedPuzzle` | 50 / 200 / 40 | Kötü cin kademeli puanları |
+| `NetRangeTolerance` | 0.5 | m (otoritenin menzil kontrollerinde tanıdığı tolerans) |
 
 Possessable değerleri §8 tablosundadır ve her birinin `PossessableDefinition` asset'inde tutulur.
 

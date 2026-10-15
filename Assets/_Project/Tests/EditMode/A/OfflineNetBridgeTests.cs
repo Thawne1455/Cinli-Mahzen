@@ -113,14 +113,14 @@ namespace CinliMahzen.Tests.EditMode.A
             h1 = _ =>
             {
                 first++;
-                _net.Unregister(MsgCode.LevelBuilt, h1);
-                _net.Unregister(MsgCode.LevelBuilt, h2);
+                _net.Unregister(MsgCode.HouseReady, h1);
+                _net.Unregister(MsgCode.HouseReady, h2);
             };
-            _net.Register(MsgCode.LevelBuilt, h1);
-            _net.Register(MsgCode.LevelBuilt, h2);
+            _net.Register(MsgCode.HouseReady, h1);
+            _net.Register(MsgCode.HouseReady, h2);
 
-            _net.Broadcast(new NetMsg { Code = MsgCode.LevelBuilt });
-            _net.Broadcast(new NetMsg { Code = MsgCode.LevelBuilt });
+            _net.Broadcast(new NetMsg { Code = MsgCode.HouseReady });
+            _net.Broadcast(new NetMsg { Code = MsgCode.HouseReady });
 
             Assert.AreEqual(1, first);
             Assert.AreEqual(0, second, "removed before its turn");

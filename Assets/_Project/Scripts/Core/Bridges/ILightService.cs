@@ -1,12 +1,9 @@
-using UnityEngine;
-
 namespace CinliMahzen.Core
 {
-    /// <summary>Implemented by C (World).</summary>
+    /// <summary>Lamp control (Teknik §4.8). Implemented by World; room light state is derived from its lamps (IRoomService.LightOf).</summary>
     public interface ILightService
     {
-        int RoomOf(Vector3 worldPos);
         /// <summary>Authority only.</summary>
-        void SetRoomLightsAuthority(int roomId, bool on, float duration);
+        void SetLampAuthority(NetId lamp, LampState state);
     }
 }
