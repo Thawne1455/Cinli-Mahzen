@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36605d430c2a40b389f9b08cfdd236a3, type: 3}
+  m_Name: PD_QuestItem
+  m_EditorClassIdentifier: CM.Possession::CinliMahzen.Possession.PossessableDefinition
+  id: quest_item
+  nameKey: poss.quest_item
+  size: 7
+  allowGoodJinn: 1
+  isLamp: 0
+  primary:
+    id: fling
+    nameKey: action.fling
+    causeId: 
+    trigger: 0
+    usableBy: 2
+    telegraphTime: 0.5
+    recoverTime: 0.3
+    energyCost: 10
+    cooldown: 8
+    singleUse: 0
+    damage: 0
+    flags: 0
+    knockdownTime: 0
+    grabTime: 0
+    applyStatus: 0
+    statusDuration: 0
+    shape: 3
+    shapeSize: {x: 0.2, y: 0, z: 0}
+    shapeOffset: {x: 0, y: 0, z: 0}
+    outerRadius: 0
+    outerDamage: 0
+    outerFlags: 0
+    outerKnockdownTime: 0
+    projectileSpeed: 10
+    projectileRange: 8
+    projectileArc: 1
+    effectDuration: 0
+  secondary:
+    id: 
+    nameKey: 
+    causeId: 
+    trigger: 0
+    usableBy: 0
+    telegraphTime: 0
+    recoverTime: 0
+    energyCost: 0
+    cooldown: 0
+    singleUse: 0
+    damage: 0
+    flags: 0
+    knockdownTime: 0
+    grabTime: 0
+    applyStatus: 0
+    statusDuration: 0
+    shape: 0
+    shapeSize: {x: 0, y: 0, z: 0}
+    shapeOffset: {x: 0, y: 0, z: 0}
+    outerRadius: 0
+    outerDamage: 0
+    outerFlags: 0
+    outerKnockdownTime: 0
+    projectileSpeed: 0
+    projectileRange: 0
+    projectileArc: 0
+    effectDuration: 0
+  canMove: 0
+  hopDistance: 1
+  hopInterval: 0.5
+  hopEnergy: 2
+  hopAnimTime: 0.25
+  hopHeight: 0.3
+  yawLimitDeg: 45
+  yawSpeedDeg: 60
+  enterShakeAmplitude: 0.02
+  enterShakeAngleDeg: 2
+  cameraDistance: 3

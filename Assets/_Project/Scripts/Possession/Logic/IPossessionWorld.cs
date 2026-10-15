@@ -5,7 +5,7 @@ namespace CinliMahzen.Possession
     /// <summary>
     /// Everything <see cref="PossessionArbiterCore"/> needs to know about the outside world.
     /// The MonoBehaviour side (PossessionSystem) implements it on top of GameServices
-    /// (IPlayerRegistry, IMatchInfo, IPossessionBlockerRegistry, jinn stun state, entity positions);
+    /// (IPlayerRegistry, IMatchInfo, IRoomService, jinn stun state, entity positions);
     /// EditMode tests implement it with a fake.
     /// </summary>
     public interface IPossessionWorld
@@ -22,10 +22,13 @@ namespace CinliMahzen.Possession
         /// <summary>Rule 2: <c>IMatchInfo.JinnsAwake</c> (JinnWakeDelay elapsed).</summary>
         bool JinnsAwake { get; }
 
-        /// <summary>Rule 3: an <c>IPossessionBlocker</c> (salt) covers the object.</summary>
-        bool IsObjectBlocked(NetId obj);
+        /// <summary>
+        /// Rule 4: light state of the room that contains the object
+        /// (<c>IRoomService.LightOf(IRoomService.RoomOf(objectPosition))</c>; outside every room = <see cref="RoomLightState.Off"/>).
+        /// </summary>
+        RoomLightState LightOfObject(NetId obj);
 
-        /// <summary>Rule 4: distance from the jinn to the object (closest point); false if either is unknown.</summary>
+        /// <summary>Rule 5: distance from the jinn to the object (closest point); false if either is unknown.</summary>
         bool TryGetDistance(PlayerId player, NetId obj, out float distance);
     }
 }

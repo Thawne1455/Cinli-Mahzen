@@ -14,31 +14,35 @@ MonoBehaviour:
   m_EditorClassIdentifier: CM.Possession::CinliMahzen.Possession.PossessableDefinition
   id: barrel
   nameKey: poss.barrel
+  size: 2
+  allowGoodJinn: 1
+  isLamp: 0
   primary:
-    id: roll
-    nameKey: action.roll
-    causeId: barrel.roll
-    trigger: 1
-    telegraphTime: 0.8
-    recoverTime: 0.3
-    energyCost: 20
-    cooldown: 6
+    id: slide
+    nameKey: action.slide
+    causeId: 
+    trigger: 0
+    usableBy: 2
+    telegraphTime: 0.6
+    recoverTime: 0.4
+    energyCost: 10
+    cooldown: 3
     singleUse: 0
-    damage: 1
-    flags: 1
-    knockdownTime: 1.5
+    damage: 0
+    flags: 0
+    knockdownTime: 0
     grabTime: 0
     applyStatus: 0
     statusDuration: 0
-    shape: 1
-    shapeSize: {x: 0.5, y: 0, z: 0}
-    shapeOffset: {x: 0, y: 0.5, z: 0}
+    shape: 4
+    shapeSize: {x: 0, y: 0, z: 0}
+    shapeOffset: {x: 0, y: 0, z: 0}
     outerRadius: 0
     outerDamage: 0
     outerFlags: 0
     outerKnockdownTime: 0
-    projectileSpeed: 8
-    projectileRange: 12
+    projectileSpeed: 3
+    projectileRange: 1.5
     projectileArc: 0
     effectDuration: 0
   secondary:
@@ -46,6 +50,7 @@ MonoBehaviour:
     nameKey: 
     causeId: 
     trigger: 0
+    usableBy: 0
     telegraphTime: 0
     recoverTime: 0
     energyCost: 0
@@ -74,9 +79,8 @@ MonoBehaviour:
   hopEnergy: 2
   hopAnimTime: 0.25
   hopHeight: 0.3
-  yawLimitDeg: 90
-  yawSpeedDeg: 90
+  yawLimitDeg: 45
+  yawSpeedDeg: 60
   enterShakeAmplitude: 0.02
   enterShakeAngleDeg: 2
   cameraDistance: 3.5
-  isSearchableContainer: 1

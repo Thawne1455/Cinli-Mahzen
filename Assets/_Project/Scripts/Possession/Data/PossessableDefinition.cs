@@ -8,7 +8,7 @@ using UnityEngine;
 namespace CinliMahzen.Possession
 {
     /// <summary>
-    /// Static data of one possessable type (Tech §6.3). One PD_*.asset per row of Oyun §4.
+    /// Static data of one possessable type (Tech §6.3, v2.1). One PD_*.asset per row of Oyun §8.
     /// </summary>
     [CreateAssetMenu(menuName = "CinliMahzen/Possessable Definition", fileName = "PD_New")]
     public sealed class PossessableDefinition : ScriptableObject
@@ -16,10 +16,17 @@ namespace CinliMahzen.Possession
         public const int PrimaryIndex = 0;
         public const int SecondaryIndex = 1;
 
-        [Tooltip("shelf, barrel, chair, stool, chest, swordshield, torch, candle, bottle, keg")]
+        [Tooltip("bottle, candle, plate, slipper, stool, chair, barrel, chest, table, shelf, lamp, radio, cologne, quest_item")]
         [SerializeField] private string id;
         [Tooltip("Loc key of the object name, e.g. poss.shelf")]
         [SerializeField] private string nameKey;
+
+        [Header("Classification")]
+        [SerializeField] private PossessableSize size;
+        [Tooltip("The good jinn may enter this object (slide, harmless carry / fling, cologne revive)")]
+        [SerializeField] private bool allowGoodJinn;
+        [Tooltip("Lamps can be entered even in a lit room (the only exception to the light rule)")]
+        [SerializeField] private bool isLamp;
 
         [Header("Actions")]
         [Tooltip("Left click")]
@@ -27,7 +34,7 @@ namespace CinliMahzen.Possession
         [Tooltip("Right click (optional — leave Id empty)")]
         [SerializeField] private PossessableActionDef secondary = new PossessableActionDef();
 
-        [Header("Movement (chair / stool)")]
+        [Header("Movement (chair / stool: the 'hop' mode)")]
         [SerializeField] private bool canMove;
         [Min(0f)] [SerializeField] private float hopDistance = 1f;
         [Min(0f)] [SerializeField] private float hopInterval = 0.5f;
@@ -50,12 +57,11 @@ namespace CinliMahzen.Possession
         [Tooltip("Orbit camera distance while possessed (m)")]
         [Min(0f)] [SerializeField] private float cameraDistance = 3.5f;
 
-        [Header("World")]
-        [Tooltip("Can also be searched by the human (chest / barrel / shelf)")]
-        [SerializeField] private bool isSearchableContainer;
-
         public string Id => id;
         public string NameKey => nameKey;
+        public PossessableSize Size => size;
+        public bool AllowGoodJinn => allowGoodJinn;
+        public bool IsLamp => isLamp;
         public PossessableActionDef Primary => primary;
         public PossessableActionDef Secondary => secondary;
         public bool HasSecondary => secondary != null && secondary.IsDefined;
@@ -71,7 +77,6 @@ namespace CinliMahzen.Possession
         public float EnterShakeAmplitude => enterShakeAmplitude;
         public float EnterShakeAngleDeg => enterShakeAngleDeg;
         public float CameraDistance => cameraDistance;
-        public bool IsSearchableContainer => isSearchableContainer;
 
         /// <summary>0 = primary, 1 = secondary; null if the index has no action.</summary>
         public PossessableActionDef GetAction(int index)
@@ -110,6 +115,34 @@ namespace CinliMahzen.Possession
             if (canMove && (hopDistance <= 0f || hopInterval <= 0f))
             {
                 problems.Add(name + ": canMove but hop distance/interval is zero");
+            }
+            if (isLamp != (size == PossessableSize.Lamp))
+            {
+                problems.Add(name + ": isLamp must be set exactly when size is Lamp");
+            }
+
+            // Good jinn consistency: the flag and the actions' UsableBy must agree, and good actions are harmless.
+            bool goodAction = false;
+            for (int i = PrimaryIndex; i <= SecondaryIndex; i++)
+            {
+                PossessableActionDef a = GetAction(i);
+                if (a == null || !a.IsUsableBy(Role.GoodJinn))
+                {
+                    continue;
+                }
+                goodAction = true;
+                if (a.Damage > 0 || a.ApplyStatus != StatusType.None || a.Flags != DamageFlags.None)
+                {
+                    problems.Add(name + "." + a.Id + ": usable by the good jinn but deals damage / applies a status");
+                }
+            }
+            if (allowGoodJinn && !goodAction)
+            {
+                problems.Add(name + ": allowGoodJinn but no action is usable by the good jinn");
+            }
+            if (!allowGoodJinn && goodAction)
+            {
+                problems.Add(name + ": has a good-jinn action but allowGoodJinn is off");
             }
         }
 

@@ -31,7 +31,6 @@ namespace CinliMahzen.Tests.EditMode.A
             Assert.IsInstanceOf<StubLightService>(GameServices.Get<ILightService>());
             Assert.IsInstanceOf<StubHumanStatusQuery>(GameServices.Get<IHumanStatusQuery>());
             Assert.IsInstanceOf<StubPossessionQuery>(GameServices.Get<IPossessionQuery>());
-            Assert.IsInstanceOf<StubPossessionBlockerRegistry>(GameServices.Get<IPossessionBlockerRegistry>());
             Assert.IsNull(GameServices.Net);
             Assert.IsNull(GameServices.Players);
             Assert.IsNull(GameServices.Entities);

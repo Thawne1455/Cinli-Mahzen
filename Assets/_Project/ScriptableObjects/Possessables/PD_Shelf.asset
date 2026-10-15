@@ -14,19 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: CM.Possession::CinliMahzen.Possession.PossessableDefinition
   id: shelf
   nameKey: poss.shelf
+  size: 3
+  allowGoodJinn: 0
+  isLamp: 0
   primary:
     id: topple
     nameKey: action.topple
     causeId: shelf.topple
     trigger: 0
+    usableBy: 0
     telegraphTime: 1
     recoverTime: 1
-    energyCost: 40
+    energyCost: 35
     cooldown: 0
     singleUse: 1
-    damage: 3
-    flags: 4
-    knockdownTime: 0
+    damage: 1
+    flags: 1
+    knockdownTime: 2
     grabTime: 0
     applyStatus: 0
     statusDuration: 0
@@ -46,6 +50,7 @@ MonoBehaviour:
     nameKey: 
     causeId: 
     trigger: 0
+    usableBy: 0
     telegraphTime: 0
     recoverTime: 0
     energyCost: 0
@@ -79,4 +84,3 @@ MonoBehaviour:
   enterShakeAmplitude: 0.02
   enterShakeAngleDeg: 2
   cameraDistance: 4
-  isSearchableContainer: 1

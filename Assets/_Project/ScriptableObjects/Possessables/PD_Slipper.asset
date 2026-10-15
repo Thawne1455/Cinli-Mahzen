@@ -10,35 +10,39 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 36605d430c2a40b389f9b08cfdd236a3, type: 3}
-  m_Name: PD_Keg
+  m_Name: PD_Slipper
   m_EditorClassIdentifier: CM.Possession::CinliMahzen.Possession.PossessableDefinition
-  id: keg
-  nameKey: poss.keg
+  id: slipper
+  nameKey: poss.slipper
+  size: 1
+  allowGoodJinn: 0
+  isLamp: 0
   primary:
-    id: explode
-    nameKey: action.explode
-    causeId: keg.explode
-    trigger: 1
-    telegraphTime: 3.5
-    recoverTime: 0.5
-    energyCost: 60
-    cooldown: 0
-    singleUse: 1
-    damage: 3
-    flags: 4
+    id: homing_slipper
+    nameKey: action.homing_slipper
+    causeId: slipper.homing_slipper
+    trigger: 0
+    usableBy: 0
+    telegraphTime: 0.6
+    recoverTime: 0.4
+    energyCost: 25
+    cooldown: 15
+    singleUse: 0
+    damage: 1
+    flags: 0
     knockdownTime: 0
     grabTime: 0
-    applyStatus: 0
-    statusDuration: 0
-    shape: 1
-    shapeSize: {x: 3, y: 0, z: 0}
-    shapeOffset: {x: 0, y: 0.5, z: 0}
-    outerRadius: 5
-    outerDamage: 1
-    outerFlags: 1
-    outerKnockdownTime: 1.5
-    projectileSpeed: 0
-    projectileRange: 0
+    applyStatus: 7
+    statusDuration: 0.15
+    shape: 3
+    shapeSize: {x: 0.25, y: 0, z: 0}
+    shapeOffset: {x: 0, y: 0, z: 0.2}
+    outerRadius: 0
+    outerDamage: 0
+    outerFlags: 0
+    outerKnockdownTime: 0
+    projectileSpeed: 16
+    projectileRange: 15
     projectileArc: 0
     effectDuration: 0
   secondary:
@@ -46,6 +50,7 @@ MonoBehaviour:
     nameKey: 
     causeId: 
     trigger: 0
+    usableBy: 0
     telegraphTime: 0
     recoverTime: 0
     energyCost: 0
@@ -74,9 +79,8 @@ MonoBehaviour:
   hopEnergy: 2
   hopAnimTime: 0.25
   hopHeight: 0.3
-  yawLimitDeg: 0
+  yawLimitDeg: 45
   yawSpeedDeg: 60
   enterShakeAmplitude: 0.02
   enterShakeAngleDeg: 2
   cameraDistance: 3.5
-  isSearchableContainer: 0

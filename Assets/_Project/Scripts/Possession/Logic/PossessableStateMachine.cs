@@ -6,10 +6,9 @@ namespace CinliMahzen.Possession
     /// Per-object possession state machine (Tech §6.2), plain C#.
     /// <code>
     /// Free ─BeginEnter─► Entering ─(PossessTime)─► Lurking ◄─► Charging ─Resolve─► Recovering ─► Lurking
-    ///   ▲                   │ Exit                    │ Exit (voluntary / exorcised / salt)          │ single use
+    ///   ▲                   │ Exit                    │ Exit (voluntary / exorcised / room lit)      │ single use
     ///   └───────────────────┴─────────────────────────┘                                              ▼
     ///                                                                                   Spent (never again)
-    /// Blessed = timer overlay: a blessed object cannot be entered until the timer runs out.
     /// </code>
     /// The authority drives it through <see cref="PossessionArbiterCore"/> and the action runner;
     /// clients use the same methods to mirror broadcast results.
@@ -36,8 +35,6 @@ namespace CinliMahzen.Possession
         /// <summary>Action being charged / recovered from (0 = primary, 1 = secondary), -1 when none.</summary>
         public int ActionIndex { get; private set; }
 
-        public double BlessedUntil { get; private set; }
-
         public bool IsOccupied =>
             State == PossessableState.Entering || State == PossessableState.Lurking ||
             State == PossessableState.Charging || State == PossessableState.Recovering;
@@ -51,11 +48,6 @@ namespace CinliMahzen.Possession
 
         /// <summary>True while the last resolved action was single use (object turns Spent when the jinn leaves).</summary>
         public bool WillBeSpent => _spentAfterRecover;
-
-        public bool IsBlessed(double now)
-        {
-            return now < BlessedUntil;
-        }
 
         /// <summary>Free → Entering. <paramref name="endTime"/> = now + PossessTime.</summary>
         public bool BeginEnter(PlayerId who, double endTime)
@@ -167,20 +159,6 @@ namespace CinliMahzen.Possession
             return who;
         }
 
-        /// <summary>Extends the blessing to <paramref name="until"/> (never shortens it).</summary>
-        public void Bless(double until)
-        {
-            if (until > BlessedUntil)
-            {
-                BlessedUntil = until;
-            }
-        }
-
-        public void ClearBless()
-        {
-            BlessedUntil = double.NegativeInfinity;
-        }
-
         /// <summary>Forces Spent (occupant cleared). Used on resolve-eject and by clients mirroring state.</summary>
         public void MarkSpent()
         {
@@ -192,14 +170,13 @@ namespace CinliMahzen.Possession
             _chargeReadyReported = false;
         }
 
-        /// <summary>Back to a fresh Free, unblessed object (new round).</summary>
+        /// <summary>Back to a fresh Free object (new round).</summary>
         public void Reset()
         {
             State = PossessableState.Free;
             Occupant = PlayerId.None;
             StateEndTime = 0d;
             ActionIndex = -1;
-            BlessedUntil = double.NegativeInfinity;
             _spentAfterRecover = false;
             _chargeReadyReported = false;
         }

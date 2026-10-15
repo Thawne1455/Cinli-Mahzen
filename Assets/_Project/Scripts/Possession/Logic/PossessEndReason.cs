@@ -7,8 +7,8 @@ namespace CinliMahzen.Possession
         Voluntary = 0,
         /// <summary>Good jinn exorcism.</summary>
         Exorcised = 1,
-        /// <summary>Salt zone placed over the object.</summary>
-        Salted = 2,
+        /// <summary>The room lit up while an evil jinn was inside (ejected after <c>LitRoomEjectDelay</c>). Was <c>Salted</c> in v1.</summary>
+        RoomLit = 2,
         /// <summary>Single-use action consumed the object.</summary>
         Spent = 3,
         /// <summary>Round end, object removed, debug.</summary>

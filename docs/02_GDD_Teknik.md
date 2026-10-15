@@ -294,17 +294,21 @@ FPS uçuş, noclip, kinematik. Sınır: `IHouseInfo.Bounds` içinde clamp.
 Free -> Entering(PossessTime) -> Possessed(Lurking <-> Charging -> Recovering) -> Free
 Özel: Spent (tek kullanımlık bitti: Raf, Limon Kolonyası)
 ```
-**`PossessionArbiter.TryPossess(player, obj)` kuralları (v2.1):**
-1. Rol `EvilJinn` **veya** `GoodJinn` (iyi cin sadece `AllowGoodJinn` işaretli eşyalara), sersem/kilitli değil.
-2. `JinnsAwake`.
-3. Nesne `Free`, `Spent` değil.
-4. **Işık kuralı:** Kötü cin ise ve nesnenin odası `On` -> red (`PossessDenyReason.Lit`) — **istisna:** nesne `IsLamp`.
-5. Mesafe <= `PossessRange + NetRangeTolerance`.
-6. `ReenterCooldown` dolmuş, oyuncu başka nesnede değil.
+**`PossessionArbiterCore.TryPossess(player, obj, now)` kuralları (v2.1):** düz C# sınıfı; dış dünyayı `IPossessionWorld` ile okur (`GetRole`, `IsPossessionLocked`, `IsPlaying`, `JinnsAwake`, `LightOfObject(NetId) -> RoomLightState`, `TryGetDistance`). MonoBehaviour tarafı `LightOfObject`'i `IRoomService.LightOf(RoomOf(pos))` ile uygular. Nesneler `Register(NetId, PossessableTraits{IsLamp, AllowGoodJinn})` ile kaydedilir (`PossessableTraits.From(definition)`).
+1. Rol `EvilJinn` **veya** `GoodJinn` (aksi halde `RoleNotAllowed`); iyi cin sadece `AllowGoodJinn` işaretli eşyalara (`GoodJinnNotAllowed`); sersem/kilitli değil (`Stunned`).
+2. Maç `Playing` (`NotPlaying`) ve `JinnsAwake` (`JinnsAsleep`).
+3. Nesne kayıtlı (`InvalidTarget`), `Free` (`Occupied`), `Spent` değil (`Spent`).
+4. **Işık kuralı:** Kötü cin ise ve nesnenin odası `RoomLightState.On` -> red (`PossessDenyReason.Lit`) — **istisna:** `IsLamp` nesne. İyi cin ışıktan etkilenmez.
+5. Mesafe <= `PossessRange + NetRangeTolerance` (`OutOfRange`).
+6. `ReenterCooldown` dolmuş (`Cooldown`, iyi cin için de geçerli), oyuncu başka nesnede değil (`AlreadyPossessing`).
+
+- `PossessDenyReason` değerleri byte olarak ağa gider: `NotEvilJinn` -> `RoleNotAllowed` (1, aynı değer), `8` ve `9` (v1 kutsama/tuz) emekli — yeniden kullanılmaz; yeni değerler sonda: `Lit = 13`, `GoodJinnNotAllowed = 14`.
+- Kutsama (bless) ve tuz v2.1'de yoktur (`IPossessionBlocker*` kaldırıldı). `PossessEndReason.Salted` -> `RoomLit = 2`: kötü cin içerideyken oda aydınlanırsa `LitRoomEjectDelay` (2 sn) sonra `Eject` ile dışarı atılır (lamba hariç).
 
 ### 6.3 PossessableDefinition ve Özel Eşyalar (v2.1)
-Mevcut alanlar + `bool AllowGoodJinn`, `bool IsLamp`, `PossessableSize Size {Small, Slipper, Large, Shelf, Lamp, Radio, Cologne, QuestItem}`.
-Aksiyon `Id`'leri: `throw`, `homing_slipper` (Anne Terliği), `hop`, `lunge`, `slide`, `topple`, `burst`, `play_tune` (Radyo), `fling` (görev eşyası / kolonya fırlatma), `revive_splash` (İyi Cin kolonya ile ayıltma).
+Mevcut alanlar + `bool allowGoodJinn`, `bool isLamp` (`size == Lamp` ile tutarlı olmalı), `PossessableSize size {Small=0, Slipper=1, Large=2, Shelf=3, Lamp=4, Radio=5, Cologne=6, QuestItem=7}`. v1'e özgü `isSearchableContainer` kaldırıldı.
+`PossessableActionDef` yeni alan: `ActionUser usableBy {EvilOnly=0, GoodOnly=1, Both=2}` (`IsUsableBy(Role)`). Yay `projectileArc` (0 = yerçekimsiz düz çizgi), oda etkisi süresi `effectDuration` (Radyo 12 sn; 0 = yok / başkası geri alana kadar), tek kullanım `singleUse` (Raf, Kolonya sıçraması, kırılan küçük eşyalar) zaten vardı. İyi cinin kullanabildiği aksiyon `damage = 0`, `flags = None`, `applyStatus = None` olmak zorundadır; `allowGoodJinn` ile "en az bir iyi cin aksiyonu" birbirini gerektirir (`CollectProblems` denetler).
+Aksiyon `Id`'leri: `throw`, `homing_slipper` (Anne Terliği), `lunge`, `slide`, `topple`, `burst`, `play_tune` (Radyo), `fling` (görev eşyası / kolonya fırlatma), `revive_splash` (İyi Cin kolonya ile ayıltma). `hop` bir tık aksiyonu değil hareket modudur (`canMove` + `Hop*` alanları). `nameKey`'ler `poss.<id>` / `action.<id>`. Aksiyonların çalışma zamanı davranışı görev 1.8'dedir; asset'ler yalnızca veridir.
 
 **`PD_*` asset'leri (v2.1):**
 - `PD_Bottle`, `PD_Candle`, `PD_Plate` (küçük fırlatılanlar)
@@ -316,6 +320,8 @@ Aksiyon `Id`'leri: `throw`, `homing_slipper` (Anne Terliği), `hop`, `lunge`, `s
 - `PD_Radio` (**Eski Radyo / Gramofon**: `play_tune`, `15` enerji, `20 sn` bekleme; `12 sn` boyunca `IRoomService.IsNoiseSuppressed(room) = true` yapar ve odadaki sabotaj/titreme seslerini bastırır)
 - `PD_Cologne` (**Limon Kolonyası**: Kötü Cin `fling` ile uzağa fırlatabilir; İyi Cin `revive_splash` ile baygın insanın üstünde kırıp anında ayıltır, tek kullanımlık `Spent`)
 - `PD_QuestItem` (`fling`)
+
+Asset'lerde GDD'de olmayan, seçilmiş teknik değerler: küçük fırlatılanlar mermi `10 m/s`, menzil `10 m`, yay `1.5 m`, isabet yarıçapı `0.3 m`, kırılır (`singleUse`); `PD_Slipper` mermi `16 m/s`, menzil `15 m`, yarıçap `0.25 m`, `statusDuration = 0.15` (§5.1); `slide` hızı `3 m/s` (1.5 m), A/D `±45°`; `fling` `10 m/s`, yay `1.0 m`, menzil `8 m`; `revive_splash` `10` enerji (menzil `CologneReviveRange`); `burst`/`play_tune`/`revive_splash` hit-check şekli `Custom`.
 
 ### 6.4 Aksiyon Akışı ve Ruh Siperi (Spirit Block)
 - Fırlatma = otorite `ProjectileSpawned{runtimeId, origin, dir, speed, arc, t0}`, otorite `SphereCast` ile ilerletir.

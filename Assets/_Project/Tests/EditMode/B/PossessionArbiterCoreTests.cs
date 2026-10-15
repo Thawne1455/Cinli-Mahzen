@@ -2,18 +2,19 @@ using System.Collections.Generic;
 using CinliMahzen.Core;
 using CinliMahzen.Possession;
 using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
 
 namespace CinliMahzen.Tests.EditMode.B
 {
-    /// <summary>Tech §6.2 — every arbiter rule has a positive and a negative case, plus race and Öfke.</summary>
+    /// <summary>Tech §6.2 (v2.1) — every arbiter rule has a positive and a negative case, plus race and Öfke.</summary>
     public class PossessionArbiterCoreTests
     {
-        // Oyun §12: PossessRange 3, PossessTime 1.2, ReenterCooldown 10; tolerance Tech §6.2 (+0.5).
+        // Oyun §14: PossessRange 3, PossessTime 1.2, ReenterCooldown 10; tolerance NetRangeTolerance 0.5.
         private const float Range = 3f;
         private const float Tolerance = 0.5f;
         private const float PossessTime = 1.2f;
         private const float Reenter = 10f;
-        private const double Eps = 1e-6;
 
         private static readonly PlayerId Human = new PlayerId(0);
         private static readonly PlayerId Good = new PlayerId(1);
@@ -21,6 +22,13 @@ namespace CinliMahzen.Tests.EditMode.B
         private static readonly PlayerId Evil4 = new PlayerId(3);
         private static readonly NetId Shelf = new NetId(1000);
         private static readonly NetId Barrel = new NetId(1001);
+        private static readonly NetId Lamp = new NetId(1002);
+        private static readonly NetId Table = new NetId(1003);
+        private static readonly NetId Cologne = new NetId(1004);
+
+        // Mirror PD_Lamp / PD_Table + PD_Cologne; Shelf and Barrel use the default traits (evil only, not a lamp).
+        private static readonly PossessableTraits LampTraits = new PossessableTraits(true, false);
+        private static readonly PossessableTraits GoodAllowedTraits = new PossessableTraits(false, true);
 
         private FakePossessionWorld _world;
         private PossessionArbiterCore _arbiter;
@@ -36,6 +44,14 @@ namespace CinliMahzen.Tests.EditMode.B
             _arbiter = new PossessionArbiterCore(_world, new PossessionRules(Range, Tolerance, PossessTime, Reenter));
             _arbiter.Register(Shelf);
             _arbiter.Register(Barrel);
+        }
+
+        /// <summary>Adds Lamp (lamp), Table and Cologne (good jinn allowed) — kept out of SetUp so ObjectCount stays 2.</summary>
+        private void RegisterSpecials()
+        {
+            _arbiter.Register(Lamp, LampTraits);
+            _arbiter.Register(Table, GoodAllowedTraits);
+            _arbiter.Register(Cologne, GoodAllowedTraits);
         }
 
         private PossessDenyReason Possess(PlayerId p, NetId obj, double now)
@@ -88,11 +104,12 @@ namespace CinliMahzen.Tests.EditMode.B
         // ------------------------------------------------------------ rule 1: role + stun
 
         [Test]
-        public void Rule1_Role_HumanAndGoodJinnDenied()
+        public void Rule1_Role_HumanDenied()
         {
-            Assert.AreEqual(PossessDenyReason.NotEvilJinn, Possess(Human, Shelf, 0d));
-            Assert.AreEqual(PossessDenyReason.NotEvilJinn, Possess(Good, Shelf, 0d));
-            Assert.AreEqual(PossessDenyReason.NotEvilJinn, Possess(new PlayerId(9), Shelf, 0d), "unknown player");
+            RegisterSpecials();
+            Assert.AreEqual(PossessDenyReason.RoleNotAllowed, Possess(Human, Shelf, 0d));
+            Assert.AreEqual(PossessDenyReason.RoleNotAllowed, Possess(Human, Table, 0d), "even a good-jinn-friendly object");
+            Assert.AreEqual(PossessDenyReason.RoleNotAllowed, Possess(new PlayerId(9), Shelf, 0d), "unknown player");
             Assert.IsFalse(_arbiter.IsPossessed(Shelf));
         }
 
@@ -100,6 +117,43 @@ namespace CinliMahzen.Tests.EditMode.B
         public void Rule1_Role_EvilJinnAllowed()
         {
             Assert.AreEqual(PossessDenyReason.None, Possess(Evil4, Shelf, 0d));
+        }
+
+        [Test]
+        public void Rule1_GoodJinn_AllowedOnlyOnFlaggedObjects()
+        {
+            RegisterSpecials();
+            Assert.AreEqual(PossessDenyReason.GoodJinnNotAllowed, Possess(Good, Shelf, 0d));
+            Assert.AreEqual(PossessDenyReason.GoodJinnNotAllowed, Possess(Good, Lamp, 0d));
+            Assert.IsFalse(_arbiter.IsPossessed(Shelf));
+            Assert.AreEqual(PossessDenyReason.None, Possess(Good, Table, 0d));
+            Assert.AreEqual(Good, _arbiter.PossessorOf(Table));
+        }
+
+        [Test]
+        public void Rule1_GoodJinn_UnknownObject_IsInvalidTarget()
+        {
+            Assert.AreEqual(PossessDenyReason.InvalidTarget, Possess(Good, new NetId(4242), 0d));
+        }
+
+        [Test]
+        public void Rule1_GoodJinn_Stunned_ThenAllowed()
+        {
+            RegisterSpecials();
+            _world.LockUntil(Good, 4d);
+            Assert.AreEqual(PossessDenyReason.Stunned, Possess(Good, Table, 3.9d));
+            Assert.AreEqual(PossessDenyReason.None, Possess(Good, Table, 4d));
+        }
+
+        [Test]
+        public void Rule1_GoodJinn_FollowsTheOtherRules()
+        {
+            RegisterSpecials();
+            _world.JinnsAwake = false;
+            Assert.AreEqual(PossessDenyReason.JinnsAsleep, Possess(Good, Table, 0d));
+            _world.JinnsAwake = true;
+            _world.SetDistance(Good, Table, Range + Tolerance + 0.01f);
+            Assert.AreEqual(PossessDenyReason.OutOfRange, Possess(Good, Table, 0d));
         }
 
         [Test]
@@ -164,55 +218,128 @@ namespace CinliMahzen.Tests.EditMode.B
         }
 
         [Test]
-        public void Rule3_Blessed_Denied_ThenAllowedAfterExpiry()
+        public void Rule3_Free_Allowed()
         {
-            _arbiter.Bless(Shelf, 20d);
-            Assert.AreEqual(PossessDenyReason.Blessed, Possess(Evil3, Shelf, 19.9d));
-            Assert.AreEqual(PossessDenyReason.None, Possess(Evil3, Shelf, 20d));
-        }
-
-        [Test]
-        public void Rule3_BlockedBySalt_Denied()
-        {
-            _world.SetBlocked(Shelf, true);
-            Assert.AreEqual(PossessDenyReason.Blocked, Possess(Evil3, Shelf, 0d));
-            Assert.AreEqual(PossessDenyReason.None, Possess(Evil3, Barrel, 0d), "salt only covers the shelf");
-        }
-
-        [Test]
-        public void Rule3_FreeUnblessedUnblocked_Allowed()
-        {
-            _world.SetBlocked(Shelf, false);
             Assert.AreEqual(PossessDenyReason.None, Possess(Evil3, Shelf, 0d));
         }
 
-        // ------------------------------------------------------------ rule 4: distance
+        // ------------------------------------------------------------ rule 4: light
 
         [Test]
-        public void Rule4_WithinRangePlusTolerance_Allowed()
+        public void Rule4_DarkRoom_EvilJinnAllowed()
+        {
+            _world.SetLight(Shelf, RoomLightState.Off);
+            Assert.AreEqual(PossessDenyReason.None, Possess(Evil3, Shelf, 0d));
+        }
+
+        [Test]
+        public void Rule4_LitRoom_EvilJinnDenied()
+        {
+            _world.SetLight(Shelf, RoomLightState.On);
+            Assert.AreEqual(PossessDenyReason.Lit, Possess(Evil3, Shelf, 0d));
+            Assert.IsFalse(_arbiter.IsPossessed(Shelf));
+        }
+
+        [Test]
+        public void Rule4_LitRoom_LampIsTheOnlyException()
+        {
+            RegisterSpecials();
+            _world.SetLight(Lamp, RoomLightState.On);
+            _world.SetLight(Table, RoomLightState.On);
+            Assert.AreEqual(PossessDenyReason.None, Possess(Evil3, Lamp, 0d));
+            Assert.AreEqual(PossessDenyReason.Lit, Possess(Evil4, Table, 0d), "allowGoodJinn is not a light exception");
+        }
+
+        [Test]
+        public void Rule4_LitRoom_LampStillNeedsRange()
+        {
+            RegisterSpecials();
+            _world.SetLight(Lamp, RoomLightState.On);
+            _world.SetDistance(Evil3, Lamp, Range + Tolerance + 0.01f);
+            Assert.AreEqual(PossessDenyReason.OutOfRange, Possess(Evil3, Lamp, 0d));
+        }
+
+        [Test]
+        public void Rule4_LightIsPerObjectRoom()
+        {
+            _world.SetLight(Shelf, RoomLightState.On);
+            _world.SetLight(Barrel, RoomLightState.Off);
+            Assert.AreEqual(PossessDenyReason.Lit, Possess(Evil3, Shelf, 0d));
+            Assert.AreEqual(PossessDenyReason.None, Possess(Evil3, Barrel, 0d));
+        }
+
+        [Test]
+        public void Rule4_LightSwitchedOnThenOff_FollowsTheWorld()
+        {
+            Assert.AreEqual(PossessDenyReason.None, _arbiter.Check(Evil3, Shelf, 0d));
+            _world.SetLight(Shelf, RoomLightState.On);
+            Assert.AreEqual(PossessDenyReason.Lit, _arbiter.Check(Evil3, Shelf, 1d));
+            _world.SetLight(Shelf, RoomLightState.Off);
+            Assert.AreEqual(PossessDenyReason.None, _arbiter.Check(Evil3, Shelf, 2d));
+        }
+
+        [Test]
+        public void Rule4_GoodJinn_IgnoresLight()
+        {
+            RegisterSpecials();
+            _world.SetLight(Table, RoomLightState.On);
+            Assert.AreEqual(PossessDenyReason.None, Possess(Good, Table, 0d));
+        }
+
+        [Test]
+        public void Rule4_CologneLikeObject_EvilInDarkAndGoodAnywhere()
+        {
+            RegisterSpecials();
+            Assert.AreEqual(PossessDenyReason.None, Possess(Evil3, Cologne, 0d), "evil jinn, dark room");
+            _arbiter.Release(Evil3, 1d, out _);
+            _world.SetLight(Cologne, RoomLightState.On);
+            Assert.AreEqual(PossessDenyReason.Lit, Possess(Evil4, Cologne, 1d), "evil jinn, lit room");
+            Assert.AreEqual(PossessDenyReason.None, Possess(Good, Cologne, 1d), "good jinn, lit room");
+        }
+
+        [Test]
+        public void Rule4_LightIsCheckedBeforeDistance()
+        {
+            _world.SetLight(Shelf, RoomLightState.On);
+            _world.SetDistance(Evil3, Shelf, 99f);
+            Assert.AreEqual(PossessDenyReason.Lit, Possess(Evil3, Shelf, 0d));
+        }
+
+        [Test]
+        public void Rule4_OccupiedIsReportedBeforeLit()
+        {
+            EnterFully(Evil4, Shelf, 0d);
+            _world.SetLight(Shelf, RoomLightState.On);
+            Assert.AreEqual(PossessDenyReason.Occupied, Possess(Evil3, Shelf, 1d));
+        }
+
+        // ------------------------------------------------------------ rule 5: distance
+
+        [Test]
+        public void Rule5_WithinRangePlusTolerance_Allowed()
         {
             _world.SetDistance(Evil3, Shelf, Range + Tolerance);
             Assert.AreEqual(PossessDenyReason.None, Possess(Evil3, Shelf, 0d));
         }
 
         [Test]
-        public void Rule4_BeyondTolerance_Denied()
+        public void Rule5_BeyondTolerance_Denied()
         {
             _world.SetDistance(Evil3, Shelf, Range + Tolerance + 0.01f);
             Assert.AreEqual(PossessDenyReason.OutOfRange, Possess(Evil3, Shelf, 0d));
         }
 
         [Test]
-        public void Rule4_UnknownDistance_Denied()
+        public void Rule5_UnknownDistance_Denied()
         {
             _world.SetDistance(Evil3, Shelf, -1f);
             Assert.AreEqual(PossessDenyReason.OutOfRange, Possess(Evil3, Shelf, 0d));
         }
 
-        // ------------------------------------------------------------ rule 5: re-enter cooldown
+        // ------------------------------------------------------------ rule 6: re-enter cooldown + already possessing
 
         [Test]
-        public void Rule5_ReenterWithinCooldown_Denied()
+        public void Rule6_ReenterWithinCooldown_Denied()
         {
             EnterFully(Evil3, Shelf, 0d);
             Assert.IsTrue(_arbiter.Release(Evil3, 5d, out NetId left));
@@ -221,7 +348,7 @@ namespace CinliMahzen.Tests.EditMode.B
         }
 
         [Test]
-        public void Rule5_ReenterAfterCooldown_Allowed()
+        public void Rule6_ReenterAfterCooldown_Allowed()
         {
             EnterFully(Evil3, Shelf, 0d);
             _arbiter.Release(Evil3, 5d, out _);
@@ -229,7 +356,7 @@ namespace CinliMahzen.Tests.EditMode.B
         }
 
         [Test]
-        public void Rule5_CooldownIsPerPlayerAndPerObject()
+        public void Rule6_CooldownIsPerPlayerAndPerObject()
         {
             EnterFully(Evil3, Shelf, 0d);
             _arbiter.Release(Evil3, 5d, out _);
@@ -238,7 +365,17 @@ namespace CinliMahzen.Tests.EditMode.B
         }
 
         [Test]
-        public void Rule5_Rage_ShortensReenterCooldown()
+        public void Rule6_GoodJinn_HasTheSameReenterCooldown()
+        {
+            RegisterSpecials();
+            EnterFully(Good, Table, 0d);
+            _arbiter.Release(Good, 5d, out _);
+            Assert.AreEqual(PossessDenyReason.Cooldown, Possess(Good, Table, 5d + Reenter - 0.01d));
+            Assert.AreEqual(PossessDenyReason.None, Possess(Good, Table, 5d + Reenter));
+        }
+
+        [Test]
+        public void Rule6_Rage_ShortensReenterCooldown()
         {
             EnterFully(Evil3, Shelf, 0d);
             _arbiter.SetCooldownMultiplier(0.6f, 2d);
@@ -249,15 +386,13 @@ namespace CinliMahzen.Tests.EditMode.B
         }
 
         [Test]
-        public void Rule5_Rage_RescalesRunningReenterCooldown()
+        public void Rule6_Rage_RescalesRunningReenterCooldown()
         {
             EnterFully(Evil3, Shelf, 0d);
             _arbiter.Release(Evil3, 5d, out _);        // ready at 15
             _arbiter.SetCooldownMultiplier(0.6f, 7d);  // 8 s left → 4.8 s → ready at 11.8
             Assert.AreEqual(11.8d, _arbiter.ReenterReadyAt(Evil3, Shelf), 1e-4);
         }
-
-        // ------------------------------------------------------------ rule 6: already possessing
 
         [Test]
         public void Rule6_AlreadyInsideAnother_Denied()
@@ -301,6 +436,15 @@ namespace CinliMahzen.Tests.EditMode.B
         }
 
         [Test]
+        public void Race_GoodAndEvilJinnSameObject_FirstWins()
+        {
+            RegisterSpecials();
+            Assert.AreEqual(PossessDenyReason.None, Possess(Good, Table, 10d));
+            Assert.AreEqual(PossessDenyReason.Occupied, Possess(Evil3, Table, 10d));
+            Assert.AreEqual(Good, _arbiter.PossessorOf(Table));
+        }
+
+        [Test]
         public void Race_LoserCanTakeTheObjectAfterWinnerLeaves()
         {
             Possess(Evil3, Shelf, 10d);
@@ -313,8 +457,9 @@ namespace CinliMahzen.Tests.EditMode.B
         public void RuleOrder_PlayerChecksBeforeObjectChecks()
         {
             _world.IsPlaying = false;
-            _world.SetBlocked(Shelf, true);
-            Assert.AreEqual(PossessDenyReason.NotEvilJinn, Possess(Good, Shelf, 0d));
+            _world.SetLight(Shelf, RoomLightState.On);
+            Assert.AreEqual(PossessDenyReason.RoleNotAllowed, Possess(Human, Shelf, 0d));
+            Assert.AreEqual(PossessDenyReason.GoodJinnNotAllowed, Possess(Good, Shelf, 0d));
             Assert.AreEqual(PossessDenyReason.NotPlaying, Possess(Evil3, Shelf, 0d));
         }
 
@@ -377,13 +522,64 @@ namespace CinliMahzen.Tests.EditMode.B
         }
 
         [Test]
+        public void Register_StoresTraits_AndReRegisterReplacesThem()
+        {
+            Assert.IsTrue(_arbiter.TryGetTraits(Shelf, out PossessableTraits plain));
+            Assert.IsFalse(plain.IsLamp);
+            Assert.IsFalse(plain.AllowGoodJinn);
+            _arbiter.Register(Shelf, new PossessableTraits(true, true));
+            Assert.IsTrue(_arbiter.TryGetTraits(Shelf, out PossessableTraits updated));
+            Assert.IsTrue(updated.IsLamp);
+            Assert.IsTrue(updated.AllowGoodJinn);
+            Assert.IsFalse(_arbiter.TryGetTraits(new NetId(4242), out _));
+        }
+
+        [Test]
+        public void Unregister_KeepsTraitsOfTheOtherObjectsAligned()
+        {
+            RegisterSpecials();                       // Shelf, Barrel, Lamp, Table, Cologne
+            _arbiter.Unregister(Shelf);               // last one (Cologne) moves into slot 0
+            _arbiter.TryGetTraits(Cologne, out PossessableTraits cologne);
+            _arbiter.TryGetTraits(Lamp, out PossessableTraits lamp);
+            _arbiter.TryGetTraits(Barrel, out PossessableTraits barrel);
+            Assert.IsTrue(cologne.AllowGoodJinn);
+            Assert.IsTrue(lamp.IsLamp);
+            Assert.IsFalse(barrel.AllowGoodJinn);
+            Assert.AreEqual(PossessDenyReason.None, Possess(Good, Cologne, 0d));
+            Assert.AreEqual(PossessDenyReason.GoodJinnNotAllowed, Possess(Good, Barrel, 0d));
+        }
+
+        [Test]
+        public void Traits_From_CopiesDefinitionFlags()
+        {
+            var def = ScriptableObject.CreateInstance<PossessableDefinition>();
+            try
+            {
+                var so = new SerializedObject(def);
+                so.FindProperty("isLamp").boolValue = true;
+                so.FindProperty("allowGoodJinn").boolValue = true;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                PossessableTraits t = PossessableTraits.From(def);
+                Assert.IsTrue(t.IsLamp);
+                Assert.IsTrue(t.AllowGoodJinn);
+                Assert.IsFalse(PossessableTraits.From(null).IsLamp);
+            }
+            finally
+            {
+                Object.DestroyImmediate(def);
+            }
+        }
+
+        [Test]
         public void Clear_ForgetsObjectsPossessionsAndCooldowns()
         {
+            RegisterSpecials();
             EnterFully(Evil3, Shelf, 0d);
             _arbiter.SetCooldownMultiplier(0.6f, 0d);
             _arbiter.Clear();
             Assert.AreEqual(0, _arbiter.ObjectCount);
             Assert.IsFalse(_arbiter.TryGetPossessed(Evil3, out _));
+            Assert.IsFalse(_arbiter.TryGetTraits(Table, out _));
             Assert.AreEqual(1f, _arbiter.CooldownMultiplier);
         }
     }

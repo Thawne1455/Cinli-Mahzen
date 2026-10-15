@@ -78,7 +78,6 @@ namespace CinliMahzen.Core
             Services[typeof(ILightService)] = new StubLightService();
             Services[typeof(IHumanStatusQuery)] = new StubHumanStatusQuery();
             Services[typeof(IPossessionQuery)] = new StubPossessionQuery();
-            Services[typeof(IPossessionBlockerRegistry)] = new StubPossessionBlockerRegistry();
         }
 
         private static object CreateStub(Type t)
@@ -90,7 +89,6 @@ namespace CinliMahzen.Core
             if (t == typeof(ILightService)) return new StubLightService();
             if (t == typeof(IHumanStatusQuery)) return new StubHumanStatusQuery();
             if (t == typeof(IPossessionQuery)) return new StubPossessionQuery();
-            if (t == typeof(IPossessionBlockerRegistry)) return new StubPossessionBlockerRegistry();
             return null;
         }
     }

@@ -14,11 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: CM.Possession::CinliMahzen.Possession.PossessableDefinition
   id: stool
   nameKey: poss.stool
+  size: 2
+  allowGoodJinn: 0
+  isLamp: 0
   primary:
     id: lunge
     nameKey: action.lunge
     causeId: stool.lunge
     trigger: 0
+    usableBy: 0
     telegraphTime: 0.4
     recoverTime: 0.5
     energyCost: 15
@@ -46,6 +50,7 @@ MonoBehaviour:
     nameKey: 
     causeId: 
     trigger: 0
+    usableBy: 0
     telegraphTime: 0
     recoverTime: 0
     energyCost: 0
@@ -79,4 +84,3 @@ MonoBehaviour:
   enterShakeAmplitude: 0.02
   enterShakeAngleDeg: 2
   cameraDistance: 3
-  isSearchableContainer: 0

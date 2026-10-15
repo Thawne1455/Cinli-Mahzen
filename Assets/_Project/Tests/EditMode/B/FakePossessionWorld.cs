@@ -9,11 +9,14 @@ namespace CinliMahzen.Tests.EditMode.B
     {
         private readonly Dictionary<PlayerId, Role> _roles = new Dictionary<PlayerId, Role>();
         private readonly Dictionary<PlayerId, double> _lockedUntil = new Dictionary<PlayerId, double>();
-        private readonly HashSet<NetId> _blocked = new HashSet<NetId>();
+        private readonly Dictionary<NetId, RoomLightState> _lights = new Dictionary<NetId, RoomLightState>();
         private readonly Dictionary<long, float> _distances = new Dictionary<long, float>();
 
         public bool IsPlaying { get; set; } = true;
         public bool JinnsAwake { get; set; } = true;
+
+        /// <summary>Light state of every object without an explicit one (v2.1: houses start dark).</summary>
+        public RoomLightState DefaultLight { get; set; } = RoomLightState.Off;
 
         /// <summary>Distance used when no explicit one was set. Negative = unknown entity.</summary>
         public float DefaultDistance { get; set; } = 1f;
@@ -28,16 +31,9 @@ namespace CinliMahzen.Tests.EditMode.B
             _lockedUntil[player] = until;
         }
 
-        public void SetBlocked(NetId obj, bool blocked)
+        public void SetLight(NetId obj, RoomLightState light)
         {
-            if (blocked)
-            {
-                _blocked.Add(obj);
-            }
-            else
-            {
-                _blocked.Remove(obj);
-            }
+            _lights[obj] = light;
         }
 
         public void SetDistance(PlayerId player, NetId obj, float distance)
@@ -55,9 +51,9 @@ namespace CinliMahzen.Tests.EditMode.B
             return _lockedUntil.TryGetValue(player, out double until) && now < until;
         }
 
-        public bool IsObjectBlocked(NetId obj)
+        public RoomLightState LightOfObject(NetId obj)
         {
-            return _blocked.Contains(obj);
+            return _lights.TryGetValue(obj, out RoomLightState l) ? l : DefaultLight;
         }
 
         public bool TryGetDistance(PlayerId player, NetId obj, out float distance)

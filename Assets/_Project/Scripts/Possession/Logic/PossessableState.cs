@@ -1,9 +1,6 @@
 namespace CinliMahzen.Possession
 {
-    /// <summary>
-    /// Object-side possession state (Tech §6.2). "Blessed" is not a state: it is a timer overlay
-    /// kept by <see cref="PossessableStateMachine"/> (a Free object may be blessed).
-    /// </summary>
+    /// <summary>Object-side possession state (Tech §6.2).</summary>
     public enum PossessableState : byte
     {
         Free = 0,

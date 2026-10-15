@@ -8,19 +8,22 @@ using UnityEngine;
 namespace CinliMahzen.Possession
 {
     /// <summary>
-    /// One action of a possessable (Tech §6.3, values from Oyun §4). Read-only at runtime;
-    /// edited in the PD_*.asset inspector.
+    /// One action of a possessable (Tech §6.3, values from Oyun §8). Read-only at runtime;
+    /// edited in the PD_*.asset inspector. Data only — the behaviour for each <see cref="Id"/> lives in the
+    /// action runner (task 1.8).
     /// </summary>
     [Serializable]
     public sealed class PossessableActionDef
     {
-        [Tooltip("topple, roll, lunge, mimic, launch, extinguish, flame, throw, explode")]
+        [Tooltip("throw, homing_slipper, lunge, slide, topple, burst, play_tune, fling, revive_splash (hop is the movement mode: canMove + Hop* fields on the definition)")]
         [SerializeField] private string id;
         [Tooltip("Loc key for the HUD action card, e.g. action.topple")]
         [SerializeField] private string nameKey;
-        [Tooltip("Autopsy Loc key, e.g. shelf.topple")]
+        [Tooltip("DamageInfo.CauseId of harmful actions (stats / faint source), e.g. shelf.topple")]
         [SerializeField] private string causeId;
         [SerializeField] private ActionTrigger trigger;
+        [Tooltip("Who may use it: the good jinn only slides, flings / carries harmlessly and revives with cologne")]
+        [SerializeField] private ActionUser usableBy = ActionUser.EvilOnly;
 
         [Header("Timing & cost")]
         [Tooltip("Telegraph / charge time before resolve (s)")]
@@ -31,7 +34,7 @@ namespace CinliMahzen.Possession
         [Min(0f)] [SerializeField] private float energyCost;
         [Tooltip("Seconds; scaled by RageCooldownMult during Öfke")]
         [Min(0f)] [SerializeField] private float cooldown;
-        [Tooltip("Object becomes Spent after resolving")]
+        [Tooltip("Object becomes Spent after resolving (shelf, cologne splash, breakable small throwables)")]
         [SerializeField] private bool singleUse;
 
         [Header("Damage")]
@@ -47,7 +50,7 @@ namespace CinliMahzen.Possession
         [SerializeField] private Vector3 shapeSize;
         [SerializeField] private Vector3 shapeOffset;
 
-        [Header("Outer ring (Sphere only, 0 = none) — keg")]
+        [Header("Outer ring (Sphere only, 0 = none)")]
         [Min(0f)] [SerializeField] private float outerRadius;
         [Min(0)] [SerializeField] private int outerDamage;
         [SerializeField] private DamageFlags outerFlags;
@@ -58,17 +61,18 @@ namespace CinliMahzen.Possession
         [Min(0f)] [SerializeField] private float projectileSpeed;
         [Tooltip("Projectile or travel distance (m)")]
         [Min(0f)] [SerializeField] private float projectileRange;
-        [Tooltip("Arc apex height (m), 0 = straight")]
+        [Tooltip("Arc apex height (m), 0 = flat gravity-free straight line (Mother's Slipper)")]
         [Min(0f)] [SerializeField] private float projectileArc;
 
         [Header("Other effects")]
-        [Tooltip("Extinguish: room lights stay off for this long (s)")]
+        [Tooltip("Room effect length (s): Old Radio noise suppression (12). 0 = none / until undone by someone else (lamp burst).")]
         [Min(0f)] [SerializeField] private float effectDuration;
 
         public string Id => id;
         public string NameKey => nameKey;
         public string CauseId => causeId;
         public ActionTrigger Trigger => trigger;
+        public ActionUser UsableBy => usableBy;
         public float TelegraphTime => telegraphTime;
         public float RecoverTime => recoverTime;
         public float EnergyCost => energyCost;
@@ -94,5 +98,19 @@ namespace CinliMahzen.Possession
 
         /// <summary>Unity never serializes this class as null; an empty id means "no action".</summary>
         public bool IsDefined => !string.IsNullOrEmpty(id);
+
+        /// <summary>True if a jinn with <paramref name="role"/> may use this action (humans never can).</summary>
+        public bool IsUsableBy(Role role)
+        {
+            switch (role)
+            {
+                case Role.EvilJinn:
+                    return usableBy != ActionUser.GoodOnly;
+                case Role.GoodJinn:
+                    return usableBy != ActionUser.EvilOnly;
+                default:
+                    return false;
+            }
+        }
     }
 }

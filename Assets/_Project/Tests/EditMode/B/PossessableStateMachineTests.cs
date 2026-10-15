@@ -23,7 +23,6 @@ namespace CinliMahzen.Tests.EditMode.B
             Assert.AreEqual(PossessableState.Free, sm.State);
             Assert.AreEqual(PlayerId.None, sm.Occupant);
             Assert.IsFalse(sm.IsOccupied);
-            Assert.IsFalse(sm.IsBlessed(0d));
         }
 
         [Test]
@@ -148,27 +147,13 @@ namespace CinliMahzen.Tests.EditMode.B
         }
 
         [Test]
-        public void Bless_ExpiresAndNeverShortens()
-        {
-            var sm = new PossessableStateMachine();
-            sm.Bless(20d);
-            sm.Bless(15d);
-            Assert.IsTrue(sm.IsBlessed(19.9d));
-            Assert.IsFalse(sm.IsBlessed(20d));
-            sm.ClearBless();
-            Assert.IsFalse(sm.IsBlessed(0d));
-        }
-
-        [Test]
         public void Reset_ClearsEverything()
         {
             var sm = Possessed();
-            sm.Bless(100d);
             sm.BeginCharge(0, 3d);
             sm.Reset();
             Assert.AreEqual(PossessableState.Free, sm.State);
             Assert.AreEqual(PlayerId.None, sm.Occupant);
-            Assert.IsFalse(sm.IsBlessed(0d));
         }
 
         [Test]

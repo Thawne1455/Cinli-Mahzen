@@ -79,3 +79,75 @@ MonoBehaviour:
   - key: menu.quit
     tr: "\xC7\u0131k\u0131\u015F"
     en: Quit
+  - key: poss.bottle
+    tr: "\u015Ei\u015Fe"
+    en: Bottle
+  - key: poss.candle
+    tr: Mum
+    en: Candle
+  - key: poss.plate
+    tr: Tabak
+    en: Plate
+  - key: poss.slipper
+    tr: "Anne Terli\u011Fi"
+    en: Mother's Slipper
+  - key: poss.stool
+    tr: Tabure
+    en: Stool
+  - key: poss.chair
+    tr: Sandalye
+    en: Chair
+  - key: poss.barrel
+    tr: "F\u0131\xE7\u0131"
+    en: Barrel
+  - key: poss.chest
+    tr: "Sand\u0131k"
+    en: Chest
+  - key: poss.table
+    tr: Masa
+    en: Table
+  - key: poss.shelf
+    tr: Raf
+    en: Shelf
+  - key: poss.lamp
+    tr: Lamba
+    en: Lamp
+  - key: poss.radio
+    tr: Eski Radyo
+    en: Old Radio
+  - key: poss.cologne
+    tr: "Limon Kolonyas\u0131"
+    en: Lemon Cologne
+  - key: poss.quest_item
+    tr: "G\xF6rev E\u015Fyas\u0131"
+    en: Quest Item
+  - key: action.throw
+    tr: "F\u0131rlat"
+    en: Throw
+  - key: action.homing_slipper
+    tr: "G\xFCd\xFCml\xFC F\u0131rlat"
+    en: Homing Throw
+  - key: action.hop
+    tr: "Z\u0131pla"
+    en: Hop
+  - key: action.lunge
+    tr: "\xC7arp"
+    en: Lunge
+  - key: action.slide
+    tr: "Kayd\u0131r"
+    en: Slide
+  - key: action.topple
+    tr: Devril
+    en: Topple
+  - key: action.burst
+    tr: Patlat
+    en: Burst
+  - key: action.play_tune
+    tr: "T\xFCrk\xFC \xC7al"
+    en: Play Tune
+  - key: action.fling
+    tr: "F\u0131rlat"
+    en: Fling
+  - key: action.revive_splash
+    tr: "Kolonya ile Ay\u0131lt"
+    en: Cologne Revive
