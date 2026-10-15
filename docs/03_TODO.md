@@ -46,8 +46,8 @@
 | ✔ | ID | Görev | Bağımlılık | Boyut |
 |---|---|---|---|---|
 | [x] | P.1 | Dokümanları v2.1'e yaz (GDD, Teknik, TODO, CLAUDE.md, README), ajan dosyalarını kaldır | — | S |
-| [ ] | P.2 | KayKit import + prefablar (C dalından al) | — | S |
-| [ ] | P.3 | Core kontratları v2.1 (config, event, bridge, MsgCode, stub, ItemDefinition) | P.1 | M |
+| [x] | P.2 | KayKit import + prefablar (C dalından al) | — | S |
+| [~] | P.3 | Core kontratları v2.1 (config, event, bridge, MsgCode, stub, ItemDefinition) | P.1 | M |
 | [ ] | P.4 | Possession v2.1 (ışık kuralı, iyi cin, PD_* özel eşyalar) + Input v2.1 | P.3 | M |
 | [ ] | P.5 | Eski dalları temizle + Sandbox sahnesi | P.2 | S |
 
