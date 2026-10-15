@@ -156,7 +156,7 @@
 
 | ✔ | ID | Görev | Bağımlılık | Boyut |
 |---|---|---|---|---|
-| [~] | 2.1 | `PuzzleState` (toplu sabotaj, cooldown, referans dönüş/tuzak) + `PuzzleDefinition` SO + testler | P.3 | S |
+| [x] | 2.1 | `PuzzleState` (toplu sabotaj, cooldown, referans dönüş/tuzak) + `PuzzleDefinition` SO + testler | P.3 | S |
 | [ ] | 2.2 | Ev marker'ları (§8: `CologneSpawnSpot` dahil) + `HouseService.Index` + `HouseValidator` + `IRoomService` | 1.9 | M |
 | [ ] | 2.3 | `RoundSetupPlanner` + `RoundPlanValidator` + testler (500 seed) | 2.1, 2.2 | L |
 | [ ] | 2.4 | `PuzzleSystem` + mesajlar (Op / Toplu Sabotaj / Confirm / Completed) + round-trip testleri | 2.1, 1.4 | M |

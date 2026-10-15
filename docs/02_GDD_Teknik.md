@@ -342,26 +342,61 @@ Asset'lerde GDD'de olmayan, seçilmiş teknik değerler: küçük fırlatılanla
 ## 7. Bulmacalar & İlerleme (CM.Objectives) ⭐
 
 ### 7.1 Genel model — `PuzzleState` (düz C#)
+**Dosya konumu:** tanım tarafı (`PuzzleDefinition`, `PuzzleType`, `PuzzleOpKind`, `PuzzleSlotSize`) `Scripts/Core/Config/` altında (CM.Core); durum tarafı (`PuzzleState`, `PuzzleOp`) `Scripts/Objectives/Logic/` altında (CM.Objectives). Sebep: `RoundSetupPlanner` (CM.World) `PuzzleDefinition` havuzunu okur, CM.World ise CM.Objectives'i referans edemez (Objectives → World bağımlı).
 ```csharp
+public readonly struct PuzzleOp               // tek bayraklı op; fabrikalar doğrulamaz, TryApply doğrular
+{
+    public PuzzleOpKind Kind { get; }         // Cycle | Set | Swap (default(PuzzleOp) = None, hep reddedilir)
+    public int Part { get; }                  // Swap'ta ilk parça
+    public int Value { get; }                 // Cycle: yön (+1/-1), Set: yeni değer
+    public int PartB { get; }                 // Swap: ikinci parça
+    public static PuzzleOp Cycle(int part, int dir);
+    public static PuzzleOp Set(int part, int value);
+    public static PuzzleOp Swap(int a, int b);
+}
+
 public sealed class PuzzleState
 {
-    public int PartCount { get; }
-    public int ValueCount(int part);          // her parçanın K değeri
-    public int Get(int part);
-    public IReadOnlyList<int> Solution { get; }
-    public int ReferenceRotation { get; }     // Mühür Taşları için 0, 90, 180, 270 derece
-    public int[] TrapValues { get; }          // Tılsımlı Şalter için referanstaki 2 tuzak sembol (X)
-    public bool IsSolved { get; }
-    public bool IsLocked { get; }             // onaylandıktan sonra true
-    public double ScrambleCooldownUntil { get; set; }
+    // Çözülmüş ve kilitsiz başlar (Oyun §4.2). Diziler kopyalanır. Geçersiz girdide ArgumentException:
+    // uzunluk uyuşmazlığı, K < 2, çözüm değeri [0,K) dışı, allowedOps None/bilinmeyen bayrak,
+    // referenceRotation ∉ {0,90,180,270}, tuzak değeri [0,maxK) dışı.
+    // allowedOps == Swap (saf permütasyon, Jigsaw) ise ek olarak her K == PartCount ve çözüm 0..N-1 permütasyonu olmalı.
+    public PuzzleState(int[] valueCounts, int[] solution, PuzzleOpKind allowedOps,
+                       int referenceRotation = 0, int[] trapValues = null);
 
-    // İnsan op tipleri: Cycle(part, +1/-1), Set(part, value), Swap(a, b)
-    public bool TryApply(in PuzzleOp op);     // locked ise false
-    // Kötü cin toplu sabotajı: çözülmemiş rastgele bir dizilime sokar
+    public int PartCount { get; }
+    public int ValueCount(int part);          // her parçanın K değeri (geçersiz parça: ArgumentOutOfRangeException)
+    public int Get(int part);
+    public IReadOnlyList<int> Solution { get; }   // salt okunur görünüm; dışarıya değiştirilebilir dizi verilmez
+    public int ReferenceRotation { get; }     // Mühür Taşları için 0, 90, 180, 270 derece
+    public IReadOnlyList<int> TrapValues { get; } // Tılsımlı Şalter için referanstaki 2 tuzak sembol (X); yoksa boş
+    public PuzzleOpKind AllowedOps { get; }
+    public bool IsSolved { get; }
+    public bool IsLocked { get; }             // onaylandıktan sonra true (IsLocked ⇒ IsSolved)
+    public double ScrambleCooldownUntil { get; set; }   // salt veri; PuzzleSystem yönetir
+    public bool IsScrambleOnCooldown(double now);        // now < ScrambleCooldownUntil
+
+    // İnsan op tipleri: Cycle(part, +1/-1) K içinde sarar, Set(part, value), Swap(a, b)
+    // false: kilitli | op türü AllowedOps'ta yok | parça/değer aralık dışı | Cycle yönü ±1 değil | Swap aynı parça
+    public bool TryApply(in PuzzleOp op);
+
+    // Kötü cin toplu sabotajı: HER ZAMAN çözülmemiş bir dizilim üretir. Kilitliyse false.
+    //  - AllowedOps == Swap (Jigsaw): çözümün değerleri karıştırılır (permütasyon korunur)
+    //  - diğerleri (Books dahil): her parçaya rng.Range(0, K); Books'ta ilk 5 parça permütasyon kalmayabilir
+    //  - sonuç çözümle aynı çıkarsa deterministik düzeltme (Swap: ilk iki parça takas; diğer: parça 0 +1 sar), döngü yok
+    // Cooldown'ı KONTROL ETMEZ ve DEĞİŞTİRMEZ; bunu (enerji, ışık, fener kurallarıyla birlikte) PuzzleSystem yapar.
     public bool TryScrambleAll(GameRandom rng);
-    public void ResetToSolution();            // raund başı
+
+    public bool TryLock();                    // sadece IsSolved && !IsLocked iken kilitler; aksi false (çifte tamamlama olmaz)
+    public void ResetToSolution();            // raund başı: değerler = çözüm, kilit açık, ScrambleCooldownUntil = 0
+
+    // Ağ senkronu (allocation yok): otorite yayınlar, istemciler uygular
+    public void CopyValuesTo(int[] buffer);   // ilk PartCount elemanı yazar; buffer kısa/null ise ArgumentException
+    public bool ApplySnapshot(int[] values, bool locked);  // önce doğrular, geçersizse hiçbir şeyi değiştirmeden false
+                                                           // (uzunluk, aralık, permütasyonda tekrar, locked ama çözüm değil)
 }
 ```
+`ApplySnapshot` otoritenin gerçeğidir: kilit durumunu iki yönde de ezer; `ScrambleCooldownUntil` taşımaz (mesajdan ayrıca atanır).
 Her bulmaca bu modele indirgenir (v2.1):
 | Tip | Parça x değer | İnsan Op | Özel Referans Verisi |
 |---|---|---|---|
@@ -373,17 +408,27 @@ Her bulmaca bu modele indirgenir (v2.1):
 | **Jigsaw** *(sonra)* | 6 permütasyon | Swap | — |
 
 ### 7.2 PuzzleDefinition (SO)
+`Scripts/Core/Config/PuzzleDefinition.cs` (CM.Core, `CinliMahzen.Core`; sebep §7.1'de). Asset'ler `ScriptableObjects/Puzzles/PZ_*.asset`. Alanlar `[SerializeField] private`, dışarıya property olarak açılır. Enum'lar byte'tır ve asset'te int saklanır: `PuzzleType {Paintings=0, Statue=1, Wires=2, Sigil=3, Books=4, Jigsaw=5}`, `[Flags] PuzzleOpKind {None=0, Cycle=1, Set=2, Swap=4}` (Books = Swap|Cycle), `PuzzleSlotSize {Wall=0, Floor=1, Table=2}`.
 ```csharp
-public class PuzzleDefinition : ScriptableObject
+public sealed class PuzzleDefinition : ScriptableObject
 {
-    public PuzzleType Type;               // Paintings, Statue, Wires, Sigil, Books, Jigsaw
-    public string NameKey;
-    public int[] ValueCounts;             // parça başına K
-    public PuzzleOpKind OpKind;
-    public string RequiredItemId;         // "" = yok ("paint", "fuse_key")
-    public GameObject InteractivePrefab;  // P_Puzzle_*
-    public GameObject ReferencePrefab;    // P_PuzzleRef_* (SpiritOnly, Ruh Perdesi destekli)
-    public PuzzleSlotSize Size;           // Wall / Floor / Table — slot uyumu
+    public const int MinValueCount = 2;
+    public PuzzleType Type { get; }               // Paintings, Statue, Wires, Sigil, Books, Jigsaw
+    public string NameKey { get; }
+    public IReadOnlyList<int> ValueCounts { get; }// parça başına K (salt okunur görünüm)
+    public PuzzleOpKind OpKind { get; }
+    public string RequiredItemId { get; }         // "" = yok; ItemDefinition.Id ile aynı ("paint", "fuse_key")
+    public GameObject InteractivePrefab { get; }  // P_Puzzle_*
+    public GameObject ReferencePrefab { get; }    // P_PuzzleRef_* (SpiritOnly, Ruh Perdesi destekli)
+    public PuzzleSlotSize Size { get; }           // Wall / Floor / Table — slot uyumu
+
+    public int PartCount { get; }                 // ValueCounts.Count
+    public bool HasRequiredItem { get; }
+    public bool IsPermutation { get; }            // OpKind == Swap (yalnız Jigsaw). Books (Swap|Cycle) şimdilik permütasyon sayılmaz
+    public int[] CopyValueCounts();               // PuzzleState ctor'una vermek için bağımsız kopya
+    public static bool IsValidOpKinds(PuzzleOpKind kinds);   // None değil ve yalnız bilinen bayraklar
+    public void CollectProblems(List<string> problems);     // boş nameKey, boş/K<2 valueCounts, OpKind None/bilinmeyen,
+                                                             // permütasyonda K != PartCount
 }
 ```
 
