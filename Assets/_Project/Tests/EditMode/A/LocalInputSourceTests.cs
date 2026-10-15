@@ -85,7 +85,53 @@ namespace CinliMahzen.Tests.EditMode.A
             IHumanInput h = _input;
             Assert.AreEqual(Vector2.zero, h.Move);
             Assert.AreEqual(-1, h.SelectSlot);
+            Assert.IsFalse(h.Sprint);
+            Assert.IsFalse(h.InteractHeld);
+            Assert.IsFalse(h.InteractPressed);
             Assert.IsFalse(h.KickPressed);
+            Assert.IsFalse(h.LanternPulsePressed);
+            Assert.IsFalse(h.DropPressed);
+        }
+
+        [Test]
+        public void IdleSpiritInput_ReadsZero()
+        {
+            EventBus.Publish(new LocalRoleChangedEvt(Role.GoodJinn));
+            ISpiritInput s = _input;
+            Assert.AreEqual(Vector2.zero, s.Move);
+            Assert.AreEqual(0f, s.Vertical);
+            Assert.IsFalse(s.Boost);
+            Assert.IsFalse(s.PrimaryPressed);
+            Assert.IsFalse(s.PrimaryHeld);
+            Assert.IsFalse(s.FocusHeld);
+            Assert.IsFalse(s.PossessAsGoodPressed);
+            Assert.IsFalse(s.PingPressed);
+            Assert.IsFalse(s.ExorciseHeld);
+        }
+
+        [Test]
+        public void NullInput_IsAlwaysIdle()
+        {
+            IHumanInput h = NullInput.Instance;
+            Assert.AreEqual(Vector2.zero, h.Move);
+            Assert.AreEqual(-1, h.SelectSlot);
+            Assert.IsFalse(h.Sprint);
+            Assert.IsFalse(h.InteractHeld);
+            Assert.IsFalse(h.InteractPressed);
+            Assert.IsFalse(h.KickPressed);
+            Assert.IsFalse(h.LanternPulsePressed);
+            Assert.IsFalse(h.DropPressed);
+
+            ISpiritInput s = NullInput.Instance;
+            Assert.AreEqual(Vector2.zero, s.Move);
+            Assert.AreEqual(0f, s.Vertical);
+            Assert.IsFalse(s.Boost);
+            Assert.IsFalse(s.PrimaryPressed);
+            Assert.IsFalse(s.PrimaryHeld);
+            Assert.IsFalse(s.FocusHeld);
+            Assert.IsFalse(s.PossessAsGoodPressed);
+            Assert.IsFalse(s.PingPressed);
+            Assert.IsFalse(s.ExorciseHeld);
         }
     }
 }

@@ -31,7 +31,7 @@ namespace CinliMahzen.DebugTools
             if (d.NewRound.WasPressedThisFrame()) DebugCommands.RestartRound();
             if (d.Overlay.WasPressedThisFrame()) DebugCommands.ToggleOverlay();
             if (d.TimeScale.WasPressedThisFrame()) DebugCommands.ToggleTimeScale();
-            if (d.AllFragments.WasPressedThisFrame()) DebugCommands.CompleteCurrentStage();
+            if (d.CompleteStage.WasPressedThisFrame()) DebugCommands.CompleteCurrentStage();
             if (d.DummyBot.WasPressedThisFrame()) DebugCommands.ToggleDummyHuman();
         }
     }

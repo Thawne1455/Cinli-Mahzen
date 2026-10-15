@@ -51,18 +51,9 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Lantern",
+                    "name": "LanternPulse",
                     "type": "Button",
-                    "id": "8f06e1fb-f573-4e66-bfe5-a91e386a8e3f",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "UseItem",
-                    "type": "Button",
-                    "id": "e8ac3868-fa58-4a17-8dfe-4b5bb5fd3685",
+                    "id": "f172a4a7-144d-4f50-adf1-e4180e4c21d4",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -87,7 +78,16 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "DropGold",
+                    "name": "Slot3",
+                    "type": "Button",
+                    "id": "377a2070-77cc-4f36-b9cb-81e02c129729",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Drop",
                     "type": "Button",
                     "id": "ea71cf5a-bfd3-4b90-83f8-50483b3e9129",
                     "expectedControlType": "Button",
@@ -198,23 +198,12 @@
                 },
                 {
                     "name": "",
-                    "id": "2cc6721e-2ba0-4d4d-bfe8-7a011b3f6b7e",
+                    "id": "b4c7dea7-e49f-461f-822a-ba6a298ed5ac",
                     "path": "<Mouse>/rightButton",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Lantern",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "50f100ef-d0eb-402f-9a61-f0510ba5b5b2",
-                    "path": "<Keyboard>/q",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "UseItem",
+                    "action": "LanternPulse",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -242,12 +231,23 @@
                 },
                 {
                     "name": "",
+                    "id": "4b734fd7-8513-4ba9-bdd6-93694f0251e8",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Slot3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "c64ae079-3643-4499-8aea-1160f97ee518",
                     "path": "<Keyboard>/g",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "DropGold",
+                    "action": "Drop",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
@@ -303,6 +303,24 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "Focus",
+                    "type": "Button",
+                    "id": "5c21ffab-6c78-4077-8753-cc979c2c94df",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "PossessAsGood",
+                    "type": "Button",
+                    "id": "7b2f8f3d-dca7-44bc-8f32-6f0081ad1ecf",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Ping",
                     "type": "Button",
                     "id": "140d9caf-8f05-473c-ba0b-fd10d3177486",
@@ -312,9 +330,9 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Bless",
+                    "name": "Exorcise",
                     "type": "Button",
-                    "id": "fb82c0b5-8511-43e7-b5a3-ed26c4b99feb",
+                    "id": "04174a9c-0466-4f45-8a86-0f0f22b97335",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -434,6 +452,17 @@
                 },
                 {
                     "name": "",
+                    "id": "01ba85f1-4a5d-4b91-9046-857a1e684043",
+                    "path": "<Keyboard>/rightShift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Boost",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "dbc05832-8475-4aae-a2a3-b844e3310ad1",
                     "path": "<Keyboard>/e",
                     "interactions": "",
@@ -442,6 +471,50 @@
                     "action": "Primary",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d85d06b8-0268-436e-8620-2e2950f36b39",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Focus",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "OneModifier",
+                    "id": "536223ba-7a60-44e0-80c2-0b631c0c2dce",
+                    "path": "OneModifier",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PossessAsGood",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "modifier",
+                    "id": "8215cb4c-89e3-49eb-851f-c21f43c91f09",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PossessAsGood",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "binding",
+                    "id": "31effef6-0f48-4022-9dc8-bc80108cd823",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PossessAsGood",
+                    "isComposite": false,
+                    "isPartOfComposite": true
                 },
                 {
                     "name": "",
@@ -456,12 +529,12 @@
                 },
                 {
                     "name": "",
-                    "id": "11a0da01-cadb-44ef-bd0a-ae79fb966df4",
+                    "id": "4792e15d-99ec-4941-8308-c5fb657e0f0e",
                     "path": "<Keyboard>/r",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Bless",
+                    "action": "Exorcise",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
@@ -815,7 +888,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "AllFragments",
+                    "name": "CompleteStage",
                     "type": "Button",
                     "id": "f94b4945-a4b1-411f-8fab-b43847326448",
                     "expectedControlType": "Button",
@@ -951,7 +1024,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "AllFragments",
+                    "action": "CompleteStage",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

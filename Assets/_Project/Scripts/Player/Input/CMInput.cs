@@ -140,18 +140,9 @@ namespace CinliMahzen.Player
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Lantern"",
+                    ""name"": ""LanternPulse"",
                     ""type"": ""Button"",
-                    ""id"": ""8f06e1fb-f573-4e66-bfe5-a91e386a8e3f"",
-                    ""expectedControlType"": ""Button"",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""UseItem"",
-                    ""type"": ""Button"",
-                    ""id"": ""e8ac3868-fa58-4a17-8dfe-4b5bb5fd3685"",
+                    ""id"": ""f172a4a7-144d-4f50-adf1-e4180e4c21d4"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """",
@@ -176,7 +167,16 @@ namespace CinliMahzen.Player
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""DropGold"",
+                    ""name"": ""Slot3"",
+                    ""type"": ""Button"",
+                    ""id"": ""377a2070-77cc-4f36-b9cb-81e02c129729"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Drop"",
                     ""type"": ""Button"",
                     ""id"": ""ea71cf5a-bfd3-4b90-83f8-50483b3e9129"",
                     ""expectedControlType"": ""Button"",
@@ -287,23 +287,12 @@ namespace CinliMahzen.Player
                 },
                 {
                     ""name"": """",
-                    ""id"": ""2cc6721e-2ba0-4d4d-bfe8-7a011b3f6b7e"",
+                    ""id"": ""b4c7dea7-e49f-461f-822a-ba6a298ed5ac"",
                     ""path"": ""<Mouse>/rightButton"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Lantern"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""50f100ef-d0eb-402f-9a61-f0510ba5b5b2"",
-                    ""path"": ""<Keyboard>/q"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""UseItem"",
+                    ""action"": ""LanternPulse"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -331,12 +320,23 @@ namespace CinliMahzen.Player
                 },
                 {
                     ""name"": """",
+                    ""id"": ""4b734fd7-8513-4ba9-bdd6-93694f0251e8"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Slot3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""c64ae079-3643-4499-8aea-1160f97ee518"",
                     ""path"": ""<Keyboard>/g"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""DropGold"",
+                    ""action"": ""Drop"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -392,6 +392,24 @@ namespace CinliMahzen.Player
                     ""initialStateCheck"": false
                 },
                 {
+                    ""name"": ""Focus"",
+                    ""type"": ""Button"",
+                    ""id"": ""5c21ffab-6c78-4077-8753-cc979c2c94df"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PossessAsGood"",
+                    ""type"": ""Button"",
+                    ""id"": ""7b2f8f3d-dca7-44bc-8f32-6f0081ad1ecf"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
                     ""name"": ""Ping"",
                     ""type"": ""Button"",
                     ""id"": ""140d9caf-8f05-473c-ba0b-fd10d3177486"",
@@ -401,9 +419,9 @@ namespace CinliMahzen.Player
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Bless"",
+                    ""name"": ""Exorcise"",
                     ""type"": ""Button"",
-                    ""id"": ""fb82c0b5-8511-43e7-b5a3-ed26c4b99feb"",
+                    ""id"": ""04174a9c-0466-4f45-8a86-0f0f22b97335"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """",
@@ -523,6 +541,17 @@ namespace CinliMahzen.Player
                 },
                 {
                     ""name"": """",
+                    ""id"": ""01ba85f1-4a5d-4b91-9046-857a1e684043"",
+                    ""path"": ""<Keyboard>/rightShift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Boost"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""dbc05832-8475-4aae-a2a3-b844e3310ad1"",
                     ""path"": ""<Keyboard>/e"",
                     ""interactions"": """",
@@ -531,6 +560,50 @@ namespace CinliMahzen.Player
                     ""action"": ""Primary"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d85d06b8-0268-436e-8620-2e2950f36b39"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Focus"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""OneModifier"",
+                    ""id"": ""536223ba-7a60-44e0-80c2-0b631c0c2dce"",
+                    ""path"": ""OneModifier"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PossessAsGood"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""modifier"",
+                    ""id"": ""8215cb4c-89e3-49eb-851f-c21f43c91f09"",
+                    ""path"": ""<Keyboard>/shift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PossessAsGood"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""binding"",
+                    ""id"": ""31effef6-0f48-4022-9dc8-bc80108cd823"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PossessAsGood"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
                 },
                 {
                     ""name"": """",
@@ -545,12 +618,12 @@ namespace CinliMahzen.Player
                 },
                 {
                     ""name"": """",
-                    ""id"": ""11a0da01-cadb-44ef-bd0a-ae79fb966df4"",
+                    ""id"": ""4792e15d-99ec-4941-8308-c5fb657e0f0e"",
                     ""path"": ""<Keyboard>/r"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""Bless"",
+                    ""action"": ""Exorcise"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -904,7 +977,7 @@ namespace CinliMahzen.Player
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""AllFragments"",
+                    ""name"": ""CompleteStage"",
                     ""type"": ""Button"",
                     ""id"": ""f94b4945-a4b1-411f-8fab-b43847326448"",
                     ""expectedControlType"": ""Button"",
@@ -1040,7 +1113,7 @@ namespace CinliMahzen.Player
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
-                    ""action"": ""AllFragments"",
+                    ""action"": ""CompleteStage"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1067,11 +1140,11 @@ namespace CinliMahzen.Player
             m_Human_Sprint = m_Human.FindAction("Sprint", throwIfNotFound: true);
             m_Human_Interact = m_Human.FindAction("Interact", throwIfNotFound: true);
             m_Human_Kick = m_Human.FindAction("Kick", throwIfNotFound: true);
-            m_Human_Lantern = m_Human.FindAction("Lantern", throwIfNotFound: true);
-            m_Human_UseItem = m_Human.FindAction("UseItem", throwIfNotFound: true);
+            m_Human_LanternPulse = m_Human.FindAction("LanternPulse", throwIfNotFound: true);
             m_Human_Slot1 = m_Human.FindAction("Slot1", throwIfNotFound: true);
             m_Human_Slot2 = m_Human.FindAction("Slot2", throwIfNotFound: true);
-            m_Human_DropGold = m_Human.FindAction("DropGold", throwIfNotFound: true);
+            m_Human_Slot3 = m_Human.FindAction("Slot3", throwIfNotFound: true);
+            m_Human_Drop = m_Human.FindAction("Drop", throwIfNotFound: true);
             // Spirit
             m_Spirit = asset.FindActionMap("Spirit", throwIfNotFound: true);
             m_Spirit_Move = m_Spirit.FindAction("Move", throwIfNotFound: true);
@@ -1079,8 +1152,10 @@ namespace CinliMahzen.Player
             m_Spirit_Vertical = m_Spirit.FindAction("Vertical", throwIfNotFound: true);
             m_Spirit_Boost = m_Spirit.FindAction("Boost", throwIfNotFound: true);
             m_Spirit_Primary = m_Spirit.FindAction("Primary", throwIfNotFound: true);
+            m_Spirit_Focus = m_Spirit.FindAction("Focus", throwIfNotFound: true);
+            m_Spirit_PossessAsGood = m_Spirit.FindAction("PossessAsGood", throwIfNotFound: true);
             m_Spirit_Ping = m_Spirit.FindAction("Ping", throwIfNotFound: true);
-            m_Spirit_Bless = m_Spirit.FindAction("Bless", throwIfNotFound: true);
+            m_Spirit_Exorcise = m_Spirit.FindAction("Exorcise", throwIfNotFound: true);
             // Possessed
             m_Possessed = asset.FindActionMap("Possessed", throwIfNotFound: true);
             m_Possessed_Look = m_Possessed.FindAction("Look", throwIfNotFound: true);
@@ -1105,7 +1180,7 @@ namespace CinliMahzen.Player
             m_Debug_NewRound = m_Debug.FindAction("NewRound", throwIfNotFound: true);
             m_Debug_Overlay = m_Debug.FindAction("Overlay", throwIfNotFound: true);
             m_Debug_TimeScale = m_Debug.FindAction("TimeScale", throwIfNotFound: true);
-            m_Debug_AllFragments = m_Debug.FindAction("AllFragments", throwIfNotFound: true);
+            m_Debug_CompleteStage = m_Debug.FindAction("CompleteStage", throwIfNotFound: true);
             m_Debug_DummyBot = m_Debug.FindAction("DummyBot", throwIfNotFound: true);
         }
 
@@ -1196,11 +1271,11 @@ namespace CinliMahzen.Player
         private readonly InputAction m_Human_Sprint;
         private readonly InputAction m_Human_Interact;
         private readonly InputAction m_Human_Kick;
-        private readonly InputAction m_Human_Lantern;
-        private readonly InputAction m_Human_UseItem;
+        private readonly InputAction m_Human_LanternPulse;
         private readonly InputAction m_Human_Slot1;
         private readonly InputAction m_Human_Slot2;
-        private readonly InputAction m_Human_DropGold;
+        private readonly InputAction m_Human_Slot3;
+        private readonly InputAction m_Human_Drop;
         /// <summary>
         /// Provides access to input actions defined in input action map "Human".
         /// </summary>
@@ -1233,13 +1308,9 @@ namespace CinliMahzen.Player
             /// </summary>
             public InputAction @Kick => m_Wrapper.m_Human_Kick;
             /// <summary>
-            /// Provides access to the underlying input action "Human/Lantern".
+            /// Provides access to the underlying input action "Human/LanternPulse".
             /// </summary>
-            public InputAction @Lantern => m_Wrapper.m_Human_Lantern;
-            /// <summary>
-            /// Provides access to the underlying input action "Human/UseItem".
-            /// </summary>
-            public InputAction @UseItem => m_Wrapper.m_Human_UseItem;
+            public InputAction @LanternPulse => m_Wrapper.m_Human_LanternPulse;
             /// <summary>
             /// Provides access to the underlying input action "Human/Slot1".
             /// </summary>
@@ -1249,9 +1320,13 @@ namespace CinliMahzen.Player
             /// </summary>
             public InputAction @Slot2 => m_Wrapper.m_Human_Slot2;
             /// <summary>
-            /// Provides access to the underlying input action "Human/DropGold".
+            /// Provides access to the underlying input action "Human/Slot3".
             /// </summary>
-            public InputAction @DropGold => m_Wrapper.m_Human_DropGold;
+            public InputAction @Slot3 => m_Wrapper.m_Human_Slot3;
+            /// <summary>
+            /// Provides access to the underlying input action "Human/Drop".
+            /// </summary>
+            public InputAction @Drop => m_Wrapper.m_Human_Drop;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -1293,21 +1368,21 @@ namespace CinliMahzen.Player
                 @Kick.started += instance.OnKick;
                 @Kick.performed += instance.OnKick;
                 @Kick.canceled += instance.OnKick;
-                @Lantern.started += instance.OnLantern;
-                @Lantern.performed += instance.OnLantern;
-                @Lantern.canceled += instance.OnLantern;
-                @UseItem.started += instance.OnUseItem;
-                @UseItem.performed += instance.OnUseItem;
-                @UseItem.canceled += instance.OnUseItem;
+                @LanternPulse.started += instance.OnLanternPulse;
+                @LanternPulse.performed += instance.OnLanternPulse;
+                @LanternPulse.canceled += instance.OnLanternPulse;
                 @Slot1.started += instance.OnSlot1;
                 @Slot1.performed += instance.OnSlot1;
                 @Slot1.canceled += instance.OnSlot1;
                 @Slot2.started += instance.OnSlot2;
                 @Slot2.performed += instance.OnSlot2;
                 @Slot2.canceled += instance.OnSlot2;
-                @DropGold.started += instance.OnDropGold;
-                @DropGold.performed += instance.OnDropGold;
-                @DropGold.canceled += instance.OnDropGold;
+                @Slot3.started += instance.OnSlot3;
+                @Slot3.performed += instance.OnSlot3;
+                @Slot3.canceled += instance.OnSlot3;
+                @Drop.started += instance.OnDrop;
+                @Drop.performed += instance.OnDrop;
+                @Drop.canceled += instance.OnDrop;
             }
 
             /// <summary>
@@ -1334,21 +1409,21 @@ namespace CinliMahzen.Player
                 @Kick.started -= instance.OnKick;
                 @Kick.performed -= instance.OnKick;
                 @Kick.canceled -= instance.OnKick;
-                @Lantern.started -= instance.OnLantern;
-                @Lantern.performed -= instance.OnLantern;
-                @Lantern.canceled -= instance.OnLantern;
-                @UseItem.started -= instance.OnUseItem;
-                @UseItem.performed -= instance.OnUseItem;
-                @UseItem.canceled -= instance.OnUseItem;
+                @LanternPulse.started -= instance.OnLanternPulse;
+                @LanternPulse.performed -= instance.OnLanternPulse;
+                @LanternPulse.canceled -= instance.OnLanternPulse;
                 @Slot1.started -= instance.OnSlot1;
                 @Slot1.performed -= instance.OnSlot1;
                 @Slot1.canceled -= instance.OnSlot1;
                 @Slot2.started -= instance.OnSlot2;
                 @Slot2.performed -= instance.OnSlot2;
                 @Slot2.canceled -= instance.OnSlot2;
-                @DropGold.started -= instance.OnDropGold;
-                @DropGold.performed -= instance.OnDropGold;
-                @DropGold.canceled -= instance.OnDropGold;
+                @Slot3.started -= instance.OnSlot3;
+                @Slot3.performed -= instance.OnSlot3;
+                @Slot3.canceled -= instance.OnSlot3;
+                @Drop.started -= instance.OnDrop;
+                @Drop.performed -= instance.OnDrop;
+                @Drop.canceled -= instance.OnDrop;
             }
 
             /// <summary>
@@ -1391,8 +1466,10 @@ namespace CinliMahzen.Player
         private readonly InputAction m_Spirit_Vertical;
         private readonly InputAction m_Spirit_Boost;
         private readonly InputAction m_Spirit_Primary;
+        private readonly InputAction m_Spirit_Focus;
+        private readonly InputAction m_Spirit_PossessAsGood;
         private readonly InputAction m_Spirit_Ping;
-        private readonly InputAction m_Spirit_Bless;
+        private readonly InputAction m_Spirit_Exorcise;
         /// <summary>
         /// Provides access to input actions defined in input action map "Spirit".
         /// </summary>
@@ -1425,13 +1502,21 @@ namespace CinliMahzen.Player
             /// </summary>
             public InputAction @Primary => m_Wrapper.m_Spirit_Primary;
             /// <summary>
+            /// Provides access to the underlying input action "Spirit/Focus".
+            /// </summary>
+            public InputAction @Focus => m_Wrapper.m_Spirit_Focus;
+            /// <summary>
+            /// Provides access to the underlying input action "Spirit/PossessAsGood".
+            /// </summary>
+            public InputAction @PossessAsGood => m_Wrapper.m_Spirit_PossessAsGood;
+            /// <summary>
             /// Provides access to the underlying input action "Spirit/Ping".
             /// </summary>
             public InputAction @Ping => m_Wrapper.m_Spirit_Ping;
             /// <summary>
-            /// Provides access to the underlying input action "Spirit/Bless".
+            /// Provides access to the underlying input action "Spirit/Exorcise".
             /// </summary>
-            public InputAction @Bless => m_Wrapper.m_Spirit_Bless;
+            public InputAction @Exorcise => m_Wrapper.m_Spirit_Exorcise;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -1473,12 +1558,18 @@ namespace CinliMahzen.Player
                 @Primary.started += instance.OnPrimary;
                 @Primary.performed += instance.OnPrimary;
                 @Primary.canceled += instance.OnPrimary;
+                @Focus.started += instance.OnFocus;
+                @Focus.performed += instance.OnFocus;
+                @Focus.canceled += instance.OnFocus;
+                @PossessAsGood.started += instance.OnPossessAsGood;
+                @PossessAsGood.performed += instance.OnPossessAsGood;
+                @PossessAsGood.canceled += instance.OnPossessAsGood;
                 @Ping.started += instance.OnPing;
                 @Ping.performed += instance.OnPing;
                 @Ping.canceled += instance.OnPing;
-                @Bless.started += instance.OnBless;
-                @Bless.performed += instance.OnBless;
-                @Bless.canceled += instance.OnBless;
+                @Exorcise.started += instance.OnExorcise;
+                @Exorcise.performed += instance.OnExorcise;
+                @Exorcise.canceled += instance.OnExorcise;
             }
 
             /// <summary>
@@ -1505,12 +1596,18 @@ namespace CinliMahzen.Player
                 @Primary.started -= instance.OnPrimary;
                 @Primary.performed -= instance.OnPrimary;
                 @Primary.canceled -= instance.OnPrimary;
+                @Focus.started -= instance.OnFocus;
+                @Focus.performed -= instance.OnFocus;
+                @Focus.canceled -= instance.OnFocus;
+                @PossessAsGood.started -= instance.OnPossessAsGood;
+                @PossessAsGood.performed -= instance.OnPossessAsGood;
+                @PossessAsGood.canceled -= instance.OnPossessAsGood;
                 @Ping.started -= instance.OnPing;
                 @Ping.performed -= instance.OnPing;
                 @Ping.canceled -= instance.OnPing;
-                @Bless.started -= instance.OnBless;
-                @Bless.performed -= instance.OnBless;
-                @Bless.canceled -= instance.OnBless;
+                @Exorcise.started -= instance.OnExorcise;
+                @Exorcise.performed -= instance.OnExorcise;
+                @Exorcise.canceled -= instance.OnExorcise;
             }
 
             /// <summary>
@@ -1816,7 +1913,7 @@ namespace CinliMahzen.Player
         private readonly InputAction m_Debug_NewRound;
         private readonly InputAction m_Debug_Overlay;
         private readonly InputAction m_Debug_TimeScale;
-        private readonly InputAction m_Debug_AllFragments;
+        private readonly InputAction m_Debug_CompleteStage;
         private readonly InputAction m_Debug_DummyBot;
         /// <summary>
         /// Provides access to input actions defined in input action map "Debug".
@@ -1870,9 +1967,9 @@ namespace CinliMahzen.Player
             /// </summary>
             public InputAction @TimeScale => m_Wrapper.m_Debug_TimeScale;
             /// <summary>
-            /// Provides access to the underlying input action "Debug/AllFragments".
+            /// Provides access to the underlying input action "Debug/CompleteStage".
             /// </summary>
-            public InputAction @AllFragments => m_Wrapper.m_Debug_AllFragments;
+            public InputAction @CompleteStage => m_Wrapper.m_Debug_CompleteStage;
             /// <summary>
             /// Provides access to the underlying input action "Debug/DummyBot".
             /// </summary>
@@ -1933,9 +2030,9 @@ namespace CinliMahzen.Player
                 @TimeScale.started += instance.OnTimeScale;
                 @TimeScale.performed += instance.OnTimeScale;
                 @TimeScale.canceled += instance.OnTimeScale;
-                @AllFragments.started += instance.OnAllFragments;
-                @AllFragments.performed += instance.OnAllFragments;
-                @AllFragments.canceled += instance.OnAllFragments;
+                @CompleteStage.started += instance.OnCompleteStage;
+                @CompleteStage.performed += instance.OnCompleteStage;
+                @CompleteStage.canceled += instance.OnCompleteStage;
                 @DummyBot.started += instance.OnDummyBot;
                 @DummyBot.performed += instance.OnDummyBot;
                 @DummyBot.canceled += instance.OnDummyBot;
@@ -1980,9 +2077,9 @@ namespace CinliMahzen.Player
                 @TimeScale.started -= instance.OnTimeScale;
                 @TimeScale.performed -= instance.OnTimeScale;
                 @TimeScale.canceled -= instance.OnTimeScale;
-                @AllFragments.started -= instance.OnAllFragments;
-                @AllFragments.performed -= instance.OnAllFragments;
-                @AllFragments.canceled -= instance.OnAllFragments;
+                @CompleteStage.started -= instance.OnCompleteStage;
+                @CompleteStage.performed -= instance.OnCompleteStage;
+                @CompleteStage.canceled -= instance.OnCompleteStage;
                 @DummyBot.started -= instance.OnDummyBot;
                 @DummyBot.performed -= instance.OnDummyBot;
                 @DummyBot.canceled -= instance.OnDummyBot;
@@ -2062,19 +2159,12 @@ namespace CinliMahzen.Player
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnKick(InputAction.CallbackContext context);
             /// <summary>
-            /// Method invoked when associated input action "Lantern" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "LanternPulse" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnLantern(InputAction.CallbackContext context);
-            /// <summary>
-            /// Method invoked when associated input action "UseItem" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-            /// </summary>
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnUseItem(InputAction.CallbackContext context);
+            void OnLanternPulse(InputAction.CallbackContext context);
             /// <summary>
             /// Method invoked when associated input action "Slot1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
@@ -2090,12 +2180,19 @@ namespace CinliMahzen.Player
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnSlot2(InputAction.CallbackContext context);
             /// <summary>
-            /// Method invoked when associated input action "DropGold" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "Slot3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnDropGold(InputAction.CallbackContext context);
+            void OnSlot3(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Drop" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnDrop(InputAction.CallbackContext context);
         }
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Spirit" which allows adding and removing callbacks.
@@ -2140,6 +2237,20 @@ namespace CinliMahzen.Player
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnPrimary(InputAction.CallbackContext context);
             /// <summary>
+            /// Method invoked when associated input action "Focus" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnFocus(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "PossessAsGood" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnPossessAsGood(InputAction.CallbackContext context);
+            /// <summary>
             /// Method invoked when associated input action "Ping" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
@@ -2147,12 +2258,12 @@ namespace CinliMahzen.Player
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnPing(InputAction.CallbackContext context);
             /// <summary>
-            /// Method invoked when associated input action "Bless" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "Exorcise" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnBless(InputAction.CallbackContext context);
+            void OnExorcise(InputAction.CallbackContext context);
         }
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Possessed" which allows adding and removing callbacks.
@@ -2304,12 +2415,12 @@ namespace CinliMahzen.Player
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnTimeScale(InputAction.CallbackContext context);
             /// <summary>
-            /// Method invoked when associated input action "AllFragments" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// Method invoked when associated input action "CompleteStage" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>
             /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-            void OnAllFragments(InputAction.CallbackContext context);
+            void OnCompleteStage(InputAction.CallbackContext context);
             /// <summary>
             /// Method invoked when associated input action "DummyBot" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>

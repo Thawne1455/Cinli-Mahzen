@@ -98,26 +98,44 @@ namespace CinliMahzen.Player
             return net != null ? net.LocalPlayer : new PlayerId(0);
         }
 
-        // --- IHumanInput ---
+        // --- IHumanInput (Oyun §11 "İnsan (FPS)") ---
         Vector2 IHumanInput.Move => _actions.Human.Move.ReadValue<Vector2>();
         Vector2 IHumanInput.Look => _actions.Human.Look.ReadValue<Vector2>();
         public bool Sprint => _actions.Human.Sprint.IsPressed();
         public bool InteractHeld => _actions.Human.Interact.IsPressed();
+        public bool InteractPressed => _actions.Human.Interact.WasPressedThisFrame();
         public bool KickPressed => _actions.Human.Kick.WasPressedThisFrame();
-        public bool LanternPressed => _actions.Human.Lantern.WasPressedThisFrame();
-        public bool UseItemPressed => _actions.Human.UseItem.WasPressedThisFrame();
-        public int SelectSlot => _actions.Human.Slot1.WasPressedThisFrame() ? 0 : _actions.Human.Slot2.WasPressedThisFrame() ? 1 : -1;
-        public bool DropGoldPressed => _actions.Human.DropGold.WasPressedThisFrame();
+        public bool LanternPulsePressed => _actions.Human.LanternPulse.WasPressedThisFrame();
+        public int SelectSlot
+        {
+            get
+            {
+                if (_actions.Human.Slot1.WasPressedThisFrame()) return 0;
+                if (_actions.Human.Slot2.WasPressedThisFrame()) return 1;
+                if (_actions.Human.Slot3.WasPressedThisFrame()) return 2;
+                return -1;
+            }
+        }
+        public bool DropPressed => _actions.Human.Drop.WasPressedThisFrame();
 
-        // --- ISpiritInput ---
+        /// <summary>
+        /// Shift+E (PossessAsGood) overlaps plain E (Primary): both bindings fire when E goes down with Shift held.
+        /// Shift is Boost, so while Boost is held E is never treated as Primary — only PossessAsGood sees it.
+        /// Public (not internal) so the EditMode test assembly can call it without InternalsVisibleTo.
+        /// </summary>
+        public static bool IsPrimaryAllowed(bool boostHeld) => !boostHeld;
+
+        // --- ISpiritInput (Oyun §11 "Cin — Ruh Formu") ---
         Vector2 ISpiritInput.Move => _actions.Spirit.Move.ReadValue<Vector2>();
         Vector2 ISpiritInput.Look => _actions.Spirit.Look.ReadValue<Vector2>();
         public float Vertical => _actions.Spirit.Vertical.ReadValue<float>();
         public bool Boost => _actions.Spirit.Boost.IsPressed();
-        public bool PrimaryPressed => _actions.Spirit.Primary.WasPressedThisFrame();
-        public bool PrimaryHeld => _actions.Spirit.Primary.IsPressed();
+        public bool PrimaryPressed => IsPrimaryAllowed(_actions.Spirit.Boost.IsPressed()) && _actions.Spirit.Primary.WasPressedThisFrame();
+        public bool PrimaryHeld => IsPrimaryAllowed(_actions.Spirit.Boost.IsPressed()) && _actions.Spirit.Primary.IsPressed();
+        public bool FocusHeld => _actions.Spirit.Focus.IsPressed();
+        public bool PossessAsGoodPressed => _actions.Spirit.PossessAsGood.WasPressedThisFrame();
         public bool PingPressed => _actions.Spirit.Ping.WasPressedThisFrame();
-        public bool BlessPressed => _actions.Spirit.Bless.WasPressedThisFrame();
+        public bool ExorciseHeld => _actions.Spirit.Exorcise.IsPressed();
 
         // --- IPossessedInput ---
         Vector2 IPossessedInput.Look => _actions.Possessed.Look.ReadValue<Vector2>();

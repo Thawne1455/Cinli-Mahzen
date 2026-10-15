@@ -260,6 +260,7 @@ enum RoundEndReason : byte { None = 0, Faint = 1, TreasureDug = 2, Timeout = 3 }
 
 ### 5.1 Piyon Mimarisi
 `PawnBase (NetEntity) { Owner, Role, IPawnInput Input, IsLocallyControlled }`. Hotseat: 4 piyon, lokal olmayanlar `NullInput`. `IHumanInput { Move, Look, Sprint, InteractHeld/Pressed, KickPressed, LanternPulsePressed, SelectSlot(-1/0/1/2), DropPressed }`.
+`ISpiritInput { Move, Look, Vertical, Boost, PrimaryPressed/Held, FocusHeld, PossessAsGoodPressed, PingPressed, ExorciseHeld }` — `PrimaryPressed/Held` = `E` (kötü: eşyaya gir / bulmacayı sabote et; iyi: lamba yak/onar), `FocusHeld` = Sağ Tık, `PossessAsGoodPressed` = `Shift+E`, `PingPressed` = `Q`, `ExorciseHeld` = `R`. `Shift` basılıyken `E` `Primary` sayılmaz (`LocalInputSource`, `Boost` kontrolü). Tuş tablosu: `01_GDD_Oyun.md §11`.
 
 ### 5.2 HumanController
 CharacterController, zıplama yok, **merdiven = rampa collider**. Durumlar (`HumanMotorState`, düz C#): `Normal`, `Interacting` (kazı/itme — hareket yok), `KnockedDown`, `Fainted`.
@@ -332,9 +333,9 @@ Asset'lerde GDD'de olmayan, seçilmiş teknik değerler: küçük fırlatılanla
 
 ### 6.5 İyi Cin Yetenekleri ve Ruh Perdesi
 - **Ruh Görüşü Odakla (`FocusReference`):** İyi Cin Sağ Tık basılı tutarken (`ISpiritInput.FocusHeld`), `FocusReferenceCost` (`2 enerji/sn`) harcar. `PuzzleReference` bileşenleri yalnızca lokal İyi Cin `IsFocusing` durumundayken sembol/açı detaylarını gösterir. Odaklanırken İyi Cin'in görsel parlaklığı artar (Kötü Cinler uzaktan fark edebilir).
-- **Lamba Yak / Onar (`E`):** `ReqLampLight` (anında) / `ReqLampRepair` (`2 sn` basılı).
-- **İşaret (`Q`), Kov (`R` basılı `1.5 sn`):** `ReqPing`, `ReqExorcise`.
-- **Eşyaya Gir (`Shift+E`):** Kaydırma, görev eşyası taşıma ve Limon Kolonyası ile ayıltma.
+- **Lamba Yak / Onar (`E`, `ISpiritInput.PrimaryPressed` / `PrimaryHeld`):** `ReqLampLight` (anında) / `ReqLampRepair` (`2 sn` basılı).
+- **İşaret (`Q`, `ISpiritInput.PingPressed`), Kov (`R` basılı `1.5 sn`, `ISpiritInput.ExorciseHeld`):** `ReqPing`, `ReqExorcise`.
+- **Eşyaya Gir (`Shift+E`, `ISpiritInput.PossessAsGoodPressed`):** Kaydırma, görev eşyası taşıma ve Limon Kolonyası ile ayıltma.
 
 ---
 
