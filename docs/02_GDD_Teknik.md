@@ -274,6 +274,8 @@ ApplyDamageAuthority: dokunulmazlık? -> HP -= dmg -> HumanDamaged
            -> faints >= FaintsToLose ? Match: JinnsWin(Faint) : FaintDuration sonra HumanRevived{byCologne=false} (HP = Max)
 ```
 - **Limon Kolonyası ile Anında Ayıltma:** İnsan `Fainted` durumundayken İyi Cin `PD_Cologne` eşyasının içindeyken insanın `3 m` yakınında aksiyonu tetiklerse (`CologneReviveTriggered`), otorite bayılma sayacını beklemeden anında `HumanRevived{byCologne=true}` yayınlar ve insanı tam canla ayağa kaldırır.
+- **Çekirdek (düz C#, `CM.Player`):** `HumanHealthCore` (ayarlar: `HumanHealthSettings.FromConfig`) — `ApplyDamage(in DamageInfo, double now) → DamageResult{Outcome: Ignored|Damaged|Fainted|Lost, HpAfter, FaintCount, Knockdown, KnockdownTime}`, `Tick(now)` (süre dolunca ayılır), `TryReviveWithCologne()`, `ResetForRound()`. Zamanı çağıran verir (`Net.Time`); `Lost` = `FaintsToLose`'a ulaşan bayılma (`HumanFainted` yine yayınlanır, ardından `JinnsWin(Faint)`; bir daha ayılmaz). Knockdown sadece `DamageResult`'a aktarılır, çekirdek yönetmez.
+- **Mesajlar (`Scripts/Player/Net`):** `HumanDamagedMsg{info, hpAfter}`, `HumanFaintedMsg{info, faintCount}` (tam `DamageInfo` taşır: otopsi `CauseId`, skor `Attacker`), `HumanRevivedMsg{byCologne, hp}`; ortak yardımcı `DamageInfoCodec`. MonoBehaviour `HumanHealth` (EventBus yayını, `IHumanStatusQuery`, eşya düşürme, maç bitişi) 1.5 entegrasyonunda (1.1 sonrası) gelecek.
 
 ### 5.4 Sabit Fener, Kutsanmış Yağ, Envanter, Tekme
 - **Sabit Fener (`HumanLantern`):** Envanter slotu kaplamaz. Raund başında **Zayıf Mod** (kısa menzil, Parlat kapalı, bulmaca koruma alanı kapalı) olarak başlar.
