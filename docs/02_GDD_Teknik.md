@@ -521,6 +521,9 @@ Lobby -> RoundSetup -> RoleReveal(3s) -> Intro(5s) -> Playing -> RoundEnd(8s) �
   - İnsan her bayıldığında (`HumanFaintedEvt`): Kötü Cinlere `+Config.ScorePerFaint` (`50`).
   - Kötü Cinler raundu kazandığında (`Timeout` veya `Faint`): Kötü Cinlere `+Config.JinnWinPoints` (`200`) + `(çözülmemişBulmacaSayısı * Config.ScorePerUnfinishedPuzzle)` (`40`).
 - **Maç Sonu Unvanları (`TitleCalculator`):** "Elektrikçi", "Bozguncu" (en çok sabotaj), "Ampul Katili", "Navigasyon", "Tekmeci Dayı", "Terlik Nişancısı" (Anne Terliği isabeti), "Kolonyacı" (kolonya ile ayıltma / Ruh Siperi).
+- **Kod (`Scripts/Match/`, düz C#):** `Logic/MatchStateMachine` (akış, sayaç, raund sonu; yalnız otoritede), `Logic/MatchSettings` (`GameBalanceConfig`'ten), `Logic/RoleRotation` (raund r: İnsan = oyuncu r, İyi Cin = r+1). `Net/`: `MatchStateChangedMsg`, `RoundSetupMsg`, `RoundEndedMsg`, `RoundTimeAddedMsg` (encode/decode, EditMode testleri `Tests/EditMode/Match/`).
+- **RoundSetup → RoleReveal:** `Tick` RoundSetup'ı kendiliğinden bitirmez; otorite `CompleteRoundSetup(now)` çağırır (offline: aynı frame; online: tüm istemciler `HouseReady` bildirince). Çağrı `StateEndTime = now + RoleRevealDuration` kurar.
+- `MatchController` (MonoBehaviour: `Net.Time`'ı besler, dönen `MatchTransition`'ları `MatchStateChanged` olarak yayınlar) TODO 1.10 entegrasyonunda gelecek.
 
 ---
 
