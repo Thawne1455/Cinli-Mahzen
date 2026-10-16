@@ -7,7 +7,7 @@ namespace CinliMahzen.Editor
 {
     /// <summary>
     /// Builds Assets/_Project/Prefabs/Player/P_Human.prefab (TODO 1.1): root on layer HumanPawn with CharacterController,
-    /// HumanController and the temporary TempFpsCameraAttach, a capsule "Visual" (collider removed) and a "Head" child.
+    /// HumanController, Interactor (TODO 1.4) and the temporary TempFpsCameraAttach, a capsule "Visual" (collider removed) and a "Head" child.
     /// Idempotent: an existing prefab is loaded and brought up to date in place (component ids stay stable, so scene
     /// instances keep their overrides); a missing one is created.
     /// MCP: execute_menu_item("CinliMahzen/Setup/Build Human Prefab").
@@ -70,6 +70,7 @@ namespace CinliMahzen.Editor
             controller.center = new Vector3(0f, BodyHeight * 0.5f, 0f);
 
             var human = GetOrAdd<HumanController>(root);
+            GetOrAdd<Interactor>(root);
             GetOrAdd<TempFpsCameraAttach>(root);
 
             Transform visual = root.transform.Find("Visual");

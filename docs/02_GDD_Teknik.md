@@ -179,6 +179,8 @@ Her yeni mesaj için encode/decode yardımcısı + **EditMode round-trip testi**
 - `StatusType`: `Knockdown, Stunned, Slowed, CameraSpin180 (Anne Terliği), VisionBlurred (Ruh Çarpışması)`. v1'den kalan `Grabbed, Drunk, Darkness` int kararlılığı için enum'da durur, kullanılmaz. Bayılma bir durum efekti değildir: `HumanMotorState.Fainted` + `HumanFaintedEvt`.
 - `IInteractable { NetId, PromptKey, HoldTime, CanInteract(who, role), ValidateAuthority(who), ExecuteAuthority(who), NoiseOnInteract }`.
 - **v2.1 kuralı:** Bulmaca parçası (`PuzzlePart`) sadece `Role.Human` için `CanInteract` döner; Kötü Cinler parçaları tek tek çevirmez, bulmacanın ana gövdesindeki `PuzzleScrambleTarget` bileşenine `1.5 sn` basılı tutarak toplu sabotaj yapar.
+- **Etkileşim (TODO 1.4, `Scripts/Player/Interaction/`):** Yerel `Interactor` (insanın `Head`'inden `InteractRange` raycast, `Interactable` layer; `InteractHoldTracker` basılı tutma; tamamlanınca `ReqInteract` → otorite `InteractionAuthority`: menzil (`InteractValidation`, `+NetRangeTolerance`) → `ValidateAuthority` → `ExecuteAuthority` → `InteractResult{ok}`). İpucu `InteractPromptEvt{PromptKey, Progress, Visible}` yalnız değer değişince yayınlanır. Kodlayıcılar `ReqInteractMsg` / `InteractResultMsg` (`Scripts/Core/Net/`).
+- **Test küpü:** `DebugInteractableCube` (NetId 1001, 1 sn), menü `CinliMahzen/Setup/Place Test Interactable In Open Scene` → (0, 0.5, -3).
 
 ### 4.6 EventBus (lokal)
 Ana event'ler (v2.1):
