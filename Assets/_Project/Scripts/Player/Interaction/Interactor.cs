@@ -57,7 +57,10 @@ namespace CinliMahzen.Player
 
         private void Update()
         {
-            if (!_human.IsLocallyControlled || _config == null || _net == null)
+            // Fainted or knocked-down humans cannot interact (Interacting itself is allowed: the hold continues).
+            HumanMotorState motor = _human.Motor.State;
+            bool canAct = motor == HumanMotorState.Normal || motor == HumanMotorState.Interacting;
+            if (!_human.IsLocallyControlled || _config == null || _net == null || !canAct)
             {
                 _tracker.Reset();
                 PublishIfChanged(HiddenPrompt);

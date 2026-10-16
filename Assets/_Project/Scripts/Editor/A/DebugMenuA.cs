@@ -50,5 +50,25 @@ namespace CinliMahzen.Editor
         [MenuItem(Root + "Trigger Vision Blur", true)]
         [MenuItem(Root + "Cycle Camera Mode (Fps-Orbit-Faint)", true)]
         private static bool PlayingOnly() => EditorApplication.isPlaying;
+
+        // ---- Human health (TODO 1.5) ----
+
+        [MenuItem(Root + "Faint Human")]
+        public static void FaintHuman() => DebugCommands.FaintHuman();
+
+        [MenuItem(Root + "Revive Human With Cologne")]
+        public static void ReviveHumanWithCologne() => DebugCommands.ReviveHumanWithCologne();
+
+        [MenuItem(Root + "Damage Human 1")]
+        public static void DamageHuman1() => DebugCommands.DamageHuman1();
+
+        [MenuItem(Root + "Toggle Immortal Human (F5)")]
+        public static void ToggleImmortalHuman() => DebugCommands.ToggleImmortalHuman();
+
+        [MenuItem(Root + "Faint Human", true)]
+        [MenuItem(Root + "Revive Human With Cologne", true)]
+        [MenuItem(Root + "Damage Human 1", true)]
+        [MenuItem(Root + "Toggle Immortal Human (F5)", true)]
+        private static bool HealthPlayingOnly() => EditorApplication.isPlaying;
     }
 }

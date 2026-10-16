@@ -85,9 +85,9 @@
 |---|---|---|---|---|
 | [x] | 1.1 | PawnBase + Human FPS controller + stamina + merdiven/rampa + `CameraSpin180` | P.3 | M |
 | [x] | 1.2 | CameraRig (FPS / Orbit / Faint) + culling mask + `VisionBlurred` | 1.1 | M |
-| [ ] | 1.3 | PlayerRegistry + Hotseat (F1-F4) + PawnSpawner | 1.1 | M |
+| [~] | 1.3 | PlayerRegistry + Hotseat (F1-F4) + PawnSpawner | 1.1 | M |
 | [x] | 1.4 | Interactor (raycast, basılı tutma, ipucu event'i) | 1.1 | S |
-| [~] | 1.5 | HumanHealth + bayılma + Kolonya ile anında ayılma + kaybetme (otoriter) | 1.1 | M |
+| [x] | 1.5 | HumanHealth + bayılma + Kolonya ile anında ayılma + kaybetme (otoriter) | 1.1 | M |
 | [ ] | 1.6 | SpiritController (uçuş, noclip, sınır) + Ruh Çarpışması (`SpiritBump`) | 1.2 | M |
 | [ ] | 1.7 | Possession akışı (MonoBehaviour) + mesajlar + orbit kamera | P.4, 1.6 | L |
 | [ ] | 1.8 | Aksiyonlar: Throw, HomingSlipper, Hop, Lunge, Slide, Topple, PlayTune, ReviveSplash | 1.7, 1.5 | L |

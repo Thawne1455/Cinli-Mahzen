@@ -180,10 +180,23 @@ namespace CinliMahzen.Player
                         _spin.Begin(CameraSpinDegrees, duration);
                     break;
                 default:
-                    // Knockdown / Stunned / Slowed arrive with 1.5 (HumanHealth) and 1.8 (actions).
+                    // Knockdown comes with a damage hit (HumanHealth starts it from DamageFlags.Knockdown); Stunned / Slowed arrive with 1.8 (actions).
                     CMLog.Info("Human", "Status " + status + " (" + duration.ToString("0.###", CultureInfo.InvariantCulture) + " s) not handled yet");
                     break;
             }
+        }
+
+        /// <summary>
+        /// Fainted body state (Teknik §5.3): <see cref="HumanHealth"/> calls it on every client when HumanFainted / HumanRevived arrives.
+        /// The motor locks movement and looking while fainted; a locally controlled pawn also hands the camera over
+        /// (faint view while down, first person again on revive). Does nothing when the state is unchanged.
+        /// </summary>
+        public void SetFainted(bool fainted)
+        {
+            bool wasFainted = _motor.State == HumanMotorState.Fainted;
+            _motor.SetFainted(fainted);
+            if (wasFainted != fainted && IsLocallyControlled)
+                AttachCamera();
         }
 
         private void Update()
@@ -268,20 +281,26 @@ namespace CinliMahzen.Player
         }
 
         /// <summary>
-        /// Gives the local camera to this pawn's head. Runs whenever the input is (re)bound as local — first frame, owner change,
-        /// hotseat switch — and the rig ignores a repeat of the same head. Update runs after every Awake, so a scene's rig is registered by now.
+        /// Gives the local camera to this pawn: the head (first person), or the faint view while the motor is Fainted. Runs whenever the
+        /// input is (re)bound as local — first frame, owner change, hotseat switch — and on a faint / revive of the local pawn; the rig
+        /// ignores a repeat of the same anchor. Update runs after every Awake, so a scene's rig is registered by now.
         /// </summary>
         private void AttachCamera()
         {
-            if (head == null)
-            {
-                CMLog.Warn("Human", name + ": no head assigned — camera not attached");
-                return;
-            }
             ICameraRig rig = GameServices.Get<ICameraRig>();
             if (rig == null)
             {
                 CMLog.Warn("Human", name + ": no ICameraRig registered (add the CameraRig: CinliMahzen/Setup/Add Camera Rig To Open Scene) — camera not attached");
+                return;
+            }
+            if (_motor.State == HumanMotorState.Fainted)
+            {
+                rig.SetFaint(transform);
+                return;
+            }
+            if (head == null)
+            {
+                CMLog.Warn("Human", name + ": no head assigned — camera not attached");
                 return;
             }
             rig.SetFps(head);

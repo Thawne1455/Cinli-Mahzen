@@ -16,7 +16,7 @@ namespace CinliMahzen.DebugTools
             Todo("F" + (index + 1) + " Switch To Player " + (index + 1), "1.3 Hotseat");
         }
 
-        public static void ToggleImmortalHuman() => Todo("F5 Immortal Human", "1.5 HumanHealth");
+        public static void ToggleImmortalHuman() => ToggleImmortal();
         public static void ToggleInfiniteEnergy() => Todo("F6 Infinite Energy", "1.7 Possession");
         public static void ToggleRevealAll() => Todo("F7 Reveal All", "3.9 Visibility");
         public static void RestartRound() => Todo("F8 Restart Round (New Seed)", "1.10 Match");
@@ -109,6 +109,91 @@ namespace CinliMahzen.DebugTools
                     break;
             }
             CMLog.Info("Debug", "Camera mode -> " + rig.Mode);
+        }
+
+        /// <summary>
+        /// Menu "Faint Human": the authority hits the human for HumanMaxHp with IgnoreInvuln (CauseId "debug.faint"), so it faints
+        /// regardless of the invulnerability window. A fainted human ignores further hits: revive it (Cologne menu or wait
+        /// FaintDuration) before the next one. Three faints in a round end it with JinnsWin(Faint). F5 (Immortal) blocks it.
+        /// </summary>
+        public static void FaintHuman()
+        {
+            HumanHealth health = FindHumanHealth("Faint Human");
+            GameBalanceConfig config = GameServices.Config;
+            if (health == null || config == null)
+                return;
+            if (health.IsFainted)
+            {
+                CMLog.Warn("Debug", "Faint Human: the human is already fainted - revive it first (Revive Human With Cologne); after the last faint it stays down until a new round");
+                return;
+            }
+            HitHuman(health, config.HumanMaxHp, DamageFlags.IgnoreInvuln, "debug.faint");
+            CMLog.Info("Debug", "Faint Human: hp " + health.Hp + ", faints " + health.Faints);
+        }
+
+        /// <summary>Menu "Revive Human With Cologne": the authority wakes the fainted human at once with full HP (HumanRevived byCologne=true).</summary>
+        public static void ReviveHumanWithCologne()
+        {
+            HumanHealth health = FindHumanHealth("Revive Human With Cologne");
+            if (health == null)
+                return;
+            if (health.ReviveWithCologneAuthority())
+                CMLog.Info("Debug", "Revive Human With Cologne: hp " + health.Hp + ", faints " + health.Faints);
+            else
+                CMLog.Warn("Debug", "Revive Human With Cologne: nothing to revive (the human is not fainted, or has already lost)");
+        }
+
+        /// <summary>Menu "Damage Human 1": a plain 1 HP hit (CauseId "debug.damage") that respects the invulnerability window.</summary>
+        public static void DamageHuman1()
+        {
+            HumanHealth health = FindHumanHealth("Damage Human 1");
+            if (health == null)
+                return;
+            HitHuman(health, 1, DamageFlags.None, "debug.damage");
+            CMLog.Info("Debug", "Damage Human 1: hp " + health.Hp + ", faints " + health.Faints);
+        }
+
+        private static void ToggleImmortal()
+        {
+            HumanHealth health = FindHumanHealth("Immortal Human");
+            if (health == null)
+                return;
+            health.Immortal = !health.Immortal;
+            CMLog.Info("Debug", "Immortal Human " + (health.Immortal ? "on" : "off"));
+        }
+
+        private static void HitHuman(HumanHealth health, int amount, DamageFlags flags, string causeId)
+        {
+            var info = new DamageInfo
+            {
+                Amount = amount,
+                Attacker = PlayerId.None,
+                SourceObject = NetId.Invalid,
+                CauseId = causeId,
+                Flags = flags,
+                KnockdownTime = 0f,
+                Point = health.transform.position,
+                Direction = Vector3.zero,
+            };
+            health.ApplyDamageAuthority(info);
+        }
+
+        /// <summary>The scene's HumanHealth, only on the authority (health changes are authority-only). Logs and returns null otherwise.</summary>
+        private static HumanHealth FindHumanHealth(string command)
+        {
+            INetBridge net = GameServices.Net;
+            if (net == null || !net.IsAuthority)
+            {
+                CMLog.Warn("Debug", command + ": this machine is not the authority");
+                return null;
+            }
+            HumanHealth health = Object.FindFirstObjectByType<HumanHealth>();
+            if (health == null)
+            {
+                CMLog.Warn("Debug", command + ": no HumanHealth in the scene (rebuild P_Human: CinliMahzen/Setup/Build Human Prefab)");
+                return null;
+            }
+            return health;
         }
 
         private static void Todo(string what, string waitingFor)

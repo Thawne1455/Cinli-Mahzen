@@ -7,8 +7,9 @@ namespace CinliMahzen.Editor
 {
     /// <summary>
     /// Builds Assets/_Project/Prefabs/Player/P_Human.prefab (TODO 1.1): root on layer HumanPawn with CharacterController,
-    /// HumanController and Interactor (TODO 1.4), a capsule "Visual" (collider removed) and a "Head" child. The camera is not
-    /// part of the prefab: the scene's CameraRig (TODO 1.2) follows the Head once the pawn is local.
+    /// HumanController, Interactor (TODO 1.4) and HumanHealth (TODO 1.5), a capsule "Visual" (collider removed), a "Head" child and a
+    /// "Hitbox" child (trigger capsule on layer HumanHitbox; thrown items find the root's IDamageable from it with GetComponentInParent).
+    /// The camera is not part of the prefab: the scene's CameraRig (TODO 1.2) follows the Head once the pawn is local.
     /// Idempotent: an existing prefab is loaded and brought up to date in place (component ids stay stable, so scene
     /// instances keep their overrides); a missing one is created. Components whose script no longer exists
     /// (the retired TempFpsCameraAttach) are removed.
@@ -20,6 +21,7 @@ namespace CinliMahzen.Editor
 
         private const string PrefabFolder = "Assets/_Project/Prefabs/Player";
         private const string HumanPawnLayer = "HumanPawn";
+        private const string HumanHitboxLayer = "HumanHitbox";
 
         // Prefab data: body dimensions (m). Unity's capsule primitive is 2 m high with 0.5 m radius.
         private const float BodyHeight = 1.8f;
@@ -27,6 +29,9 @@ namespace CinliMahzen.Editor
         private const float HeadHeight = 1.65f;
         private const float CapsulePrimitiveHeight = 2f;
         private const float CapsulePrimitiveRadius = 0.5f;
+        // Damage trigger: a little fatter than the body so a thrown item grazing the shoulder still counts.
+        private const float HitboxRadius = 0.4f;
+        private const float HitboxHeight = 1.8f;
 
         [MenuItem("CinliMahzen/Setup/Build Human Prefab")]
         public static void Build()
@@ -43,13 +48,20 @@ namespace CinliMahzen.Editor
                 return;
             }
 
+            int hitboxLayer = LayerMask.NameToLayer(HumanHitboxLayer);
+            if (hitboxLayer < 0)
+            {
+                Debug.LogError("[SetupPlayer] Layer '" + HumanHitboxLayer + "' is missing (Teknik section 2, layer 9)");
+                return;
+            }
+
             EnsureFolder(PrefabFolder);
 
             bool exists = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) != null;
             GameObject root = exists ? PrefabUtility.LoadPrefabContents(PrefabPath) : new GameObject("P_Human");
             try
             {
-                Configure(root, layer);
+                Configure(root, layer, hitboxLayer);
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             }
             finally
@@ -64,7 +76,7 @@ namespace CinliMahzen.Editor
             Debug.Log("[SetupPlayer] " + (exists ? "Updated " : "Created ") + PrefabPath);
         }
 
-        private static void Configure(GameObject root, int layer)
+        private static void Configure(GameObject root, int layer, int hitboxLayer)
         {
             var controller = GetOrAdd<CharacterController>(root);
             controller.height = BodyHeight;
@@ -77,6 +89,7 @@ namespace CinliMahzen.Editor
 
             var human = GetOrAdd<HumanController>(root);
             GetOrAdd<Interactor>(root);
+            GetOrAdd<HumanHealth>(root);
 
             Transform visual = root.transform.Find("Visual");
             if (visual == null)
@@ -111,7 +124,26 @@ namespace CinliMahzen.Editor
             so.FindProperty("head").objectReferenceValue = head;
             so.ApplyModifiedPropertiesWithoutUndo();
 
+            Transform hitbox = root.transform.Find("Hitbox");
+            if (hitbox == null)
+            {
+                var hitboxGo = new GameObject("Hitbox");
+                hitboxGo.transform.SetParent(root.transform, false);
+                hitbox = hitboxGo.transform;
+            }
+            hitbox.localPosition = Vector3.zero;
+            hitbox.localRotation = Quaternion.identity;
+            hitbox.localScale = Vector3.one;
+            var hitCapsule = GetOrAdd<CapsuleCollider>(hitbox.gameObject);
+            hitCapsule.isTrigger = true;
+            hitCapsule.direction = 1; // Y axis
+            hitCapsule.radius = HitboxRadius;
+            hitCapsule.height = HitboxHeight;
+            hitCapsule.center = new Vector3(0f, BodyHeight * 0.5f, 0f);
+
             SetLayerRecursively(root, layer);
+            // After the recursion: the hitbox is the one child that is not on HumanPawn.
+            hitbox.gameObject.layer = hitboxLayer;
         }
 
         private static T GetOrAdd<T>(GameObject go) where T : Component
