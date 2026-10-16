@@ -259,12 +259,16 @@ enum RoundEndReason : byte { None = 0, Faint = 1, TreasureDug = 2, Timeout = 3 }
 ## 5. İnsan Sistemleri (CM.Player)
 
 ### 5.1 Piyon Mimarisi
-`PawnBase (NetEntity) { Owner, Role, IPawnInput Input, IsLocallyControlled }`. Hotseat: 4 piyon, lokal olmayanlar `NullInput`. `IHumanInput { Move, Look, Sprint, InteractHeld/Pressed, KickPressed, LanternPulsePressed, SelectSlot(-1/0/1/2), DropPressed }`.
+`PawnBase (NetEntity) { Owner, Role, IPawnInput Input, IsLocallyControlled }` — **CM.Core**'da (`Scripts/Core/Entities/PawnBase.cs`), çünkü CM.Jinn, CM.Player'ı göremez ve `SpiritController` de ondan türer. Serileştirilen `netId`/`ownerId`/`role` elle yerleştirilen piyonun (Sandbox) başlangıç durumudur; PawnSpawner (1.3) çalışma anında `SetNetId`/`SetOwner`/`SetInput` ile üzerine yazar. `OnEnable/OnDisable`'da `IEntityRegistry`'ye kaydolur/çıkar. Core'da `NullInput` yok: `Input` boş olabilir, alt sınıf boşu "hareketsiz" sayar. Hotseat: 4 piyon, lokal olmayanlar `NullInput`. `IHumanInput { Move, Look, Sprint, InteractHeld/Pressed, KickPressed, LanternPulsePressed, SelectSlot(-1/0/1/2), DropPressed }`.
 `ISpiritInput { Move, Look, Vertical, Boost, PrimaryPressed/Held, FocusHeld, PossessAsGoodPressed, PingPressed, ExorciseHeld }` — `PrimaryPressed/Held` = `E` (kötü: eşyaya gir / bulmacayı sabote et; iyi: lamba yak/onar), `FocusHeld` = Sağ Tık, `PossessAsGoodPressed` = `Shift+E`, `PingPressed` = `Q`, `ExorciseHeld` = `R`. `Shift` basılıyken `E` `Primary` sayılmaz (`LocalInputSource`, `Boost` kontrolü). Tuş tablosu: `01_GDD_Oyun.md §11`.
 
 ### 5.2 HumanController
 CharacterController, zıplama yok, **merdiven = rampa collider**. Durumlar (`HumanMotorState`, düz C#): `Normal`, `Interacting` (kazı/itme — hareket yok), `KnockedDown`, `Fainted`.
-- **Anne Terliği Etkisi (`StatusType.CameraSpin180`):** İsabet halinde insanın look yaw açısı `0.15 sn` içinde `180 derece` döndürülür ve "ŞRAK!" ses efekti oynatılır.
+- **Düz C# mantık** (`Scripts/Player/Human/Logic/`, EditMode testli): `HumanMotor` (durum + `CanMove/CanLook/CanSprint`; öncelik `Fainted` > `KnockedDown` > `Interacting` > `Normal`; `KnockDown(until)` + `Tick(now)`; `Fainted`'te bakış da kapalı, diğerlerinde açık), `StaminaModel` (`Max/Drain/Regen/RegenDelay` `GameBalanceConfig`'ten, `Tick(dt, wantsSprint, isMoving, now)` sprint olup olmadığını döndürür) ve `YawSpin` (`Begin(degrees, duration)` / `Step(dt)`; kareler toplamı tam `degrees`).
+- **`HumanController`** (`Scripts/Player/Human/HumanController.cs`, `PawnBase` + `IStatusReceiver`): yerel kontrolde `LocalInputSource`'u `InputMode.Human` ile kullanır; gövde yaw + `head` pitch; hız/stamina config'ten; zıplama yok, yerçekimi + `slopeLimit` 50° / `stepOffset` 0.4 m (his parametreleri, serileştirilmiş). Dump State bölümü: `human`.
+- **Merdiven:** `Env_Stairs`/`Env_StairsWide` prefablarına basamak mesh collider'ının yanında basamak burunlarından geçen 45° eğik bir `RampCollider` (BoxCollider) eklenir (`CinliMahzen/Setup/Add Ramp Colliders To Stairs`); karakter basamaklara değil rampaya basar.
+- **Anne Terliği Etkisi (`StatusType.CameraSpin180`):** İsabet halinde insanın look yaw açısı `0.15 sn` içinde `180 derece` döndürülür ve "ŞRAK!" ses efekti oynatılır. Akış: otorite `HumanController.ApplyStatusAuthority` → `StatusApplied` yayını → her istemcide hedef piyon yerel kontrol ediliyorsa `YawSpin.Begin(180, duration)`; süre `PD_Slipper` status süresinden gelir. Mesaj kodlayıcı `StatusAppliedMsg` (`Scripts/Core/Net/`, Jinn'in `VisionBlurred` için de kullanacağı için Core'da): payload `{ int netId, byte status, float duration, byte source }`.
+- Geçici: `TempFpsCameraAttach` (kamerayı `head`'e bağlar; 1.2 `CameraRig` gelince silinir).
 
 ### 5.3 HumanHealth, Bayılma ve Kolonya ile Ayıltma (otoriter)
 ```

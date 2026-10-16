@@ -1,4 +1,6 @@
 using CinliMahzen.Core;
+using CinliMahzen.Core.Net;
+using CinliMahzen.Player;
 using UnityEngine;
 
 namespace CinliMahzen.DebugTools
@@ -36,6 +38,27 @@ namespace CinliMahzen.DebugTools
         public static void DumpState()
         {
             CMLog.Info("Dump", DebugState.BuildJson());
+        }
+
+        /// <summary>
+        /// Menu "Spin Human 180": the authority applies CameraSpin180 to the scene's human. The duration is the human's
+        /// serialized debugSpinDuration (PD_Slipper's status duration), so no number lives here.
+        /// </summary>
+        public static void SpinHuman180()
+        {
+            INetBridge net = GameServices.Net;
+            if (net == null || !net.IsAuthority)
+            {
+                CMLog.Warn("Debug", "Spin Human 180: this machine is not the authority");
+                return;
+            }
+            HumanController human = Object.FindFirstObjectByType<HumanController>();
+            if (human == null)
+            {
+                CMLog.Warn("Debug", "Spin Human 180: no HumanController in the scene");
+                return;
+            }
+            human.ApplyStatusAuthority(StatusType.CameraSpin180, human.DebugSpinDuration, PlayerId.None);
         }
 
         private static void Todo(string what, string waitingFor)
