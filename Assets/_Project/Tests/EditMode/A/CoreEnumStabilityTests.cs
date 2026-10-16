@@ -66,6 +66,15 @@ namespace CinliMahzen.Tests.EditMode.A
             Assert.AreEqual(expected, (int)value, value.ToString());
         }
 
+        [TestCase(CameraMode.None, 0)]
+        [TestCase(CameraMode.Fps, 1)]
+        [TestCase(CameraMode.Orbit, 2)]
+        [TestCase(CameraMode.Faint, 3)]
+        public void CameraMode_ValueIsStable(CameraMode value, int expected)
+        {
+            Assert.AreEqual(expected, (int)value, value.ToString());
+        }
+
         [Test]
         public void MsgCode_ValuesAreUnique()
         {

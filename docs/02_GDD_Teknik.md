@@ -58,7 +58,7 @@ Assets/_Project/
 ### 1.1 Assembly'ler ve Bağımlılıklar
 ```
 CM.Core          -> —                      [Unity.InputSystem]
-CM.Player        -> CM.Core
+CM.Player        -> CM.Core                [Unity.InputSystem, URP Runtime (CameraRig blur)]
 CM.Possession    -> CM.Core
 CM.Jinn          -> CM.Core, CM.Possession
 CM.Visibility    -> CM.Core
@@ -111,6 +111,10 @@ Fizik matrisi: `HumanPawn <-> Environment, Possessable` · `Projectile <-> Envir
 
 \* Mesafe kuralları `VisibilityService` ile (§6.6).
 \*\* Bulmaca referanslarının içeriği İyi Cin Sağ Tık (`FocusReference`) basılı tuttuğunda netleşir.
+
+**CameraRig (1.2):** Arayüz `ICameraRig` (`Scripts/Core/Camera/`: `SetFps(head)`, `SetOrbit(target, dist)`, `SetFaint(body)`, `TriggerBlur(sn)`, `Mode`, `Camera`) Core'da; uygulaması `CameraRig` (CM.Player, sahnenin Main Camera'sında) `GameServices.Register<ICameraRig>` ile kaydolur ve pozu LateUpdate'te dünya uzayında yazar. Mantık düz C# (`Scripts/Player/Camera/Logic/`, EditMode testli): `CameraBlendState` (mod geçişi 0.3 sn, ilk bağlanış anlık), `OrbitSolver` (orbit; `Physics.SphereCast` ile `Environment` layer'ına çarpan mesafe kısaltır), `BlurPulse` (bulanıklık zarfı), `CullingMasks` (yukarıdaki tablo; `LocalRoleChangedEvt` → `camera.cullingMask`, rol yokken İnsan maskesi). Orbit yaw/pitch'i `IPossessedInput.Look`'tan (`LocalInputSource`) alır.
+**Bulanıklık (`VisionBlurred`):** global URP `Volume` + Gaussian `DepthOfField` override'ı; `Volume.weight` = `BlurPulse` yoğunluğu (0..1; fade-in/out ve sarsıntı genliği `CameraRig` alanları) + küçük konum sarsıntısı. Tetikleyiciler: `SpiritBumpedEvt` (`GoodJinn` yerel oyuncuysa) ve hedefi yerel piyon olan `StatusApplied(VisionBlurred)`; süre `SpiritBumpBlurTime`; üst üste tetikleme süreyi uzatır, toplamaz (aynı çarpışma iki yoldan gelse de 2 sn).
+**Kurulum:** `CinliMahzen/Setup/Add Camera Rig To Open Scene` (idempotent, sahneyi kaydetmez): Main Camera'ya `CameraRig` + post-processing, çocuk `CM_BlurVolume` (weight 0) ve `Assets/_Project/Settings/CM_BlurProfile.asset`. Debug: `CinliMahzen/Debug/Trigger Vision Blur`, `Cycle Camera Mode (Fps-Orbit-Faint)`; Dump State bölümü: `camera`.
 
 ---
 
@@ -270,7 +274,7 @@ CharacterController, zıplama yok, **merdiven = rampa collider**. Durumlar (`Hum
 - **`HumanController`** (`Scripts/Player/Human/HumanController.cs`, `PawnBase` + `IStatusReceiver`): yerel kontrolde `LocalInputSource`'u `InputMode.Human` ile kullanır; gövde yaw + `head` pitch; hız/stamina config'ten; zıplama yok, yerçekimi + `slopeLimit` 50° / `stepOffset` 0.4 m (his parametreleri, serileştirilmiş). Dump State bölümü: `human`.
 - **Merdiven:** `Env_Stairs`/`Env_StairsWide` prefablarına basamak mesh collider'ının yanında basamak burunlarından geçen 45° eğik bir `RampCollider` (BoxCollider) eklenir (`CinliMahzen/Setup/Add Ramp Colliders To Stairs`); karakter basamaklara değil rampaya basar.
 - **Anne Terliği Etkisi (`StatusType.CameraSpin180`):** İsabet halinde insanın look yaw açısı `0.15 sn` içinde `180 derece` döndürülür ve "ŞRAK!" ses efekti oynatılır. Akış: otorite `HumanController.ApplyStatusAuthority` → `StatusApplied` yayını → her istemcide hedef piyon yerel kontrol ediliyorsa `YawSpin.Begin(180, duration)`; süre `PD_Slipper` status süresinden gelir. Mesaj kodlayıcı `StatusAppliedMsg` (`Scripts/Core/Net/`, Jinn'in `VisionBlurred` için de kullanacağı için Core'da): payload `{ int netId, byte status, float duration, byte source }`.
-- Geçici: `TempFpsCameraAttach` (kamerayı `head`'e bağlar; 1.2 `CameraRig` gelince silinir).
+- Kamera: yerel insan `ICameraRig.SetFps(head)` çağırır (1.2 `CameraRig`; eski `TempFpsCameraAttach` kaldırıldı).
 
 ### 5.3 HumanHealth, Bayılma ve Kolonya ile Ayıltma (otoriter)
 ```
@@ -554,6 +558,11 @@ CinliMahzen/Debug/Scramble All Puzzles
 CinliMahzen/Debug/Give All Quest Items + Blessed Oil
 CinliMahzen/Debug/Toggle All Lights
 CinliMahzen/Debug/Dump State To Console
+CinliMahzen/Debug/Spin Human 180
+CinliMahzen/Debug/Trigger Vision Blur
+CinliMahzen/Debug/Cycle Camera Mode (Fps-Orbit-Faint)
+CinliMahzen/House/Build Graybox
+CinliMahzen/House/Place House In Open Scene
 CinliMahzen/House/Validate
 CinliMahzen/House/Print Round Plan (Seed=12345)
 CinliMahzen/House/Plan Batch Report (500 seeds)

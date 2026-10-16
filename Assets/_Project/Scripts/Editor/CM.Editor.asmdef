@@ -1,7 +1,7 @@
 {
     "name": "CM.Editor",
     "rootNamespace": "CinliMahzen.Editor",
-    "references": ["CM.Core", "CM.Player", "CM.Possession", "CM.Jinn", "CM.Visibility", "CM.World", "CM.Objectives", "CM.Audio", "CM.Match", "CM.UI", "CM.DebugTools", "CM.Net.Pun", "Unity.InputSystem", "Unity.AI.Navigation"],
+    "references": ["CM.Core", "CM.Player", "CM.Possession", "CM.Jinn", "CM.Visibility", "CM.World", "CM.Objectives", "CM.Audio", "CM.Match", "CM.UI", "CM.DebugTools", "CM.Net.Pun", "Unity.InputSystem", "Unity.AI.Navigation", "Unity.RenderPipelines.Core.Runtime", "Unity.RenderPipelines.Universal.Runtime"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

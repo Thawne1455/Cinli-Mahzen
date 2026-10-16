@@ -1,7 +1,7 @@
 {
     "name": "CM.Player",
     "rootNamespace": "CinliMahzen.Player",
-    "references": ["CM.Core", "Unity.InputSystem"],
+    "references": ["CM.Core", "Unity.InputSystem", "Unity.RenderPipelines.Core.Runtime", "Unity.RenderPipelines.Universal.Runtime"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

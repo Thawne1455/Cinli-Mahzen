@@ -11,6 +11,7 @@ namespace CinliMahzen.Player
     /// stepOffset below). Game state follows Request → authority → broadcast: <see cref="ApplyStatusAuthority"/> broadcasts
     /// StatusApplied and every client reacts to it in <see cref="OnStatusApplied"/> (CameraSpin180 turns the local view 180 degrees).
     /// Logic lives in plain classes: <see cref="HumanMotor"/>, <see cref="StaminaModel"/>, <see cref="YawSpin"/>.
+    /// While this pawn is the local one it hands its head to the <see cref="ICameraRig"/> (SetFps); the rig owns the camera.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(CharacterController))]
@@ -262,6 +263,28 @@ namespace CinliMahzen.Player
                 SetInput(NullInput.Instance);
             }
             SetCursorLocked(local && lockCursor);
+            if (local)
+                AttachCamera();
+        }
+
+        /// <summary>
+        /// Gives the local camera to this pawn's head. Runs whenever the input is (re)bound as local — first frame, owner change,
+        /// hotseat switch — and the rig ignores a repeat of the same head. Update runs after every Awake, so a scene's rig is registered by now.
+        /// </summary>
+        private void AttachCamera()
+        {
+            if (head == null)
+            {
+                CMLog.Warn("Human", name + ": no head assigned — camera not attached");
+                return;
+            }
+            ICameraRig rig = GameServices.Get<ICameraRig>();
+            if (rig == null)
+            {
+                CMLog.Warn("Human", name + ": no ICameraRig registered (add the CameraRig: CinliMahzen/Setup/Add Camera Rig To Open Scene) — camera not attached");
+                return;
+            }
+            rig.SetFps(head);
         }
 
         private void SetCursorLocked(bool locked)

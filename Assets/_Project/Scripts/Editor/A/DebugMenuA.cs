@@ -31,6 +31,12 @@ namespace CinliMahzen.Editor
         [MenuItem(Root + "Spin Human 180")]
         public static void SpinHuman180() => DebugCommands.SpinHuman180();
 
+        [MenuItem(Root + "Trigger Vision Blur")]
+        public static void TriggerVisionBlur() => DebugCommands.TriggerVisionBlur();
+
+        [MenuItem(Root + "Cycle Camera Mode (Fps-Orbit-Faint)")]
+        public static void CycleCameraMode() => DebugCommands.CycleCameraMode();
+
         [MenuItem(Root + "Dump State To Console", true)]
         [MenuItem(Root + "Toggle Debug Overlay (F9)", true)]
         [MenuItem(Root + "Toggle Time Scale x2 (F10)", true)]
@@ -41,6 +47,8 @@ namespace CinliMahzen.Editor
         [MenuItem(Root + "Restart Round (New Seed)", true)]
         [MenuItem(Root + "Complete Current Stage", true)]
         [MenuItem(Root + "Spin Human 180", true)]
+        [MenuItem(Root + "Trigger Vision Blur", true)]
+        [MenuItem(Root + "Cycle Camera Mode (Fps-Orbit-Faint)", true)]
         private static bool PlayingOnly() => EditorApplication.isPlaying;
     }
 }

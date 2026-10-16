@@ -42,7 +42,6 @@ GameObject:
   - component: {fileID: 3071260323855586855}
   - component: {fileID: 2759515522840253250}
   - component: {fileID: 804330554885925324}
-  - component: {fileID: 3846534716484218076}
   - component: {fileID: 5206196170800727638}
   m_Layer: 8
   m_Name: P_Human
@@ -117,18 +116,6 @@ MonoBehaviour:
   slopeLimit: 50
   stepOffset: 0.4
   debugSpinDuration: 0.15
---- !u!114 &3846534716484218076
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1780838588880200848}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6fb89998722c66f44b96cc139c05e62d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CM.Player::CinliMahzen.Player.TempFpsCameraAttach
 --- !u!114 &5206196170800727638
 MonoBehaviour:
   m_ObjectHideFlags: 0

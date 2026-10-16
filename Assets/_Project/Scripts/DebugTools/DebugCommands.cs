@@ -61,6 +61,56 @@ namespace CinliMahzen.DebugTools
             human.ApplyStatusAuthority(StatusType.CameraSpin180, human.DebugSpinDuration, PlayerId.None);
         }
 
+        /// <summary>
+        /// Menu "Trigger Vision Blur": blurs the local camera for SpiritBumpBlurTime, as a Spirit Bump would (TODO 1.2).
+        /// Goes straight to the camera, so it works for any local role.
+        /// </summary>
+        public static void TriggerVisionBlur()
+        {
+            ICameraRig rig = GameServices.Get<ICameraRig>();
+            GameBalanceConfig config = GameServices.Config;
+            if (rig == null || config == null)
+            {
+                CMLog.Warn("Debug", "Trigger Vision Blur: no ICameraRig / GameBalanceConfig (add the CameraRig to the scene first)");
+                return;
+            }
+            rig.TriggerBlur(config.SpiritBumpBlurTime);
+            CMLog.Info("Debug", "Vision blur for " + config.SpiritBumpBlurTime + " s");
+        }
+
+        /// <summary>
+        /// Menu "Cycle Camera Mode": Fps -> Orbit -> Faint -> Fps around the scene's human, so the transitions, the orbit wall check
+        /// and the faint view can be tried in Sandbox (TODO 1.2). The orbit reads the Possessed input map, so entering Orbit switches the
+        /// local input to it (the human stops moving) and leaving it switches back to the Human map.
+        /// </summary>
+        public static void CycleCameraMode()
+        {
+            ICameraRig rig = GameServices.Get<ICameraRig>();
+            HumanController human = Object.FindFirstObjectByType<HumanController>();
+            if (rig == null || human == null || human.Head == null)
+            {
+                CMLog.Warn("Debug", "Cycle Camera Mode: needs an ICameraRig and a HumanController with a head in the scene");
+                return;
+            }
+
+            LocalInputSource input = GameServices.Get<LocalInputSource>();
+            switch (rig.Mode)
+            {
+                case CameraMode.Fps:
+                    input?.SetMode(InputMode.Possessed);
+                    rig.SetOrbit(human.transform, 0f);
+                    break;
+                case CameraMode.Orbit:
+                    input?.SetMode(InputMode.Human);
+                    rig.SetFaint(human.transform);
+                    break;
+                default:
+                    rig.SetFps(human.Head);
+                    break;
+            }
+            CMLog.Info("Debug", "Camera mode -> " + rig.Mode);
+        }
+
         private static void Todo(string what, string waitingFor)
         {
             CMLog.Info("Debug", what + ": TODO (" + waitingFor + ")");

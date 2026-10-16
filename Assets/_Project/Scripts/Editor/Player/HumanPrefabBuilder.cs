@@ -7,9 +7,11 @@ namespace CinliMahzen.Editor
 {
     /// <summary>
     /// Builds Assets/_Project/Prefabs/Player/P_Human.prefab (TODO 1.1): root on layer HumanPawn with CharacterController,
-    /// HumanController, Interactor (TODO 1.4) and the temporary TempFpsCameraAttach, a capsule "Visual" (collider removed) and a "Head" child.
+    /// HumanController and Interactor (TODO 1.4), a capsule "Visual" (collider removed) and a "Head" child. The camera is not
+    /// part of the prefab: the scene's CameraRig (TODO 1.2) follows the Head once the pawn is local.
     /// Idempotent: an existing prefab is loaded and brought up to date in place (component ids stay stable, so scene
-    /// instances keep their overrides); a missing one is created.
+    /// instances keep their overrides); a missing one is created. Components whose script no longer exists
+    /// (the retired TempFpsCameraAttach) are removed.
     /// MCP: execute_menu_item("CinliMahzen/Setup/Build Human Prefab").
     /// </summary>
     public static class HumanPrefabBuilder
@@ -69,9 +71,12 @@ namespace CinliMahzen.Editor
             controller.radius = BodyRadius;
             controller.center = new Vector3(0f, BodyHeight * 0.5f, 0f);
 
+            int removed = GameObjectUtility.RemoveMonoBehavioursWithMissingScript(root);
+            if (removed > 0)
+                Debug.Log("[SetupPlayer] Removed " + removed + " component(s) with a missing script from " + root.name);
+
             var human = GetOrAdd<HumanController>(root);
             GetOrAdd<Interactor>(root);
-            GetOrAdd<TempFpsCameraAttach>(root);
 
             Transform visual = root.transform.Find("Visual");
             if (visual == null)
