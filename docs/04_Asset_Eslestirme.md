@@ -42,6 +42,10 @@
 | Tavan | `ceiling_tile` |
 | Dekor | `crates_stacked`, `box_stacked`, `barrel_small_stack`, `rubble_*`, `wall_shelves`, `keyring_hanging` |
 
+**Graybox ev v0 (TODO 1.9):** yerleşim verisi `Assets/_Project/Scripts/World/Graybox/GrayboxLayout.cs` (`Default`; sabit ve elle düzenlenir: oda dikdörtgenleri, kapılar, merdiven, korkuluk, bahçe prop'ları; üretici yok). Yeniden kurma: `CinliMahzen/House/Build Graybox` → `Assets/_Project/Prefabs/World/P_House.prefab` (üzerine yazar); `Place House In Open Scene` açık sahneye (0,0,0) koyar; `Print Graybox ASCII Map` kat planlarını konsola yazar.
+- Ölçek: 4 m grid, duvar grid çizgisine ortalı ve kenar başına bir kez (`GrayboxWallPlanner`); çit ve korkuluk = `Env_Wall` yükseklik/kalınlık ölçekli (`Env_WallHalf` 2 m uzunluğunda ama 4 m yüksekliğinde, çit işi görmez). Aşama geçidi ve ön kapı kanadı çizili, collider'ı kapalı (kilit 2.7'de).
+- Merdiven: `Env_Stairs` **ölçeksiz**, 1 hücre (4 m koşu = 4 m kat, 45°; `RampCollider` ile `slopeLimit` 50° çıkar). Prefab döndürülmeden yerel −Z'ye yükselir, pivot üst uçtadır: pivot varış kenarının ortasına konur, yaw = `GrayboxStairs.ModelYawDegrees` (Kuzey için 180°, giriş +Z ucu = güney).
+
 ---
 
 ## 3. Possessable Eşyalar (`PD_*` v2.1)
