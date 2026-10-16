@@ -17,7 +17,7 @@
 | `wall_gated` | 4.00 x 4.00 x 1.00 | wall ile aynı (parmaklık) | Aşama geçidi alternatifi |
 | `floor_tile_large` | 4.00 x 0.15 x 4.00 | hücre merkezi; üst yüzey +0.05 | |
 | `floor_tile_small` | 2.00 x 0.15 x 2.00 | karo merkezi | |
-| `stairs` | 5.00 x 5.10 x 4.00 | pivot yerelde z=0 ucu (üst uç); **−Z yerine pivota doğru yükselir** (2026-10-16 raycast ölçümü): 8 basamak x 0.5 m = 4 m yükseklik / 4 m koşu (45°), 5.1 m üst korkuluk | `Env_Stairs`/`Env_StairsWide` prefablarında 45° `RampCollider` var (`CinliMahzen/Setup/Add Ramp Colliders To Stairs`); insan `slopeLimit` 50° ile çıkar |
+| `stairs` | 5.00 x 5.10 x 4.00 | pivot yerelde z=0 ucu (üst uç); **yerel −Z yönünde (pivota doğru) yükselir** (2026-10-16 raycast ölçümü): 8 basamak x 0.5 m = 4 m yükseklik / 4 m koşu (45°), 5.1 m üst korkuluk | `Env_Stairs`/`Env_StairsWide` prefablarında 45° `RampCollider` var (`CinliMahzen/Setup/Add Ramp Colliders To Stairs`); insan `slopeLimit` 50° ile çıkar |
 | `shelf_large` | 2.00 x 0.45 x 0.50 | arka yüz z=0 | |
 | `barrel_large` | 1.80 x 2.00 x 1.80 | taban merkezi | |
 | `chest` | 1.70 x 1.30 x 1.45 | taban merkezi | |
