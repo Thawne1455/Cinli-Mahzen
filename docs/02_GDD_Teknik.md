@@ -252,6 +252,12 @@ IObjectiveInfo
 }
 enum ObjectivePhase : byte { Garden = 0, House = 1, Cellar = 2, Done = 3 }
 
+// Jinn uygular (JinnEnergyCore yanında); Objectives toplu sabotaj enerjisini bununla öder
+IJinnEnergyService { float Get(PlayerId p); bool TrySpendAuthority(PlayerId p, float amount); } // yetmezse false, hiçbir şey değişmez
+
+// Player uygular (Inventory, TODO 2.7); Objectives eşya gerektiren bulmacada sorar
+IInventoryQuery { bool HasItem(PlayerId p, string itemId); }
+
 // Match uygular
 IMatchInfo { MatchState State; int RoundIndex; double StateEndTime; bool JinnsAwake; int Faints; }
 enum RoundEndReason : byte { None = 0, Faint = 1, TreasureDug = 2, Timeout = 3 }
@@ -480,7 +486,7 @@ Kötü Cin Toplu Sabotajı (Anti-Spam):
 ### 7.4 Bileşenler
 | Bileşen | Tip | Görev |
 |---|---|---|
-| `PuzzleSystem` | servis (otoriter) | Slot -> `PuzzleState`; op ve toplu sabotaj handler'ları; `IObjectiveInfo` |
+| `PuzzleSystem` | servis (otoriter) | Slot -> `PuzzleState`; op ve toplu sabotaj handler'ları; `IObjectiveInfo`. Mantık düz C# `PuzzleSystemCore` (+ `PuzzleRules`, `PuzzleSlotRuntime`, `PuzzleDenyReason`); MonoBehaviour ince sarmalayıcı |
 | `PuzzleView` | MonoBehaviour | Değerleri görsele çevirir. Sabotajda yüksek sesli gıcırtı (odada Radyo çalmıyorsa) + titreme |
 | `PuzzlePart` | IInteractable | Parça başına; sadece İnsan etkileşime girer |
 | `PuzzleScrambleTarget` | IInteractable | Bulmaca gövdesi; sadece Kötü Cin `1.5 sn` basılı tutarak toplu sabotaj yapar |
