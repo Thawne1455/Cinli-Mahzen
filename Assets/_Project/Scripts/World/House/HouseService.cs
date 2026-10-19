@@ -29,6 +29,7 @@ namespace CinliMahzen.World
         private const string LogCategory = "House";
         private const string InteractableLayerName = "Interactable";
         private static readonly Vector3 SwitchColliderSize = new Vector3(0.3f, 0.3f, 0.2f);
+        private static readonly Vector3 LampColliderSize = new Vector3(0.5f, 0.5f, 0.5f);
         private const char PathSeparator = '/';
 
         [Tooltip("Metres added to every side of the union of the room boxes for IHouseInfo.Bounds (spirits are clamped inside).")]
@@ -163,6 +164,16 @@ namespace CinliMahzen.World
                 {
                     if (!_lampViews.ContainsKey(lamp.NetId))
                         _lampViews.Add(lamp.NetId, LampLightView.Create(lamp.transform, range));
+                    // TODO 3.5: the good jinn aims at the lamp (SpiritInteractor raycasts the Interactable layer).
+                    lamp.BindLights(_lights);
+                    if (lamp.GetComponent<Collider>() == null)
+                    {
+                        var box = lamp.gameObject.AddComponent<BoxCollider>();
+                        box.size = LampColliderSize;
+                        box.isTrigger = true;
+                    }
+                    if (interactable >= 0)
+                        lamp.gameObject.layer = interactable;
                 }
                 else if (_netMarkers[i] is LightSwitch light)
                 {

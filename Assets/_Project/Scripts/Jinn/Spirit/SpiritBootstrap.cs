@@ -37,7 +37,19 @@ namespace CinliMahzen.Jinn
             // TODO 1.8: the real jinn energy (regen needs a frame tick, so it lives on a hidden persistent object).
             var energy = new GameObject("JinnEnergy");
             Object.DontDestroyOnLoad(energy);
-            energy.AddComponent<JinnEnergyRunner>();
+            JinnEnergyRunner runner = energy.AddComponent<JinnEnergyRunner>();
+
+            // TODO 3.5: the good jinn's focus drains FocusReferenceCost per second and stops when the tank is empty.
+            JinnEnergyService service = runner.Service;
+            if (service != null)
+            {
+                float cost = config.FocusReferenceCost;
+                authority.FocusChanged += (player, focusing) => service.SetDrainAuthority(player, focusing ? cost : 0f);
+                service.DrainExhausted += authority.StopFocusAuthority;
+            }
+
+            // TODO 3.5: the good jinn's pings.
+            energy.AddComponent<PingRunner>();
         }
     }
 }

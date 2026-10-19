@@ -76,6 +76,15 @@ MonoBehaviour:
   - key: interact.light_switch
     tr: "I\u015F\u0131\u011F\u0131 a\xE7 / kapat"
     en: Lights on / off
+  - key: interact.exorcise
+    tr: "[R bas\u0131l\u0131 tut] Kov"
+    en: '[Hold R] Exorcise'
+  - key: interact.lamp_light
+    tr: "Lambay\u0131 yak"
+    en: Light the lamp
+  - key: interact.lamp_repair
+    tr: "[Bas\u0131l\u0131 tut] Lambay\u0131 onar"
+    en: '[Hold] Repair the lamp'
   - key: interact.puzzle_paint
     tr: Boya / sil
     en: Paint / wipe

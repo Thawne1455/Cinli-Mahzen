@@ -56,6 +56,8 @@ namespace CinliMahzen.Jinn
         // Cached once so Register/Unregister never allocate a new delegate.
         private Action<NetMsg> _onFocusChanged;
         private Action<NetMsg> _onBumped;
+        private Action<NetMsg> _onStunned;
+        private double _stunnedUntil;
 
         private bool _wasLocal;
         private bool _boosting;
@@ -83,6 +85,9 @@ namespace CinliMahzen.Jinn
         /// </summary>
         public bool IsFocusingReference => _focusingReference;
 
+        /// <summary>True until the JinnStunned time of this jinn (kick, exorcism).</summary>
+        public bool IsStunned => _net != null && _net.Time < _stunnedUntil;
+
         /// <summary>The local Shift (Boost) state, only while this pawn is played; false otherwise.</summary>
         public bool IsBoosting => _boosting;
 
@@ -97,6 +102,7 @@ namespace CinliMahzen.Jinn
             _pawn = GetComponent<SpiritPawn>();
             _onFocusChanged = OnReferenceFocusChanged;
             _onBumped = OnSpiritBumped;
+            _onStunned = OnJinnStunned;
         }
 
         private void OnEnable()
@@ -122,6 +128,8 @@ namespace CinliMahzen.Jinn
 
             _net.Register(MsgCode.ReferenceFocusChanged, _onFocusChanged);
             _net.Register(MsgCode.SpiritBumped, _onBumped);
+            _net.Register(MsgCode.JinnStunned, _onStunned);
+            _stunnedUntil = 0d;
         }
 
         private void OnDisable()
@@ -130,6 +138,7 @@ namespace CinliMahzen.Jinn
             {
                 _net.Unregister(MsgCode.ReferenceFocusChanged, _onFocusChanged);
                 _net.Unregister(MsgCode.SpiritBumped, _onBumped);
+                _net.Unregister(MsgCode.JinnStunned, _onStunned);
                 _net = null;
             }
             _boosting = false;
@@ -158,7 +167,9 @@ namespace CinliMahzen.Jinn
 
             _boosting = input.Boost;
             UpdateLook(input);
-            UpdateFlight(input, Time.deltaTime);
+            // TODO 3.5: a kicked / exorcised jinn hangs still while stunned (it may still look around).
+            if (!IsStunned)
+                UpdateFlight(input, Time.deltaTime);
             UpdateFocusRequest(input);
             UpdateSpiritBump();
         }
@@ -419,6 +430,12 @@ namespace CinliMahzen.Jinn
             }
             sb.Append(']');
             return sb.ToString();
+        }
+
+        private void OnJinnStunned(NetMsg msg)
+        {
+            if (JinnStunnedMsg.TryDecode(msg, out PlayerId player, out double until) && player == Owner)
+                _stunnedUntil = until;
         }
 
         private static float NormalizePitch(float eulerX)

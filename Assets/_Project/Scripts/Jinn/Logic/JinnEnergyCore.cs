@@ -77,6 +77,21 @@ namespace CinliMahzen.Jinn
             return true;
         }
 
+        /// <summary>
+        /// Authority: continuous cost (the good jinn's focus, TODO 3.5). Deducts up to <paramref name="amount"/> without forcing a sync (the regen
+        /// throttle covers it). Returns false when the tank ran dry this time (the remainder could not be paid).
+        /// </summary>
+        public bool Drain(float amount)
+        {
+            if (Unlimited || amount <= 0f)
+            {
+                return true;
+            }
+            bool enough = Current >= amount;
+            Current = Clamp(Current - amount);
+            return enough;
+        }
+
         /// <summary>Öfke on/off. Forces a sync so HUDs switch immediately.</summary>
         public void SetRage(bool active)
         {

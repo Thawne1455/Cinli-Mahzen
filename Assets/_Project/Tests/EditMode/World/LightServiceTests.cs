@@ -152,5 +152,55 @@ namespace CinliMahzen.Tests.EditMode.World
             Assert.AreEqual(LampState.Broken, state);
             Assert.IsFalse(LightsChangedMsg.TryDecode(new NetMsg { Code = MsgCode.LightsChanged, Payload = new object[] { 1002, (byte)9 } }, out _, out _));
         }
+
+        // ---------- good jinn: light / repair (TODO 3.5) ----------
+
+        private Vector3 PositionOfLamp(NetId lamp) => _lights.PositionOf(lamp);
+
+        private void UsePlayers()
+        {
+            var players = new OfflinePlayerRegistry();
+            players.SetRoles(new[] { Role.Human, Role.GoodJinn, Role.EvilJinn, Role.EvilJinn });
+            GameServices.Register<IPlayerRegistry>(players);
+        }
+
+        [Test]
+        public void GoodJinn_LightsAnOffLamp_FromRange()
+        {
+            UsePlayers();
+            NetId lamp = LampOf(Kitchen);
+            Vector3 near = PositionOfLamp(lamp) + Vector3.down * 2f;
+
+            Assert.IsFalse(_lights.ProcessLampRequestAuthority(new PlayerId(2), lamp, false, near, 8f), "the evil jinn cannot");
+            Assert.IsFalse(_lights.ProcessLampRequestAuthority(new PlayerId(1), lamp, false, near + Vector3.right * 20f, 8f), "too far");
+            Assert.IsTrue(_lights.ProcessLampRequestAuthority(new PlayerId(1), lamp, false, near, 8f));
+            Assert.AreEqual(RoomLightState.On, _rooms.LightOf(Kitchen));
+            Assert.IsFalse(_lights.ProcessLampRequestAuthority(new PlayerId(1), lamp, false, near, 8f), "already on");
+            GameServices.ResetToStubs();
+        }
+
+        [Test]
+        public void GoodJinn_RepairsABrokenLamp_AndItLightsAgain()
+        {
+            UsePlayers();
+            NetId lamp = LampOf(Kitchen);
+            Vector3 near = PositionOfLamp(lamp);
+            _lights.SetLampAuthority(lamp, LampState.Broken);
+
+            Assert.IsFalse(_lights.ProcessLampRequestAuthority(new PlayerId(1), lamp, false, near, 8f), "lighting is not repairing");
+            Assert.IsTrue(_lights.ProcessLampRequestAuthority(new PlayerId(1), lamp, true, near, 8f));
+            Assert.AreEqual(LampState.On, _lights.State.StateOf(lamp));
+            GameServices.ResetToStubs();
+        }
+
+        [Test]
+        public void ReqLamp_RoundTrip()
+        {
+            Assert.IsTrue(ReqLampMsg.TryDecode(ReqLampMsg.Encode(new NetId(1005), true), out NetId lamp, out bool repair));
+            Assert.AreEqual(new NetId(1005), lamp);
+            Assert.IsTrue(repair);
+            Assert.IsTrue(ReqLampMsg.TryDecode(ReqLampMsg.Encode(new NetId(1005), false), out _, out bool light));
+            Assert.IsFalse(light);
+        }
     }
 }

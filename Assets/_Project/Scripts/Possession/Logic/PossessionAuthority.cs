@@ -40,6 +40,9 @@ namespace CinliMahzen.Possession
         // Cached once so Register/Unregister/Subscribe never allocate a new delegate.
         private readonly Action<NetMsg> _onReqPossess;
         private readonly Action<NetMsg> _onReqUnpossess;
+        private readonly Action<NetMsg> _onReqExorcise;
+        private readonly CooldownTracker _exorciseCooldowns = new CooldownTracker();
+        private ExorciseSettings _exorcise;
         private readonly Action<RoundStartedEvt> _onRoundStarted;
         private bool _attached;
 
@@ -60,6 +63,7 @@ namespace CinliMahzen.Possession
 
             _onReqPossess = OnReqPossess;
             _onReqUnpossess = OnReqUnpossess;
+            _onReqExorcise = OnReqExorcise;
             _onRoundStarted = OnRoundStarted;
         }
 
@@ -69,11 +73,21 @@ namespace CinliMahzen.Possession
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
             var rules = new PossessionRules(config.PossessRange, config.NetRangeTolerance, config.PossessTime, config.ReenterCooldown);
-            return new PossessionAuthority(net, world, rules, config.LitRoomEjectDelay, config.KickStun);
+            var authority = new PossessionAuthority(net, world, rules, config.LitRoomEjectDelay, config.KickStun);
+            authority.Exorcise = new ExorciseSettings(config.ExorciseRange + config.NetRangeTolerance, config.ExorciseCooldown,
+                config.ExorciseStun, config.ExorcisePossessLock);
+            return authority;
         }
 
         /// <summary>The rules and per-object state machines (the action runner of TODO 1.8 drives Charging / Recovering through it).</summary>
         public PossessionArbiterCore Arbiter => _arbiter;
+
+        /// <summary>The good jinn's exorcism (TODO 3.5). Default: range 0 = always out of range.</summary>
+        public ExorciseSettings Exorcise
+        {
+            get => _exorcise;
+            set => _exorcise = value;
+        }
 
         /// <summary>Timer transitions other than EnterCompleted / SpentEjected (ChargeReady, RecoverFinished) — for the action runner.</summary>
         public event Action<PossessionTransitionInfo> TransitionOccurred;
@@ -85,6 +99,7 @@ namespace CinliMahzen.Possession
             _attached = true;
             _net.Register(MsgCode.ReqPossess, _onReqPossess);
             _net.Register(MsgCode.ReqUnpossess, _onReqUnpossess);
+            _net.Register(MsgCode.ReqExorcise, _onReqExorcise);
             EventBus.Subscribe(_onRoundStarted);
         }
 
@@ -95,6 +110,7 @@ namespace CinliMahzen.Possession
             _attached = false;
             _net.Unregister(MsgCode.ReqPossess, _onReqPossess);
             _net.Unregister(MsgCode.ReqUnpossess, _onReqUnpossess);
+            _net.Unregister(MsgCode.ReqExorcise, _onReqExorcise);
             EventBus.Unsubscribe(_onRoundStarted);
         }
 
@@ -178,9 +194,51 @@ namespace CinliMahzen.Possession
             if (occupant.IsValid)
             {
                 _world.LockUntil(occupant, _net.Time + _kickStun);
+                _net.Broadcast(JinnStunnedMsg.Encode(occupant, _net.Time + _kickStun));
                 CMLog.Info(LogCategory, by + " kicked " + obj + ": " + occupant + " stunned for " + _kickStun + " s");
             }
             return occupant;
+        }
+
+        /// <summary>
+        /// Authority only (TODO 3.5). The good jinn <paramref name="by"/> exorcises <paramref name="obj"/>: it must be the good jinn, off cooldown,
+        /// within range of an object an evil jinn is in. The evil jinn is ejected (<see cref="PossessEndReason.Exorcised"/>), stunned for
+        /// <c>ExorciseStun</c> (JinnStunned) and cannot possess for <c>ExorcisePossessLock</c>; the good jinn's cooldown starts. Returns the
+        /// ejected player or <see cref="PlayerId.None"/> (refused: nothing happens).
+        /// </summary>
+        public PlayerId ProcessExorciseAuthority(PlayerId by, NetId obj)
+        {
+            Debug.Assert(_net.IsAuthority, "ProcessExorciseAuthority must only run on the authority");
+            double now = _net.Time;
+            if (_world.GetRole(by) != Role.GoodJinn)
+                return Refuse(by, obj, "only the good jinn exorcises");
+            long key = CooldownTracker.Key(by.Value, 0);
+            if (!_exorciseCooldowns.IsReady(key, now))
+                return Refuse(by, obj, "cooldown");
+            PlayerId occupant = _arbiter.PossessorOf(obj);
+            if (!occupant.IsValid || !_arbiter.IsPossessed(obj) || _world.GetRole(occupant) != Role.EvilJinn)
+                return Refuse(by, obj, "no evil jinn inside");
+            if (!_world.TryGetDistance(by, obj, out float distance) || distance > _exorcise.Range)
+                return Refuse(by, obj, "out of range");
+
+            EjectAuthority(obj, PossessEndReason.Exorcised);
+            _world.LockUntil(occupant, now + Math.Max(_exorcise.PossessLock, _exorcise.Stun));
+            _net.Broadcast(JinnStunnedMsg.Encode(occupant, now + _exorcise.Stun));
+            _exorciseCooldowns.Start(key, now, _exorcise.Cooldown);
+            CMLog.Info(LogCategory, by + " exorcised " + occupant + " from " + obj);
+            return occupant;
+        }
+
+        /// <summary>When <paramref name="goodJinn"/> may exorcise again (negative infinity: never used this round).</summary>
+        public double ExorciseReadyAt(PlayerId goodJinn)
+        {
+            return _exorciseCooldowns.ReadyAt(CooldownTracker.Key(goodJinn.Value, 0));
+        }
+
+        private static PlayerId Refuse(PlayerId by, NetId obj, string why)
+        {
+            CMLog.Info(LogCategory, "Exorcise of " + obj + " by " + by + " refused: " + why);
+            return PlayerId.None;
         }
 
         /// <summary>
@@ -283,8 +341,21 @@ namespace CinliMahzen.Possession
             ProcessUnpossessAuthority(msg.Sender);
         }
 
+        private void OnReqExorcise(NetMsg msg)
+        {
+            if (!_net.IsAuthority)
+                return;
+            if (!ReqExorciseMsg.TryDecode(msg, out NetId obj))
+            {
+                CMLog.Warn(LogCategory, "Malformed ReqExorcise from " + msg.Sender + " ignored");
+                return;
+            }
+            ProcessExorciseAuthority(msg.Sender, obj);
+        }
+
         private void OnRoundStarted(RoundStartedEvt evt)
         {
+            _exorciseCooldowns.Reset();
             _arbiter.ResetRound();
             _world.ClearLocks();
             _litSince.Clear();

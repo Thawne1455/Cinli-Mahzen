@@ -32,6 +32,7 @@ namespace CinliMahzen.World
         private readonly List<NetId> _planLamps = new List<NetId>(4);
         private readonly List<LampState> _planStates = new List<LampState>(4);
         private readonly Action<NetMsg> _onChanged;
+        private readonly Action<NetMsg> _onReqLamp;
         private readonly Action<RoundStartedEvt> _onRoundStarted;
         private bool _attached;
 
@@ -45,6 +46,7 @@ namespace CinliMahzen.World
             for (int i = 0; i < index.Lamps.Count; i++)
                 _core.AddLamp(index.Lamps[i].NetId, index.ResolveRoom(index.Lamps[i]));
             _onChanged = OnLightsChanged;
+            _onReqLamp = OnReqLamp;
             _onRoundStarted = OnRoundStarted;
         }
 
@@ -59,6 +61,8 @@ namespace CinliMahzen.World
                 return;
             _attached = true;
             _net.Register(MsgCode.LightsChanged, _onChanged);
+            _net.Register(MsgCode.ReqLampLight, _onReqLamp);
+            _net.Register(MsgCode.ReqLampRepair, _onReqLamp);
             EventBus.Subscribe(_onRoundStarted);
         }
 
@@ -68,6 +72,8 @@ namespace CinliMahzen.World
                 return;
             _attached = false;
             _net.Unregister(MsgCode.LightsChanged, _onChanged);
+            _net.Unregister(MsgCode.ReqLampLight, _onReqLamp);
+            _net.Unregister(MsgCode.ReqLampRepair, _onReqLamp);
             EventBus.Unsubscribe(_onRoundStarted);
         }
 
@@ -103,6 +109,41 @@ namespace CinliMahzen.World
             for (int i = 0; i < _planLamps.Count; i++)
                 _net.Broadcast(LightsChangedMsg.Encode(_planLamps[i], _planStates[i]));
             return _planLamps.Count;
+        }
+
+        /// <summary>
+        /// Authority only (TODO 3.5). The good jinn <paramref name="who"/> lights an Off lamp (<paramref name="repair"/> false) or repairs a Broken one
+        /// (true; it lights up again). Checks: role GoodJinn, the lamp state, and the jinn within <paramref name="range"/> of the lamp (its pawn
+        /// position from <paramref name="pawnPosition"/>). Returns whether a LightsChanged was sent.
+        /// </summary>
+        public bool ProcessLampRequestAuthority(PlayerId who, NetId lamp, bool repair, Vector3? pawnPosition, float range)
+        {
+            Debug.Assert(_net.IsAuthority, "ProcessLampRequestAuthority must only run on the authority");
+            IPlayerRegistry players = GameServices.Players;
+            if (players == null || players.GetRole(who) != Role.GoodJinn || !_core.IsLamp(lamp))
+                return false;
+            LampState state = _core.StateOf(lamp);
+            if (repair ? state != LampState.Broken : state != LampState.Off)
+                return false;
+            if (!pawnPosition.HasValue || (PositionOf(lamp) - pawnPosition.Value).magnitude > range)
+            {
+                CMLog.Info(Category, (repair ? "Repair" : "Light") + " of " + lamp + " by " + who + " refused: out of range");
+                return false;
+            }
+            _net.Broadcast(LightsChangedMsg.Encode(lamp, LampState.On));
+            return true;
+        }
+
+        /// <summary>World position of a LampMarker (Vector3.zero for an unknown id).</summary>
+        public Vector3 PositionOf(NetId lamp)
+        {
+            IReadOnlyList<HouseSpotEntry> lamps = _index.Lamps;
+            for (int i = 0; i < lamps.Count; i++)
+            {
+                if (lamps[i].NetId == lamp)
+                    return lamps[i].Position;
+            }
+            return Vector3.zero;
         }
 
         /// <summary>
@@ -150,6 +191,32 @@ namespace CinliMahzen.World
             if (_rooms.LightOf(room) != light && _rooms.SetRoomLight(room, light))
                 EventBus.Publish(new RoomLightChangedEvt(room, light));
             LampChanged?.Invoke(lamp, state);
+        }
+
+        private void OnReqLamp(NetMsg msg)
+        {
+            if (!_net.IsAuthority)
+                return;
+            if (!ReqLampMsg.TryDecode(msg, out NetId lamp, out bool repair))
+            {
+                CMLog.Warn(Category, "Malformed lamp request ignored");
+                return;
+            }
+            GameBalanceConfig config = GameServices.Config;
+            float range = config != null ? config.LampLightRange + config.NetRangeTolerance : LampLightView.DefaultRange;
+            ProcessLampRequestAuthority(msg.Sender, lamp, repair, PawnPosition(msg.Sender), range);
+        }
+
+        /// <summary>Scene search over PawnBase by owner; on a request only.</summary>
+        private static Vector3? PawnPosition(PlayerId who)
+        {
+            PawnBase[] pawns = UnityEngine.Object.FindObjectsByType<PawnBase>(FindObjectsSortMode.None);
+            for (int i = 0; i < pawns.Length; i++)
+            {
+                if (pawns[i].Owner == who)
+                    return pawns[i].transform.position;
+            }
+            return null;
         }
 
         private void OnRoundStarted(RoundStartedEvt e)

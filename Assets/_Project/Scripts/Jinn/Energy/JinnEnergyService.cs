@@ -28,6 +28,7 @@ namespace CinliMahzen.Jinn
         private readonly Action<NetMsg> _onChanged;
         private readonly Action _onRolesChanged;
         private readonly Action<RoundStartedEvt> _onRoundStarted;
+        private readonly float[] _drainPerSecond = new float[Slots];
         private bool _attached;
         private bool _unlimited;
 
@@ -49,6 +50,21 @@ namespace CinliMahzen.Jinn
             var good = new JinnEnergySettings(config.GoodEnergyMax, Mathf.Min(config.EnergyStart, config.GoodEnergyMax), config.GoodEnergyRegen, 1f,
                 syncMinDelta, syncMinInterval);
             return new JinnEnergyService(net, players, evil, good);
+        }
+
+        /// <summary>Authority: a continuous drain ran a player dry (the drain is cleared first). TODO 3.5: the good jinn's focus stops.</summary>
+        public event Action<PlayerId> DrainExhausted;
+
+        /// <summary>Authority: <paramref name="player"/> pays <paramref name="perSecond"/> every second until set back to 0 (focus: FocusReferenceCost).</summary>
+        public void SetDrainAuthority(PlayerId player, float perSecond)
+        {
+            if (player.IsValid)
+                _drainPerSecond[player.Value] = perSecond > 0f ? perSecond : 0f;
+        }
+
+        public float DrainOf(PlayerId player)
+        {
+            return player.IsValid ? _drainPerSecond[player.Value] : 0f;
         }
 
         /// <summary>Debug (F6): every spend succeeds and nothing is deducted.</summary>
@@ -119,6 +135,12 @@ namespace CinliMahzen.Jinn
                 if (core == null)
                     continue;
                 core.Tick(deltaTime);
+                float drain = _drainPerSecond[i];
+                if (drain > 0f && !core.Drain(drain * deltaTime))
+                {
+                    _drainPerSecond[i] = 0f;
+                    DrainExhausted?.Invoke(new PlayerId((byte)i));
+                }
                 if (core.NeedsSync(now))
                     Sync(new PlayerId((byte)i), core, now);
             }
@@ -153,6 +175,7 @@ namespace CinliMahzen.Jinn
         private void ResetAll()
         {
             Array.Clear(_cores, 0, Slots);
+            Array.Clear(_drainPerSecond, 0, Slots);
             var infos = _players.Players;
             for (int i = 0; i < infos.Count; i++)
             {

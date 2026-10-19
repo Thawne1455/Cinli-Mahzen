@@ -97,6 +97,8 @@ namespace CinliMahzen.Editor
             GetOrAdd<SpiritInteractor>(root);
             // TODO 1.8: left / right click actions and WASD hops while inside an object.
             GetOrAdd<PossessedActionInput>(root);
+            // TODO 3.5: the good jinn's ping (Q) and exorcism (R held).
+            GetOrAdd<GoodJinnAbilityInput>(root);
 
             Transform eyes = root.transform.Find(EyesName);
             if (eyes == null)
