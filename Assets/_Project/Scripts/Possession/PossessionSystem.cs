@@ -48,6 +48,7 @@ namespace CinliMahzen.Possession
         private Action<NetMsg> _onActionResolved;
         private Action<NetMsg> _onProjectileSpawned;
         private Action<NetMsg> _onProjectileImpact;
+        private Action<NetMsg> _onLanternPulsed;
 
         private readonly List<Possessable> _sorted = new List<Possessable>(64);
 
@@ -98,6 +99,7 @@ namespace CinliMahzen.Possession
             _onActionResolved = OnActionResolved;
             _onProjectileSpawned = OnProjectileSpawned;
             _onProjectileImpact = OnProjectileImpact;
+            _onLanternPulsed = OnLanternPulsed;
         }
 
         /// <summary>The actions of possessed objects (authority side). Null when inert.</summary>
@@ -118,6 +120,7 @@ namespace CinliMahzen.Possession
             _net.Register(MsgCode.ActionResolved, _onActionResolved);
             _net.Register(MsgCode.ProjectileSpawned, _onProjectileSpawned);
             _net.Register(MsgCode.ProjectileImpact, _onProjectileImpact);
+            _net.Register(MsgCode.LanternPulsed, _onLanternPulsed);
             GameServices.Register<IPossessionQuery>(this);
             DebugState.Register(DebugStateKey, _mirror.BuildDebugJson);
 
@@ -145,6 +148,7 @@ namespace CinliMahzen.Possession
             _net.Unregister(MsgCode.ActionResolved, _onActionResolved);
             _net.Unregister(MsgCode.ProjectileSpawned, _onProjectileSpawned);
             _net.Unregister(MsgCode.ProjectileImpact, _onProjectileImpact);
+            _net.Unregister(MsgCode.LanternPulsed, _onLanternPulsed);
             GameServices.Unregister<IPossessionQuery>(this);
             if (Instance == this)
             {
@@ -349,6 +353,15 @@ namespace CinliMahzen.Possession
             PossessableActionDef primary = p.Definition != null ? p.Definition.Primary : null;
             bool breaks = primary != null && primary.SingleUse && primary.Shape == ActionShape.Projectile;
             p.Land(point, breaks);
+        }
+
+        /// <summary>TODO 3.8: the human's lantern pulse — the possessed objects it caught glow for everybody.</summary>
+        private void OnLanternPulsed(NetMsg msg)
+        {
+            if (!HumanActionMsgs.TryDecodePulsed(msg, out PlayerId _, out int[] objects, out double until))
+                return;
+            for (int i = 0; i < objects.Length; i++)
+                Possessable.Find(new NetId(objects[i]))?.ShowPulseGlow(until);
         }
 
         // ---- IActionWorld (authority, on request / per projectile step) ----

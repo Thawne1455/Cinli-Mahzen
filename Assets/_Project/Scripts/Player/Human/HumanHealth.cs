@@ -25,6 +25,7 @@ namespace CinliMahzen.Player
     [RequireComponent(typeof(HumanController))]
     public sealed class HumanHealth : MonoBehaviour, IDamageable, IHumanStatusQuery
     {
+        private HumanLantern _lantern;
         private const string DebugStateKey = "health";
 
         private static HumanHealth s_debugOwner;
@@ -66,8 +67,8 @@ namespace CinliMahzen.Player
         /// <summary>Mirrored: true from the HumanFainted message until the HumanRevived message.</summary>
         public bool IsFainted => _mirror != null && _mirror.IsFainted;
 
-        /// <summary>Always false until the fixed lantern arrives (TODO 3.8 HumanLantern): it will report the Blessed Oil strong mode here.</summary>
-        public bool IsBlessedLanternActive => false;
+        /// <summary>The fixed lantern is in strong mode (Blessed Oil, TODO 3.8 <see cref="HumanLantern"/> on the same pawn).</summary>
+        public bool IsBlessedLanternActive => _lantern != null && _lantern.IsStrong;
 
         public bool IsInLanternSafeZone(Vector3 worldPos)
         {
@@ -85,6 +86,7 @@ namespace CinliMahzen.Player
 
         private void Awake()
         {
+            _lantern = GetComponent<HumanLantern>();
             _human = GetComponent<HumanController>();
             _onDamaged = OnDamagedMsg;
             _onFainted = OnFaintedMsg;

@@ -138,6 +138,37 @@ namespace CinliMahzen.Possession
             return reason;
         }
 
+        /// <summary>
+        /// Authority only (TODO 3.8). The human at <paramref name="humanPosition"/> pushes the free object <paramref name="obj"/> away from itself along
+        /// the ground, as far as its slide action goes (walls stop it) → ObjectMoved. False when nothing moves.
+        /// </summary>
+        public bool ProcessPushAuthority(PlayerId who, NetId obj, Vector3 humanPosition)
+        {
+            Debug.Assert(_net.IsAuthority, "ProcessPushAuthority must only run on the authority");
+            if (_world.GetRole(who) != Role.Human || _authority.Arbiter.IsPossessed(obj))
+                return false;
+            if (!_world.TryGetObject(obj, out PossessableDefinition def, out Vector3 position, out float yaw) || def == null)
+                return false;
+            PossessableActionDef slide = null;
+            for (int i = 0; i < def.ActionCount; i++)
+            {
+                PossessableActionDef action = def.GetAction(i);
+                if (action != null && action.Id == "slide")
+                    slide = action;
+            }
+            if (slide == null)
+                return false;
+            Vector3 dir = Vector3.ProjectOnPlane(position - humanPosition, Vector3.up);
+            if (dir.sqrMagnitude < 1e-6f)
+                return false;
+            dir.Normalize();
+            float distance = _world.FreeDistance(position + Vector3.up * MoveRadius, dir, MoveRadius, slide.ProjectileRange);
+            if (distance < MinHop)
+                return false;
+            _net.Broadcast(ObjectMovedMsg.Encode(obj, position + dir * distance, yaw));
+            return true;
+        }
+
         /// <summary>Authority only, every frame: steps the projectiles in the air.</summary>
         public void TickAuthority(double now)
         {

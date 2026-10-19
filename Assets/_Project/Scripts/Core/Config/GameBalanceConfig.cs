@@ -48,6 +48,9 @@ namespace CinliMahzen.Core
         [SerializeField] private float lanternPulseRange = 8f;
         [SerializeField] private float lanternPulseDuration = 3f;
         [SerializeField] private float lanternPulseCooldown = 12f;
+        [SerializeField] private float lanternPulseAngle = 30f;
+        [SerializeField] private float lanternWeakRange = 4f;
+        [SerializeField] private float lanternStrongRange = 12f;
         [SerializeField] private int itemSlotCount = 3;
 
         [Header("Jinn")]
@@ -179,6 +182,12 @@ namespace CinliMahzen.Core
         public float LanternPulseDuration => lanternPulseDuration;
         /// <summary>s</summary>
         public float LanternPulseCooldown => lanternPulseCooldown;
+        /// <summary>Half angle (degrees) of the Lantern Pulse cone (TODO 3.8).</summary>
+        public float LanternPulseAngle => lanternPulseAngle;
+        /// <summary>Reach (m) of the lantern's light before the Blessed Oil.</summary>
+        public float LanternWeakRange => lanternWeakRange;
+        /// <summary>Reach (m) of the lantern's light in strong mode (after the Blessed Oil).</summary>
+        public float LanternStrongRange => lanternStrongRange;
         /// <summary>Quest-item slots (the fixed lantern is not counted).</summary>
         public int ItemSlotCount => itemSlotCount;
 

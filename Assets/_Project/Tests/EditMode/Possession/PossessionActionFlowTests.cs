@@ -543,6 +543,31 @@ namespace CinliMahzen.Tests.EditMode.Possession
             Assert.AreEqual(ActionDenyReason.Blocked, _runner.ProcessHopAuthority(EvilId, Vector3.forward));
         }
 
+        // ---------- push (TODO 3.8) ----------
+
+        [Test]
+        public void HumanPush_MovesAFreeLargeObjectAwayFromTheHuman()
+        {
+            NetId barrel = Place("PD_Barrel", new Vector3(0f, 0f, 1f));
+
+            Assert.IsTrue(_runner.ProcessPushAuthority(HumanId, barrel, Vector3.zero));
+
+            Assert.IsTrue(ObjectMovedMsg.TryDecode(Sent(MsgCode.ObjectMoved)[0], out _, out Vector3 position, out _));
+            Assert.AreEqual(new Vector3(0f, 0f, 2.5f), position, "1.5 m (the slide range) away from the human");
+        }
+
+        [Test]
+        public void HumanPush_IsRefused_ForJinns_PossessedObjects_AndUnpushables()
+        {
+            NetId barrel = Place("PD_Barrel", new Vector3(0f, 0f, 1f));
+            NetId bottle = Place("PD_Bottle", new Vector3(3f, 0f, 1f));
+
+            Assert.IsFalse(_runner.ProcessPushAuthority(EvilId, barrel, Vector3.zero), "only the human pushes");
+            Assert.IsFalse(_runner.ProcessPushAuthority(HumanId, bottle, new Vector3(3f, 0f, 0f)), "small objects are not pushed");
+            Enter(GoodId, barrel);
+            Assert.IsFalse(_runner.ProcessPushAuthority(HumanId, barrel, Vector3.zero), "someone is inside");
+        }
+
         // ---------- cellar (TODO 3.7) ----------
 
         [Test]

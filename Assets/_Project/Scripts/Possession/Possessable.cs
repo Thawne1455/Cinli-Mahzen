@@ -14,8 +14,10 @@ namespace CinliMahzen.Possession
     /// <para>Kick (<see cref="IKickable"/>) forwards to the authority; the human's kick (TODO 3.8) calls it on the authority.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class Possessable : MonoBehaviour, INetEntity, IKickable
+    public sealed class Possessable : MonoBehaviour, INetEntity, IKickable, IInteractable
     {
+        private const string PushActionId = "slide";
+        private const string InteractableLayerName = "Interactable";
         private static readonly List<Possessable> s_all = new List<Possessable>(64);
 
         [SerializeField] private PossessableDefinition definition;
@@ -43,6 +45,11 @@ namespace CinliMahzen.Possession
         private bool _flying;
         private ProjectilePath _flight;
         private bool _broken;
+
+        // TODO 3.8: lantern pulse glow and the human's push.
+        private GameObject _glow;
+        private double _glowUntil;
+        private PossessableActionDef _push;
 
         /// <summary>Every enabled possessable in the loaded scenes. Do not modify.</summary>
         public static IReadOnlyList<Possessable> All => s_all;
@@ -72,6 +79,87 @@ namespace CinliMahzen.Possession
         public bool IsBroken => _broken;
 
         // ---- poses from broadcasts (TODO 1.8) ----
+
+        // ---- the human's push (TODO 3.8) ----
+
+        /// <summary>The slide action of a large object: a human can push it that far (E held PushHoldTime). Null = not pushable.</summary>
+        public PossessableActionDef PushAction => _push;
+
+        public string PromptKey => "interact.push";
+
+        public float HoldTime
+        {
+            get
+            {
+                GameBalanceConfig config = GameServices.Config;
+                return config != null ? config.PushHoldTime : 1.5f;
+            }
+        }
+
+        public float NoiseOnInteract => 0.6f;
+
+        public bool CanInteract(PlayerId who, Role role)
+        {
+            return role == Role.Human && _push != null && _phase == PossessionPhase.Free && !_flying && !_moving;
+        }
+
+        public bool ValidateAuthority(PlayerId who)
+        {
+            return _push != null && PossessionSystem.Instance != null && PossessionSystem.Instance.Actions != null;
+        }
+
+        public void ExecuteAuthority(PlayerId who)
+        {
+            Debug.Assert(GameServices.Net.IsAuthority);
+            PossessionSystem.Instance.Actions.ProcessPushAuthority(who, _netId, PossessionSystem.FindPawn(who) is PawnBase pawn ? pawn.transform.position : transform.position);
+        }
+
+        private PossessableActionDef FindPushAction()
+        {
+            if (definition == null)
+                return null;
+            for (int i = 0; i < definition.ActionCount; i++)
+            {
+                PossessableActionDef action = definition.GetAction(i);
+                if (action != null && action.Id == PushActionId)
+                    return action;
+            }
+            return null;
+        }
+
+        /// <summary>The human's Interactor only sees the Interactable layer: a trigger copy of the object's collider bounds on that layer.</summary>
+        private void AddPushHandle()
+        {
+            int layer = LayerMask.NameToLayer(InteractableLayerName);
+            if (layer < 0 || _collider == null)
+                return;
+            var handle = new GameObject("PushHandle");
+            handle.layer = layer;
+            handle.transform.SetParent(transform, false);
+            var box = handle.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            Bounds b = _collider.bounds;
+            box.center = transform.InverseTransformPoint(b.center);
+            box.size = new Vector3(b.size.x / Mathf.Max(1e-3f, transform.lossyScale.x), b.size.y / Mathf.Max(1e-3f, transform.lossyScale.y),
+                b.size.z / Mathf.Max(1e-3f, transform.lossyScale.z));
+        }
+
+        // ---- lantern pulse glow (TODO 3.8) ----
+
+        /// <summary>The human's lantern pulse caught this possessed object: it glows (for everybody) until <paramref name="until"/> (Net.Time).</summary>
+        public void ShowPulseGlow(double until)
+        {
+            _glowUntil = until;
+            if (_glow == null)
+            {
+                _glow = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                _glow.name = "PulseGlow";
+                Destroy(_glow.GetComponent<Collider>());
+                _glow.transform.SetParent(transform, false);
+                _glow.transform.localScale = Vector3.one * 1.2f;
+            }
+            _glow.SetActive(true);
+        }
 
         /// <summary>Snaps to a pose (hop: ObjectMoved).</summary>
         public void SetPose(Vector3 position, float yaw)
@@ -178,6 +266,9 @@ namespace CinliMahzen.Possession
         private void Awake()
         {
             _collider = GetComponentInChildren<Collider>();
+            _push = FindPushAction();
+            if (_push != null)
+                AddPushHandle();
             _startPosition = transform.position;
             _startRotation = transform.rotation;
             if (visual != null)
@@ -215,6 +306,12 @@ namespace CinliMahzen.Possession
 
         private void Update()
         {
+            if (_glow != null && _glow.activeSelf)
+            {
+                INetBridge clock = GameServices.Net;
+                if (clock == null || clock.Time >= _glowUntil)
+                    _glow.SetActive(false);
+            }
             if (_flying)
             {
                 INetBridge net = GameServices.Net;
