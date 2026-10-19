@@ -379,6 +379,7 @@ namespace CinliMahzen.UI
                 _sb.Append(Loc.T("hud.round_end", roundIndex + 1)).Append('\n')
                    .Append(Loc.T(HudFormat.ResultKey(_state.LastResult))).Append(" — ").Append(Loc.T(HudFormat.ReasonKey(_state.LastReason))).Append("\n\n");
                 AppendScores(true);
+                AppendRoundStats();
                 _report.Text = _sb.ToString();
             }
             DrawPanel(_report.Text);
@@ -386,12 +387,15 @@ namespace CinliMahzen.UI
 
         private void DrawMatchEnd()
         {
-            if (_matchEnd.Changed(_state.Winner.Value, _state.TopScore, ScoreHash()))
+            IMatchStats titleSource = GameServices.Get<IMatchStats>();
+            int titleCount = titleSource != null ? titleSource.Titles.Count : 0;
+            if (_matchEnd.Changed(_state.Winner.Value * 64 + titleCount, _state.TopScore, ScoreHash()))
             {
                 _sb.Clear();
                 _sb.Append(Loc.T("hud.match_end")).Append('\n');
                 _sb.Append(_state.Winner.IsValid ? Loc.T("hud.winner", _state.Winner.ToString(), _state.TopScore) : Loc.T("hud.tie", _state.TopScore)).Append("\n\n");
                 AppendScores(false);
+                AppendTitles();
                 _sb.Append('\n').Append(Loc.T("hud.restart_hint"));
                 _matchEnd.Text = _sb.ToString();
             }
@@ -408,6 +412,51 @@ namespace CinliMahzen.UI
                 _sb.Append(withRoundDelta
                     ? Loc.T("hud.score_row_delta", p.Nickname, role, p.Score, _state.RoundDeltaOf(p.Id))
                     : Loc.T("hud.score_row", p.Nickname, p.Score)).Append('\n');
+            }
+        }
+
+        /// <summary>TODO 4.3: each player's non-zero statistics of the round, one line per player.</summary>
+        private void AppendRoundStats()
+        {
+            IMatchStats stats = GameServices.Get<IMatchStats>();
+            if (stats == null)
+                return;
+            bool header = false;
+            IReadOnlyList<PlayerInfo> players = _players.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                bool any = false;
+                for (int k = 0; k <= (int)StatKind.Rescue; k++)
+                {
+                    int count = stats.RoundCount(players[i].Id, (StatKind)k);
+                    if (count <= 0)
+                        continue;
+                    if (!header)
+                    {
+                        _sb.Append('\n').Append(Loc.T("hud.round_stats")).Append('\n');
+                        header = true;
+                    }
+                    _sb.Append(any ? " · " : players[i].Nickname + ": ").Append(Loc.T(HudFormat.StatKey((StatKind)k))).Append(' ').Append(count);
+                    any = true;
+                }
+                if (any)
+                    _sb.Append('\n');
+            }
+        }
+
+        /// <summary>TODO 4.3: the match-end titles.</summary>
+        private void AppendTitles()
+        {
+            IMatchStats stats = GameServices.Get<IMatchStats>();
+            if (stats == null || stats.Titles.Count == 0)
+                return;
+            _sb.Append('\n').Append(Loc.T("hud.titles")).Append('\n');
+            for (int i = 0; i < stats.Titles.Count; i++)
+            {
+                MatchTitle title = stats.Titles[i];
+                PlayerInfo info = _players.Get(title.Player);
+                string who = info != null ? info.Nickname : title.Player.ToString();
+                _sb.Append(Loc.T("hud.title_row", Loc.T(HudFormat.TitleKey(title.Kind)), who, title.Count)).Append('\n');
             }
         }
 

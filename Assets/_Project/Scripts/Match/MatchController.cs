@@ -48,6 +48,7 @@ namespace CinliMahzen.Match
         private MatchMirror _mirror;
         private MatchStateMachine _machine;
         private ScoreService _score;
+        private StatsService _stats;
         private double _secondsLeftAtEnd;
         private int _matchSeed;
         private bool _startPending;
@@ -92,6 +93,9 @@ namespace CinliMahzen.Match
         /// <summary>TODO 3.10: the tiered scoring (null when the controller is inert or there is no player registry).</summary>
         public ScoreService Score => _score;
 
+        /// <summary>TODO 4.3: match statistics and titles (also registered as <see cref="IMatchStats"/>).</summary>
+        public StatsService Stats => _stats;
+
         private void Awake()
         {
             _net = GameServices.Net;
@@ -124,6 +128,8 @@ namespace CinliMahzen.Match
                 _mirrorState = ReadMirrorState;
                 _score = new ScoreService(_net, players, ScoreRules.FromConfig(config), _objectives, _mirrorState);
                 DebugState.Register("score", BuildScoreJson);
+                _stats = new StatsService(_net, players);
+                GameServices.Register<IMatchStats>(_stats);
             }
             else
             {
@@ -149,6 +155,7 @@ namespace CinliMahzen.Match
             EventBus.Subscribe(_onTreasureDug);
             EventBus.Subscribe(_onStageCompleted);
             _score?.Attach();
+            _stats?.Attach();
 
             _startPending = autoStart && _machine.State == MatchState.Lobby;
         }
@@ -168,10 +175,16 @@ namespace CinliMahzen.Match
             EventBus.Unsubscribe(_onTreasureDug);
             EventBus.Unsubscribe(_onStageCompleted);
             _score?.Detach();
+            _stats?.Detach();
         }
 
         private void OnDestroy()
         {
+            if (_stats != null)
+            {
+                GameServices.Unregister<IMatchStats>(_stats);
+            }
+
             if (_registered)
             {
                 GameServices.Unregister<IMatchInfo>(this);
@@ -418,6 +431,7 @@ namespace CinliMahzen.Match
                 if (state == MatchState.MatchEnd && _score != null)
                 {
                     // TODO 3.10: every machine announces the result from the scores it was told (the round-end awards came with RoundEnd).
+                    _stats?.ComputeTitles();
                     PlayerId winner = _score.Leader(out int topScore);
                     CMLog.Info(Category, "Match end: winner " + winner + " with " + topScore);
                     EventBus.Publish(new MatchEndedEvt(winner, topScore));

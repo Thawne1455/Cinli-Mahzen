@@ -81,6 +81,36 @@ namespace CinliMahzen.UI
             }
         }
 
+        /// <summary>TODO 4.3: Loc key of a match-end title.</summary>
+        public static string TitleKey(TitleKind title)
+        {
+            switch (title)
+            {
+                case TitleKind.Electrician: return "title.electrician";
+                case TitleKind.Saboteur: return "title.saboteur";
+                case TitleKind.BulbKiller: return "title.bulb_killer";
+                case TitleKind.Navigator: return "title.navigator";
+                case TitleKind.Kicker: return "title.kicker";
+                case TitleKind.SlipperSniper: return "title.slipper_sniper";
+                default: return "title.cologne";
+            }
+        }
+
+        /// <summary>TODO 4.3: Loc key of a statistic's short name (round report).</summary>
+        public static string StatKey(StatKind stat)
+        {
+            switch (stat)
+            {
+                case StatKind.WrongConfirm: return "stat.wrong_confirm";
+                case StatKind.Scramble: return "stat.scramble";
+                case StatKind.LampBurst: return "stat.lamp_burst";
+                case StatKind.Ping: return "stat.ping";
+                case StatKind.MissedKick: return "stat.missed_kick";
+                case StatKind.SlipperHit: return "stat.slipper_hit";
+                default: return "stat.rescue";
+            }
+        }
+
         public static string ResultKey(RoundResult result)
         {
             switch (result)

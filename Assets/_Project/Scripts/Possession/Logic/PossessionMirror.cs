@@ -229,7 +229,12 @@ namespace CinliMahzen.Possession
                 return;
             }
             SetPhase(obj, PossessionPhase.Recovering);
-            EventBus.Publish(new ActionResolvedEvt(obj, index, hit));
+            // TODO 4.3: who did it and which action, for the match statistics (the object is still possessed while it recovers).
+            string actionId = string.Empty;
+            IEntityRegistry entities = GameServices.Entities;
+            if (entities != null && entities.TryGet(obj, out Possessable possessable) && possessable.Definition != null)
+                actionId = possessable.Definition.GetAction(index)?.Id ?? string.Empty;
+            EventBus.Publish(new ActionResolvedEvt(obj, index, hit, PossessorOf(obj), actionId));
         }
 
         private void OnObjectStateChanged(NetMsg msg)

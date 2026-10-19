@@ -337,3 +337,54 @@ MonoBehaviour:
   - key: hud.restart_hint
     tr: "F8: yeni ma\u00E7"
     en: "F8: new match"
+  - key: title.electrician
+    tr: "Elektrik\u00E7i"
+    en: "Electrician"
+  - key: title.saboteur
+    tr: "Bozguncu"
+    en: "Saboteur"
+  - key: title.bulb_killer
+    tr: "Ampul Katili"
+    en: "Bulb Killer"
+  - key: title.navigator
+    tr: "Navigasyon"
+    en: "Navigator"
+  - key: title.kicker
+    tr: "Tekmeci Day\u0131"
+    en: "Kicking Uncle"
+  - key: title.slipper_sniper
+    tr: "Terlik Ni\u015Fanc\u0131s\u0131"
+    en: "Slipper Sniper"
+  - key: title.cologne
+    tr: "Kolonyac\u0131"
+    en: "Cologne Keeper"
+  - key: stat.wrong_confirm
+    tr: "Yanl\u0131\u015F onay"
+    en: "Wrong confirms"
+  - key: stat.scramble
+    tr: "Sabotaj"
+    en: "Sabotages"
+  - key: stat.lamp_burst
+    tr: "Lamba patlatma"
+    en: "Lamps burst"
+  - key: stat.ping
+    tr: "\u0130\u015Faret"
+    en: "Pings"
+  - key: stat.missed_kick
+    tr: "Bo\u015Fa tekme"
+    en: "Missed kicks"
+  - key: stat.slipper_hit
+    tr: "Terlik isabeti"
+    en: "Slipper hits"
+  - key: stat.rescue
+    tr: "Ay\u0131ltma/Siper"
+    en: "Revives/Blocks"
+  - key: hud.round_stats
+    tr: "Raund istatistikleri"
+    en: "Round stats"
+  - key: hud.titles
+    tr: "Unvanlar"
+    en: "Titles"
+  - key: hud.title_row
+    tr: "{0}: {1} ({2})"
+    en: "{0}: {1} ({2})"

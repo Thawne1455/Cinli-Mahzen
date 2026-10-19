@@ -137,6 +137,7 @@ namespace CinliMahzen.Jinn
             var ping = new Ping(_nextId++, by, point, until);
             _active.Add(ping);
             PingAdded?.Invoke(ping);
+            EventBus.Publish(new PingPlacedEvt(by, point));
         }
 
         private void Clear()
