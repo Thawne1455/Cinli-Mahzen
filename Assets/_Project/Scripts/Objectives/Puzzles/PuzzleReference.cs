@@ -27,9 +27,13 @@ namespace CinliMahzen.Objectives
         [SerializeField] private Transform rotationRoot;
         [Tooltip("Optional: one mark per value; the marks of the trap values are shown (talisman switch X marks).")]
         [SerializeField] private GameObject[] trapMarks;
+        [Tooltip("Optional (talisman switch, TODO 3.2): decoy pictures; display i shows trap value i (each carries its own X mark).")]
+        [SerializeField] private PuzzlePartDisplay[] trapDisplays;
 
         private readonly bool[] _focusing = new bool[256];
         private bool _revealed;
+        private Quaternion _rotationRest = Quaternion.identity;
+        private bool _rotationRestKnown;
         private bool _subscribed;
         private IPlayerRegistry _players;
         private System.Action<PlayerId> _onLocalPlayerChanged;
@@ -57,7 +61,15 @@ namespace CinliMahzen.Objectives
 
             Transform root = rotationRoot != null ? rotationRoot : (content != null ? content.transform : null);
             if (root != null)
-                root.localRotation = Quaternion.Euler(0f, 0f, -rotation);
+            {
+                // Composed with the root's own pose (the seal stones' root is tipped so its Z is world up), never overwriting it.
+                if (!_rotationRestKnown)
+                {
+                    _rotationRest = root.localRotation;
+                    _rotationRestKnown = true;
+                }
+                root.localRotation = _rotationRest * Quaternion.Euler(0f, 0f, -rotation);
+            }
 
             if (trapMarks != null)
             {
@@ -65,6 +77,19 @@ namespace CinliMahzen.Objectives
                 {
                     if (trapMarks[i] != null)
                         trapMarks[i].SetActive(Contains(trapValues, i));
+                }
+            }
+
+            if (trapDisplays != null)
+            {
+                for (int i = 0; i < trapDisplays.Length; i++)
+                {
+                    bool shown = trapValues != null && i < trapValues.Count;
+                    if (trapDisplays[i] == null)
+                        continue;
+                    trapDisplays[i].gameObject.SetActive(shown);
+                    if (shown)
+                        trapDisplays[i].Show(trapValues[i]);
                 }
             }
 
