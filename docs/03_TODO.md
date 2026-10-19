@@ -207,7 +207,7 @@ F8 ile 3 farklı seed: F3 1.5 sn basılı tutarak bulmacayı toplu sabote eder, 
 | [~] | 3.1 | P2 **Heykelin Nazarlığı** (6 çevre objesi yönü + 3 asa eğimi) | 2.7 | M |
 | [~] | 3.2 | P3 **Tılsımlı Şalter** (4 soket × 6 köy motifi + referansta 2 Çarpı `X` tuzağı, Şalter Anahtarı) | 2.7 | M |
 | [~] | 3.3 | P4 **Mühür Taşları** (3×3 ızgara + 4 köşe sembolü + dönük referans, Boya gereksinimi) | 2.7 | M |
-| [ ] | 3.4 | Işık & Radyo sistemi: lambalar, düğmeler, `LightService`, aydınlanınca atılma, Patlat, Radyo ses bastırma | 2.2, 1.8 | M |
+| [~] | 3.4 | Işık & Radyo sistemi: lambalar, düğmeler, `LightService`, aydınlanınca atılma, Patlat, Radyo ses bastırma | 2.2, 1.8 | M |
 | [ ] | 3.5 | İyi cin yetenekleri: Ruh Perdesi Odakla, Lamba Yak/Onar, İşaret, Kov, Eşyaya Gir (hasarsız + Kolonya) | 3.4, 1.7 | L |
 | [ ] | 3.6 | Bahçe aşaması: `KeyHideSpot`, ön kapı `GateLock` (+90 sn), alet kulübesi **Kutsanmış Yağ** | 2.7 | S |
 | [ ] | 3.7 | Mahzen: kapak, `DigSpot`, kürek, **3 katmanlı kazı (3×6 sn)**, Öfke, **Ruh Siperi (`SpiritBlock`)**, `TreasureDug` | 2.7 | M |

@@ -73,6 +73,9 @@ MonoBehaviour:
   - key: interact.puzzle_confirm
     tr: "Kolu \xE7ek"
     en: Pull the lever
+  - key: interact.light_switch
+    tr: "I\u015F\u0131\u011F\u0131 a\xE7 / kapat"
+    en: Lights on / off
   - key: interact.puzzle_paint
     tr: Boya / sil
     en: Paint / wipe

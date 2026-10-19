@@ -27,6 +27,8 @@ namespace CinliMahzen.World
         public const string DebugStateKey = "house";
 
         private const string LogCategory = "House";
+        private const string InteractableLayerName = "Interactable";
+        private static readonly Vector3 SwitchColliderSize = new Vector3(0.3f, 0.3f, 0.2f);
         private const char PathSeparator = '/';
 
         [Tooltip("Metres added to every side of the union of the room boxes for IHouseInfo.Bounds (spirits are clamped inside).")]
@@ -40,6 +42,9 @@ namespace CinliMahzen.World
         private bool _published;
         private INetBridge _net;
         private System.Action<NetMsg> _onRadio;
+        private LightService _lights;
+        private readonly Dictionary<NetId, LampLightView> _lampViews = new Dictionary<NetId, LampLightView>();
+        private System.Action<NetId, LampState> _onLampChanged;
 
         /// <summary>True after a successful <see cref="Index"/> (until <see cref="Release"/>).</summary>
         public bool IsIndexed
@@ -51,6 +56,12 @@ namespace CinliMahzen.World
         public HouseIndex HouseIndex
         {
             get { return _houseIndex; }
+        }
+
+        /// <summary>The house lights (TODO 3.4); null before <see cref="Index"/> or without a network bridge.</summary>
+        public LightService Lights
+        {
+            get { return _lights; }
         }
 
         /// <summary>Concrete room state for the light and radio systems of this assembly (they set it, others read <see cref="IRoomService"/>); null before <see cref="Index"/>.</summary>
@@ -129,10 +140,56 @@ namespace CinliMahzen.World
             {
                 _onRadio = _onRadio ?? OnRadioStateChanged;
                 _net.Register(MsgCode.RadioStateChanged, _onRadio);
+                SetUpLights(index);
             }
 
             CMLog.Info(LogCategory, "Indexed " + Summary(index));
             return true;
+        }
+
+        /// <summary>The real light service (TODO 3.4): lamp lights under every LampMarker, wall switches as interactables.</summary>
+        private void SetUpLights(HouseIndex index)
+        {
+            _lights = new LightService(_net, index, _roomState, EntityPosition);
+            _lights.Attach();
+            GameServices.Register<ILightService>(_lights);
+
+            GameBalanceConfig config = GameServices.Config;
+            float range = config != null ? config.LampLightRange : LampLightView.DefaultRange;
+            int interactable = LayerMask.NameToLayer(InteractableLayerName);
+            for (int i = 0; i < _netMarkers.Count; i++)
+            {
+                if (_netMarkers[i] is LampMarker lamp)
+                {
+                    if (!_lampViews.ContainsKey(lamp.NetId))
+                        _lampViews.Add(lamp.NetId, LampLightView.Create(lamp.transform, range));
+                }
+                else if (_netMarkers[i] is LightSwitch light)
+                {
+                    light.BindLights(_lights);
+                    if (light.GetComponent<Collider>() == null)
+                    {
+                        var box = light.gameObject.AddComponent<BoxCollider>();
+                        box.size = SwitchColliderSize;
+                    }
+                    if (interactable >= 0)
+                        light.gameObject.layer = interactable;
+                }
+            }
+            _onLampChanged = _onLampChanged ?? OnLampChanged;
+            _lights.LampChanged += _onLampChanged;
+        }
+
+        private void OnLampChanged(NetId lamp, LampState state)
+        {
+            if (_lampViews.TryGetValue(lamp, out LampLightView view) && view != null)
+                view.Show(state);
+        }
+
+        private static Vector3? EntityPosition(NetId id)
+        {
+            IEntityRegistry entities = GameServices.Entities;
+            return entities != null && entities.TryGet(id, out Component c) && c != null ? c.transform.position : (Vector3?)null;
         }
 
         private void OnRadioStateChanged(NetMsg msg)
@@ -172,6 +229,14 @@ namespace CinliMahzen.World
                 _net.Unregister(MsgCode.RadioStateChanged, _onRadio);
                 _net = null;
             }
+            if (_lights != null)
+            {
+                _lights.LampChanged -= _onLampChanged;
+                _lights.Detach();
+                GameServices.Unregister<ILightService>(_lights);
+                _lights = null;
+            }
+            _lampViews.Clear();
 
             if (_published)
             {
