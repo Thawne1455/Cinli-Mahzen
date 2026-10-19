@@ -66,6 +66,7 @@ namespace CinliMahzen.Tests.EditMode.Objectives
                 Set(parts[i], "display", display);
             }
             lever = New("Lever", root.transform).AddComponent<ConfirmLever>();
+            root.AddComponent<PuzzleScrambleTarget>();
             var view = root.AddComponent<PuzzleView>();
             Set(view, "parts", parts);
             Set(view, "lever", lever);
@@ -238,6 +239,70 @@ namespace CinliMahzen.Tests.EditMode.Objectives
 
             Assert.AreEqual(1, parts[0].Display.Shown, "still the value drawn before Unbind");
             Assert.IsFalse(view.IsBound);
+        }
+
+        // ---------- mass sabotage target (TODO 2.6) ----------
+
+        [Test]
+        public void ScrambleTarget_IsBoundWithTheView_AndOnlyOffersItselfToEvilJinns()
+        {
+            PuzzleView view = NewView(3, out _, out _);
+            Assert.IsTrue(view.Bind(Puzzles, Slot, 4));
+            var target = view.GetComponent<PuzzleScrambleTarget>();
+
+            Assert.IsTrue(target.IsBound);
+            Assert.AreEqual(PuzzleNetIds.ScrambleTarget(4), target.NetId);
+            Assert.IsTrue(target.CanSpiritInteract(EvilId, Role.EvilJinn));
+            Assert.IsFalse(target.CanSpiritInteract(GoodJinnId, Role.GoodJinn));
+            Assert.IsFalse(target.CanSpiritInteract(HumanId, Role.Human));
+
+            view.Unbind();
+            Assert.IsFalse(target.IsBound);
+            Assert.IsFalse(target.CanSpiritInteract(EvilId, Role.EvilJinn));
+        }
+
+        [Test]
+        public void ScrambleTarget_UsesTheConfiguredHoldTimeAndRange()
+        {
+            PuzzleView view = NewView(3, out _, out _);
+            Assert.IsTrue(view.Bind(Puzzles, Slot, 0));
+            var target = view.GetComponent<PuzzleScrambleTarget>();
+
+            Assert.AreEqual(Config.ScrambleHoldTime, target.SpiritHoldTime);
+            Assert.AreEqual(Config.ScrambleRange + Config.NetRangeTolerance, target.SpiritRange, 1e-6f);
+            Assert.AreEqual("interact.puzzle_scramble", target.SpiritPromptKey);
+        }
+
+        [Test]
+        public void ScrambleTarget_Request_ScramblesEveryPart_AndThenHidesDuringTheCooldown()
+        {
+            GameServices.Register<INetBridge>(Bridge);
+            PuzzleView view = NewView(3, out PuzzlePart[] parts, out _);
+            Assert.IsTrue(view.Bind(Puzzles, Slot, 0));
+            var target = view.GetComponent<PuzzleScrambleTarget>();
+
+            LocalPlayer = EvilId;
+            target.SendRequest(EvilId);
+
+            Assert.AreEqual(1, ScrambledEvents.Count, "the request went through the bridge to the authority");
+            Assert.IsFalse(Runtime.State.IsSolved);
+            int[] values = Values();
+            for (int i = 0; i < 3; i++)
+                Assert.AreEqual(values[i], parts[i].Display.Shown);
+            Assert.IsFalse(target.CanSpiritInteract(EvilId, Role.EvilJinn), "15 s sabotage cooldown");
+
+            Now += Config.ScramblePuzzleCooldown;
+            Assert.IsTrue(target.CanSpiritInteract(EvilId, Role.EvilJinn), "cooldown over");
+        }
+
+        [Test]
+        public void ScrambleTarget_Hides_OnACompletedPuzzle()
+        {
+            PuzzleView view = NewView(3, out _, out ConfirmLever lever);
+            Assert.IsTrue(view.Bind(Puzzles, Slot, 0));
+            lever.ExecuteAuthority(HumanId);
+
+            Assert.IsFalse(view.GetComponent<PuzzleScrambleTarget>().CanSpiritInteract(EvilId, Role.EvilJinn));
         }
 
         // ---------- reference / Spirit Veil ----------

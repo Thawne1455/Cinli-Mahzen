@@ -29,6 +29,7 @@ namespace CinliMahzen.Objectives
         private int _slot;
         private int _ordinal = -1;
         private bool _bound;
+        private PuzzleScrambleTarget _scramble;
         private float _shakeLeft;
         private Vector3 _shakeRest;
 
@@ -97,6 +98,13 @@ namespace CinliMahzen.Objectives
                 lever.Bind(this, PuzzleNetIds.Lever(ordinal));
                 entities?.Register(lever);
             }
+            // TODO 2.6: the evil jinn's mass sabotage target lives on the same root (looked up once per bind, never per frame).
+            _scramble = GetComponent<PuzzleScrambleTarget>();
+            if (_scramble != null)
+            {
+                _scramble.Bind(this, PuzzleNetIds.ScrambleTarget(ordinal));
+                entities?.Register(_scramble);
+            }
 
             EventBus.Subscribe<PuzzleStateChangedEvt>(OnStateChanged);
             EventBus.Subscribe<PuzzleScrambledEvt>(OnScrambled);
@@ -121,6 +129,13 @@ namespace CinliMahzen.Objectives
                     entities.Unregister(parts[i]);
                 if (lever != null)
                     entities.Unregister(lever);
+                if (_scramble != null)
+                    entities.Unregister(_scramble);
+            }
+            if (_scramble != null)
+            {
+                _scramble.Unbind();
+                _scramble = null;
             }
             StopShake();
         }

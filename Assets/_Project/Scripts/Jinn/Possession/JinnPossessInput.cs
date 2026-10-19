@@ -20,10 +20,12 @@ namespace CinliMahzen.Jinn
         [Range(1f, 60f)] [SerializeField] private float lookAngle = 20f;
 
         private SpiritPawn _pawn;
+        private SpiritInteractor _interactor;
 
         private void Awake()
         {
             _pawn = GetComponent<SpiritPawn>();
+            _interactor = GetComponent<SpiritInteractor>();
         }
 
         private void Update()
@@ -50,6 +52,9 @@ namespace CinliMahzen.Jinn
             Role role = _pawn.Role;
             bool pressed = role == Role.EvilJinn ? spirit.PrimaryPressed : role == Role.GoodJinn && spirit.PossessAsGoodPressed;
             if (!pressed)
+                return;
+            // E on a puzzle (or a lamp) is a hold for the SpiritInteractor, not a possession.
+            if (role == Role.EvilJinn && _interactor != null && _interactor.HasUsableTarget)
                 return;
 
             GameBalanceConfig config = GameServices.Config;

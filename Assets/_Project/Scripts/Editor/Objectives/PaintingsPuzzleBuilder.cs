@@ -129,6 +129,8 @@ namespace CinliMahzen.Editor
             SetRef(confirm, "handle", handle.transform);
 
             var view = root.AddComponent<PuzzleView>();
+            // TODO 2.6: the evil jinn holds E on any part collider to scramble the whole puzzle.
+            root.AddComponent<PuzzleScrambleTarget>();
             var so = new SerializedObject(view);
             SerializedProperty partsProp = so.FindProperty("parts");
             partsProp.arraySize = parts.Length;

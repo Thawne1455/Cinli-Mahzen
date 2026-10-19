@@ -1,4 +1,4 @@
-namespace CinliMahzen.Player
+namespace CinliMahzen.Core
 {
     /// <summary>Result of one <see cref="InteractHoldTracker.Update"/> frame. Local only, never on the wire.</summary>
     public enum HoldStep : byte

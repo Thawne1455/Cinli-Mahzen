@@ -73,6 +73,9 @@ MonoBehaviour:
   - key: interact.puzzle_confirm
     tr: "Kolu \xE7ek"
     en: Pull the lever
+  - key: interact.puzzle_scramble
+    tr: "[Bas\u0131l\u0131 tut] Bulmacay\u0131 kar\u0131\u015Ft\u0131r"
+    en: '[Hold] Scramble the puzzle'
   - key: menu.title
     tr: Cinli Mahzen
     en: Cinli Mahzen

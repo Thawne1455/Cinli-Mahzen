@@ -1,6 +1,4 @@
-using CinliMahzen.Core;
-
-namespace CinliMahzen.Player
+namespace CinliMahzen.Core
 {
     /// <summary>
     /// Hold-to-interact progress for the local interactor (Teknik §4.5), plain C#. Time is passed in as <c>dt</c>.

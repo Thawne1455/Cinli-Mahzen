@@ -93,6 +93,8 @@ namespace CinliMahzen.Editor
             // TODO 1.7: follows the possessed object (hidden body, orbit camera) and sends the possess / unpossess requests.
             GetOrAdd<PossessionCameraBinder>(root);
             GetOrAdd<JinnPossessInput>(root);
+            // TODO 2.6: hold E on a puzzle (mass sabotage) / later a lamp.
+            GetOrAdd<SpiritInteractor>(root);
 
             Transform eyes = root.transform.Find(EyesName);
             if (eyes == null)
