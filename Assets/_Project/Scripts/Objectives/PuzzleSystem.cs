@@ -39,6 +39,8 @@ namespace CinliMahzen.Objectives
 
         public int DigCheckpoint => _core != null ? _core.DigCheckpoint : 0;
 
+        public int PuzzleCount => _core != null ? _core.PuzzleCount : 0;
+
         public bool IsPuzzleDone(int slot)
         {
             return _core != null && _core.IsPuzzleDone(slot);

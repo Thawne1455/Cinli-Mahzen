@@ -7,6 +7,8 @@ namespace CinliMahzen.Core
         int StageIndex { get; }
         /// <summary>Total stages including the garden (StagesActive + 1).</summary>
         int StageCount { get; }
+        /// <summary>TODO 3.10: puzzles planned this round (unsolved ones at round end raise the evil jinns' win award).</summary>
+        int PuzzleCount { get; }
         bool IsPuzzleDone(int slot);
         /// <summary>True while the puzzle in <paramref name="slot"/> cannot be scrambled again; <paramref name="remaining"/> in seconds.</summary>
         bool IsPuzzleScrambleOnCooldown(int slot, out float remaining);

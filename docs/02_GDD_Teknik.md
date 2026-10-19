@@ -195,6 +195,8 @@ Ana event'ler (v2.1):
 | `RoundStartedEvt{roundIndex, seed}` | Match | herkes |
 | `RoundTimeAddedEvt{bonusSeconds, newEndTime}` | Match | UI, Audio |
 | `ColdBreathChangedEvt{active}` | Visibility (lokal) | UI, Audio |
+| `ScoreChangedEvt{player, total, delta, reason}` | Match | UI |
+| `MatchEndedEvt{winner, topScore}` | Match | UI |
 | `HumanDamagedEvt{info, hpAfter}` | Player | UI, Audio, Stats |
 | `HumanFaintedEvt{info, faintCount}` / `HumanRevivedEvt{byCologne}` | Player | Match, UI, Stats |
 | `BlessedOilCollectedEvt{collector}` | Player | UI, Audio, Objectives |
@@ -245,6 +247,7 @@ IObjectiveInfo
 {
     int StageIndex { get; }
     int StageCount { get; }
+    int PuzzleCount { get; }            // TODO 3.10: bu raund planlanan bulmaca sayısı
     bool IsPuzzleDone(int slot);
     bool IsPuzzleScrambleOnCooldown(int slot, out float remaining);
     float DigProgress { get; }
@@ -588,6 +591,7 @@ Lobby -> RoundSetup -> RoleReveal(3s) -> Intro(5s) -> Playing -> RoundEnd(8s) �
   - Hazine kazıldığında (`SeekersWin`): İnsan ve İyi Cin'e `+Config.ScoreTreasureWin` (`150`) + ` kalanSaniye`.
   - İnsan her bayıldığında (`HumanFaintedEvt`): Kötü Cinlere `+Config.ScorePerFaint` (`50`).
   - Kötü Cinler raundu kazandığında (`Timeout` veya `Faint`): Kötü Cinlere `+Config.JinnWinPoints` (`200`) + `(çözülmemişBulmacaSayısı * Config.ScorePerUnfinishedPuzzle)` (`40`).
+- **Uygulama (TODO 3.10):** `Match/Logic/ScoreService` (düz C#, `MatchController` kurar; Dump `score`) + `ScoreRules` (config'ten). Puanlar bireyseldir: ödül o raundda ilgili rolü tutan her oyuncuya gider (arayıcılar = İnsan + İyi Cin). Otorite yalnız `Playing`'de puanlar: `PuzzleCompletedEvt` (slot başına bir kez), `StageCompletedEvt` sonrası `IObjectiveInfo.Phase == Cellar` (raundda bir kez = mahzen açıldı), bayılma (`MatchController` makineden **önce** `AwardFaintAuthority` çağırır, 3. bayılma da sayılır), raund sonu (`RoundEnd`'e girerken `AwardRoundEndAuthority`: hazine → `ScoreTreasureWin + tam kalan saniye`, kötü cin galibiyeti → `JinnWinPoints + (IObjectiveInfo.PuzzleCount − çözülen) × ScorePerUnfinishedPuzzle`). Her ödül `ScoreChanged{player, total, delta, reason}` (`ScoreReason`, toplam taşınır: kayıp/tekrar mesaj sapma yaratmaz) → her makine `PlayerInfo.Score = total` + `ScoreChangedEvt`. Yeni maç (`BeginMatch`) `ResetMatchAuthority` ile herkesi 0'lar (`Reset`). Ayna `MatchEnd`'e girince her makine `ScoreService.Leader` ile `MatchEndedEvt{winner (berabere: None), topScore}` yayınlar. 4 raund + rol rotasyonu `MatchStateMachine`/`RoleRotation`'da (1.10). Testler: `Tests/EditMode/Match/ScoreServiceTests`.
 - **Maç Sonu Unvanları (`TitleCalculator`):** "Elektrikçi", "Bozguncu" (en çok sabotaj), "Ampul Katili", "Navigasyon", "Tekmeci Dayı", "Terlik Nişancısı" (Anne Terliği isabeti), "Kolonyacı" (kolonya ile ayıltma / Ruh Siperi).
 - **Kod (`Scripts/Match/`, düz C#):** `Logic/MatchStateMachine` (akış, sayaç, raund sonu; yalnız otoritede), `Logic/MatchSettings` (`GameBalanceConfig`'ten), `Logic/RoleRotation` (raund r: İnsan = oyuncu r, İyi Cin = r+1). `Net/`: `MatchStateChangedMsg`, `RoundSetupMsg`, `RoundEndedMsg`, `RoundTimeAddedMsg` (encode/decode, EditMode testleri `Tests/EditMode/Match/`).
 - **RoundSetup → RoleReveal:** `Tick` RoundSetup'ı kendiliğinden bitirmez; otorite `CompleteRoundSetup(now)` çağırır (offline: aynı frame; online: tüm istemciler `HouseReady` bildirince). Çağrı `StateEndTime = now + RoleRevealDuration` kurar.

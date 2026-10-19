@@ -98,6 +98,9 @@ namespace CinliMahzen.Objectives
         public int DigCheckpoint { get; set; }
 
         /// <summary>True when the puzzle in <paramref name="slot"/> is confirmed (locked). False for an unknown slot.</summary>
+        /// <summary>IObjectiveInfo: the slots registered this round (<see cref="SlotCount"/>).</summary>
+        public int PuzzleCount => _slots.Count;
+
         public bool IsPuzzleDone(int slot)
         {
             return _slots.TryGetValue(slot, out PuzzleSlotRuntime runtime) && runtime.State.IsLocked;
