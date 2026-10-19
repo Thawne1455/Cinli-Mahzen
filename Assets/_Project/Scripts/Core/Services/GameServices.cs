@@ -24,6 +24,8 @@ namespace CinliMahzen.Core
             typeof(ILightService),
             typeof(IHumanStatusQuery),
             typeof(IPossessionQuery),
+            typeof(IJinnEnergyService),
+            typeof(IInventoryQuery),
         };
 
         static GameServices()
@@ -95,6 +97,8 @@ namespace CinliMahzen.Core
             if (t == typeof(ILightService)) return new StubLightService();
             if (t == typeof(IHumanStatusQuery)) return new StubHumanStatusQuery();
             if (t == typeof(IPossessionQuery)) return new StubPossessionQuery();
+            if (t == typeof(IJinnEnergyService)) return new StubJinnEnergyService();
+            if (t == typeof(IInventoryQuery)) return new StubInventoryQuery();
             return null;
         }
     }

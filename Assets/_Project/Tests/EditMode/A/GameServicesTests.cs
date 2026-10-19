@@ -32,6 +32,8 @@ namespace CinliMahzen.Tests.EditMode.A
             Assert.IsInstanceOf<StubLightService>(GameServices.Get<ILightService>());
             Assert.IsInstanceOf<StubHumanStatusQuery>(GameServices.Get<IHumanStatusQuery>());
             Assert.IsInstanceOf<StubPossessionQuery>(GameServices.Get<IPossessionQuery>());
+            Assert.IsInstanceOf<StubJinnEnergyService>(GameServices.Get<IJinnEnergyService>());
+            Assert.IsInstanceOf<StubInventoryQuery>(GameServices.Get<IInventoryQuery>());
             Assert.IsNull(GameServices.Net);
             Assert.IsNull(GameServices.Players);
             Assert.IsNull(GameServices.Entities);
@@ -68,6 +70,8 @@ namespace CinliMahzen.Tests.EditMode.A
             AssertUnregisterRestoresStub<IRoomService>(new StubRoomService(), typeof(StubRoomService));
             AssertUnregisterRestoresStub<IHumanStatusQuery>(new StubHumanStatusQuery(), typeof(StubHumanStatusQuery));
             AssertUnregisterRestoresStub<IHouseInfo>(new StubHouseInfo(), typeof(StubHouseInfo));
+            AssertUnregisterRestoresStub<IJinnEnergyService>(new StubJinnEnergyService(), typeof(StubJinnEnergyService));
+            AssertUnregisterRestoresStub<IInventoryQuery>(new StubInventoryQuery(), typeof(StubInventoryQuery));
         }
 
         [Test]
