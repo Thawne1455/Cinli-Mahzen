@@ -1,4 +1,5 @@
 using CinliMahzen.Core;
+using CinliMahzen.Match;
 using CinliMahzen.Player;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -10,7 +11,8 @@ namespace CinliMahzen.Editor
     /// <summary>
     /// Puts P_Human into Assets/_Project/Scenes/Sandbox.unity at (0, 0.1, -6) as pawn N1, owner P0, role Human, and moves the
     /// Sandbox "Ground" plane to the Environment layer (it is created on Default, which HumanPawn does not collide with).
-    /// TEMPORARY: delete this menu when the PawnSpawner (TODO 1.3) spawns the pawns at runtime.
+    /// SUPERSEDED by the PawnSpawner (TODO 1.3, "Add Pawn Spawner To Open Scene"): refuses to run in a scene that has a spawner.
+    /// TEMPORARY: delete this menu once the spawner is verified in Sandbox.
     /// Idempotent: an existing HumanController in the scene is repositioned and reconfigured instead of duplicated.
     /// MCP: execute_menu_item("CinliMahzen/Setup/Place Human In Sandbox") after "Build Human Prefab".
     /// </summary>
@@ -51,6 +53,12 @@ namespace CinliMahzen.Editor
                 EditorSceneManager.OpenScene(SandboxScenePath, OpenSceneMode.Single);
             }
             Scene scene = SceneManager.GetActiveScene();
+
+            if (Object.FindFirstObjectByType<PawnSpawner>() != null)
+            {
+                Debug.LogError("[SetupPlayer] The scene has a PawnSpawner, which creates the pawns at runtime — a hand-placed human would collide with its NetId");
+                return;
+            }
 
             var human = Object.FindFirstObjectByType<HumanController>();
             GameObject instance;

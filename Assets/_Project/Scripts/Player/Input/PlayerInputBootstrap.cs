@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CinliMahzen.Player
 {
-    /// <summary>Registers the LocalInputSource as a service during auto-bootstrap.</summary>
+    /// <summary>Registers the LocalInputSource as a service (and as the ILocalInputProvider that pawns bind through) during auto-bootstrap.</summary>
     internal static class PlayerInputBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
@@ -13,6 +13,7 @@ namespace CinliMahzen.Player
             {
                 var input = new LocalInputSource();
                 GameServices.Register(input);
+                GameServices.Register<ILocalInputProvider>(input);
                 Application.quitting += input.Dispose;
             });
         }

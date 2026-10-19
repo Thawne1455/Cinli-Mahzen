@@ -9,8 +9,9 @@ namespace CinliMahzen.Player
     /// Local keyboard/mouse input (TODO A0.8). Enables exactly one gameplay map for the local player's situation:
     /// Human role → Human, jinn roles → Spirit, jinn inside an object → Possessed (driven by PossessionChangedEvt
     /// for the local player). UI and Debug maps stay enabled. Pawns read it through IHumanInput/ISpiritInput/IPossessedInput.
+    /// Also the machine's <see cref="ILocalInputProvider"/> (TODO 1.3): the pawn that is currently played acquires it, the others get NullInput.
     /// </summary>
-    public sealed class LocalInputSource : IHumanInput, ISpiritInput, IPossessedInput, IDisposable
+    public sealed class LocalInputSource : IHumanInput, ISpiritInput, IPossessedInput, ILocalInputProvider, IDisposable
     {
         private readonly CMInput _actions;
         private readonly Func<PlayerId> _localPlayer;
@@ -21,6 +22,8 @@ namespace CinliMahzen.Player
         {
             _actions = new CMInput();
             _localPlayer = localPlayer ?? DefaultLocalPlayer;
+            // Roles may have been assigned before this source existed (bootstrap hook order is not fixed), so start from the registry.
+            _role = InitialLocalRole();
             _actions.UI.Enable();
             _actions.Debug.Enable();
             EventBus.Subscribe<LocalRoleChangedEvt>(OnLocalRoleChanged);
@@ -87,6 +90,21 @@ namespace CinliMahzen.Player
                 case Role.EvilJinn: return InputMode.Spirit;
                 default: return InputMode.None;
             }
+        }
+
+        // --- ILocalInputProvider ---
+        IPawnInput ILocalInputProvider.Idle => NullInput.Instance;
+
+        IPawnInput ILocalInputProvider.AcquireLocal(Role role)
+        {
+            SetMode(ModeForRole(role));
+            return this;
+        }
+
+        private Role InitialLocalRole()
+        {
+            IPlayerRegistry players = GameServices.Players;
+            return players != null ? players.GetRole(_localPlayer()) : Role.None;
         }
 
         private static PlayerId DefaultLocalPlayer()

@@ -58,9 +58,6 @@ namespace CinliMahzen.Player
         private INetBridge _net;
         private IHumanInput _humanInput;
 
-        private bool _inputBound;
-        private bool _boundLocal;
-        private bool _cursorLocked;
         private bool _sprinting;
         private float _pitch;
         private float _verticalVelocity;
@@ -107,7 +104,6 @@ namespace CinliMahzen.Player
 
             _stamina = new StaminaModel(_config.StaminaMax, _config.StaminaDrain, _config.StaminaRegen, _config.StaminaRegenDelay);
             _net.Register(MsgCode.StatusApplied, OnStatusApplied);
-            _inputBound = false;
 
             s_debugOwner = this;
             DebugState.Register(DebugStateKey, BuildDebugJson);
@@ -130,9 +126,12 @@ namespace CinliMahzen.Player
             base.OnDisable();
         }
 
-        protected override void OnOwnerChanged()
+        /// <summary>
+        /// The pawn became / stopped being the played one (first Start, hotseat F1-F4, owner change): see <see cref="PawnBase.OnLocalityChanged"/>.
+        /// </summary>
+        protected override void OnLocalityChanged(bool isLocal)
         {
-            _inputBound = false;
+            BindInput(isLocal);
         }
 
         protected override void OnInputChanged()
@@ -204,10 +203,6 @@ namespace CinliMahzen.Player
             if (_stamina == null || _net == null || !_controller.enabled)
                 return;
 
-            bool local = IsLocallyControlled;
-            if (!_inputBound || local != _boundLocal)
-                BindInput(local);
-
             float dt = Time.deltaTime;
             double now = _net.Time;
             _motor.Tick(now);
@@ -254,27 +249,8 @@ namespace CinliMahzen.Player
 
         private void BindInput(bool local)
         {
-            _inputBound = true;
-            _boundLocal = local;
-
-            if (local)
-            {
-                LocalInputSource source = GameServices.Get<LocalInputSource>();
-                if (source != null)
-                {
-                    source.SetMode(InputMode.Human);
-                    SetInput(source);
-                }
-                else
-                {
-                    CMLog.Warn("Human", name + ": no LocalInputSource registered — idle input");
-                    SetInput(NullInput.Instance);
-                }
-            }
-            else
-            {
-                SetInput(NullInput.Instance);
-            }
+            // Live input of the Human map (whatever a hand-placed pawn's serialized role says) when played, idle input otherwise.
+            ApplyInput(local, Role.Human);
             SetCursorLocked(local && lockCursor);
             if (local)
                 AttachCamera();
@@ -306,13 +282,14 @@ namespace CinliMahzen.Player
             rig.SetFps(head);
         }
 
+        // The lock is shared with the other pawn kinds and owned by one pawn (PawnBase): hotseat notifies the old and the
+        // new local pawn in no fixed order, and releasing only counts for the pawn that holds it.
         private void SetCursorLocked(bool locked)
         {
-            if (locked == _cursorLocked)
-                return;
-            _cursorLocked = locked;
-            Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !locked;
+            if (locked)
+                AcquireCursorLock();
+            else
+                ReleaseCursorLock();
         }
 
         private static float NormalizePitch(float eulerX)

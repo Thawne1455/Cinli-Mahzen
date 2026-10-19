@@ -11,9 +11,26 @@ namespace CinliMahzen.DebugTools
     /// </summary>
     public static class DebugCommands
     {
+        /// <summary>
+        /// F1-F4 / "Switch To Player N" (TODO 1.3): makes player <paramref name="index"/> the played one. The registry raises
+        /// LocalPlayerChanged (+ LocalRoleChangedEvt when the role differs); every pawn then re-evaluates whether it is the local one
+        /// (input map, camera, cursor), and the camera culling follows the new role.
+        /// </summary>
         public static void SwitchToPlayer(int index)
         {
-            Todo("F" + (index + 1) + " Switch To Player " + (index + 1), "1.3 Hotseat");
+            string what = "Switch To Player " + (index + 1);
+            var registry = GameServices.Players as OfflinePlayerRegistry;
+            if (registry == null)
+            {
+                CMLog.Warn("Debug", what + ": no offline player registry (not booted, or online)");
+                return;
+            }
+            if (index < 0 || index >= registry.Players.Count || !registry.SetLocalPlayer(new PlayerId((byte)index)))
+            {
+                CMLog.Warn("Debug", what + ": there is no such player (0.." + (registry.Players.Count - 1) + ")");
+                return;
+            }
+            CMLog.Info("Debug", "Local player -> " + registry.LocalPlayer + " (" + registry.GetRole(registry.LocalPlayer) + ")");
         }
 
         public static void ToggleImmortalHuman() => ToggleImmortal();

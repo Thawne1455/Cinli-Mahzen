@@ -143,6 +143,8 @@ Game ──► MatchController
 
 ### 4.2 Oyuncu Kaydı
 `IPlayerRegistry { Players, LocalPlayer, GetRole, Get, LocalPlayerChanged, RolesChanged }`, `PlayerInfo { Id, Nickname, Role, Score }`.
+`OfflinePlayerRegistry` (`Scripts/Core/Players/`, düz C#, 4 slot `P0..P3`, takma ad `P1..P4`): `GameBootstrap` kaydeder ve `OfflineNetBridge`'in yerel oyuncusunu ondan okutur (`localPlayer: () => registry.LocalPlayer`). Somut sınıfta `SetLocalPlayer(PlayerId)` (F1-F4; `LocalPlayerChanged`, yerel rol değiştiyse `LocalRoleChangedEvt`) ve `SetRoles(Role[])` (`RolesChanged`, yerel rol değiştiyse `LocalRoleChangedEvt`) bulunur; ikisi `IPlayerRegistry`'de değildir (1.10/M5'te karar verilecek). İlk roller (raund 0) `HotseatBootstrap` (DebugTools hook'u, `RoleRotation`) ile atanır; 1.10 entegrasyonunda `MatchController` atar.
+`PawnSpawner` (`Scripts/Match/Spawning/`, sahnede; prefab slotları `P_Human` / `P_Spirit`): `Start`'ta roller varsa ve her `RolesChanged`'de eski piyonları yok edip (önce `SetActive(false)`: NetId hemen boşalır) rolü olan her oyuncu için piyon kurar — insan → `P_Human` (`IHouseInfo.HumanSpawn`), iki cin → `P_Spirit` (`JinnSpawns` sırayla). **NetId = 1 + oyuncu slotu** (P0→N1 … P3→N4; piyon rolle değil oyuncuyla sabit). Saf kısım `PawnSpawnPlanner` (EditMode testli). Sahnedeki elle konmuş piyon, spawner'ın planladığı bir NetId'yi tutuyorsa çalışma anında uyarıyla silinir; `Add Pawn Spawner To Open Scene` elle konmuş P_Human/P_Spirit'leri sahneden kaldırır.
 
 ### 4.3 Network Soyutlaması — EN ÖNEMLİ KURAL
 ```
@@ -547,6 +549,7 @@ uGUI + TextMeshPro. `UIRoot` Canvas 1920x1080 referans.
 
 ### 11.1 Hotseat
 **F1-F4** oyuncu değiştir · **F5** insan bayılmaz · **F6** sınırsız enerji · **F7** her şeyi göster (SpiritOnly ve Ruh Perdesi açık) · **F8** yeni seed ile raund · **F9** overlay · **F10** zaman x2 · **F11** mevcut aşamayı tamamla (+90 sn) · **F12** Dummy İnsan botu.
+**Oyuncu değiştirme akışı:** F1-F4 / `Switch To Player N` → `DebugCommands.SwitchToPlayer(i)` → `OfflinePlayerRegistry.SetLocalPlayer` → `LocalPlayerChanged` (+ `LocalRoleChangedEvt`: `CameraRig` culling, `LocalInputSource` haritası) → her `PawnBase` `OnLocalityChanged(bool)` alır (ilk `Start`'ta, her geçişte, `SetOwner` sonrası): yerel piyon `ILocalInputProvider.AcquireLocal(rol)` ile gerçek input + `ICameraRig.SetFps` + imleç kilidi (`AcquireCursorLock`) alır, diğerleri `Idle` (`NullInput`). `ILocalInputProvider` (Core; `LocalInputSource` uygular) CM.Jinn'in CM.Player'ı görmeden input alabilmesi içindir. Kurulum: `Build Spirit Prefab` → `Add Camera Rig To Open Scene` → `Add Pawn Spawner To Open Scene` (Game ve Sandbox'ta); Dump State bölümü `players` (`id, role, local, pawn, pos`).
 
 ### 11.2 Menü komutları (MCP `execute_menu_item`)
 ```

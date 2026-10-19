@@ -7,7 +7,7 @@ namespace CinliMahzen.Core
 {
     /// <summary>
     /// Auto-bootstrap (Teknik §3): before the first scene loads, GameServices is filled for offline hotseat
-    /// (OfflineNetBridge, EntityRegistry, GameBalanceConfig), then module hooks run (input, debug tools, ...).
+    /// (OfflinePlayerRegistry, OfflineNetBridge, EntityRegistry, GameBalanceConfig), then module hooks run (input, debug tools, ...).
     /// Works for every scene — Boot, Game, Sandbox — so Play can be pressed anywhere.
     /// Modules add hooks from [RuntimeInitializeOnLoadMethod(AfterAssembliesLoaded)] via <see cref="AddHook"/>.
     /// </summary>
@@ -51,7 +51,11 @@ namespace CinliMahzen.Core
             if (IsBooted)
                 return;
 
-            GameServices.Register<INetBridge>(new OfflineNetBridge());
+            // Hotseat: the local player of the network bridge is the player currently being played, i.e. the registry's.
+            // Roles are empty here; HotseatBootstrap (DebugTools) assigns round 0, the MatchController takes over with TODO 1.10.
+            var players = new OfflinePlayerRegistry();
+            GameServices.Register<IPlayerRegistry>(players);
+            GameServices.Register<INetBridge>(new OfflineNetBridge(localPlayer: () => players.LocalPlayer));
             GameServices.Register<IEntityRegistry>(new EntityRegistry());
             if (settings != null && settings.Config != null)
                 GameServices.Register(settings.Config);

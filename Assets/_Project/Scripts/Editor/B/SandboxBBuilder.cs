@@ -19,8 +19,9 @@ namespace CinliMahzen.Editor
         private const string JinnPrefabFolder = "Assets/_Project/Prefabs/Jinn";
         private const string ScenePath = "Assets/_Project/Scenes/Sandbox_B.unity";
 
-        private const string EvilPrefabPath = JinnPrefabFolder + "/P_EvilJinnVisual.prefab";
-        private const string GoodPrefabPath = JinnPrefabFolder + "/P_GoodJinnVisual.prefab";
+        // Public: SpiritPrefabBuilder (TODO 1.3) nests these two visuals in P_Spirit.
+        public const string EvilPrefabPath = JinnPrefabFolder + "/P_EvilJinnVisual.prefab";
+        public const string GoodPrefabPath = JinnPrefabFolder + "/P_GoodJinnVisual.prefab";
 
         private const string UnlitShader = "Universal Render Pipeline/Unlit";
         private const string ParticleShader = "Universal Render Pipeline/Particles/Unlit";
