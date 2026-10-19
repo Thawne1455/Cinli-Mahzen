@@ -215,7 +215,7 @@ F8 ile 3 farklı seed: F3 1.5 sn basılı tutarak bulmacayı toplu sabote eder, 
 | [~] | 3.9 | Görünürlük servisi (GDD §12 tablosu + odaklanan iyi cin parıltısı) + soğuk nefes | 1.7 | M |
 | [~] | 3.10 | Maç tam: 4 raund rotasyon, **Kademeli Puanlama (`ScoreService`)**, `MatchEnd` | 1.10, 3.7 | M |
 | [~] | 3.11 | HUD'lar: İnsan, İyi Cin, Kötü Cin (GDD v2.1 §13 ve Teknik §10) | 3.5, 3.10 | L |
-| [ ] | 3.12 | Dummy İnsan botu (NavMesh gezinme) | 2.2 | S |
+| [~] | 3.12 | Dummy İnsan botu (NavMesh gezinme) | 2.2 | S |
 
 Her bulmaca görevi için kabul: tip planner'a eklendi, 500 seed raporu geçerli, MCP ile çözülme + toplu sabotaj + Ruh Perdesi referans screenshot'ı.
 

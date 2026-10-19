@@ -50,7 +50,50 @@ namespace CinliMahzen.DebugTools
         public static void ToggleRevealAll() => Todo("F7 Reveal All", "3.9 Visibility");
         public static void RestartRound() => RestartMatch();
         public static void CompleteCurrentStage() => AddStageTimeBonus();
-        public static void ToggleDummyHuman() => Todo("F12 Toggle Dummy Human", "3.12 Dummy bot");
+        /// <summary>
+        /// F12 / "Toggle Dummy Human" (TODO 3.12): the human pawn wanders the house on its own (<see cref="DummyHumanBot"/>), so a jinn can be
+        /// tested alone. The choice survives new rounds: the pawn is re-created per round, so the bot is put back on every RoundStartedEvt.
+        /// </summary>
+        public static void ToggleDummyHuman()
+        {
+            s_dummyHuman = !s_dummyHuman;
+            if (s_onRoundForBot == null)
+            {
+                s_onRoundForBot = _ => ApplyDummyHuman();
+                Core.EventBus.Subscribe(s_onRoundForBot);
+            }
+            ApplyDummyHuman();
+            CMLog.Info("Debug", "F12 Dummy Human: " + (s_dummyHuman ? "on" : "off"));
+        }
+
+        private static bool s_dummyHuman;
+        private static System.Action<Core.Events.RoundStartedEvt> s_onRoundForBot;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetDummyHuman()
+        {
+            s_dummyHuman = false;
+            s_onRoundForBot = null;
+        }
+
+        private static void ApplyDummyHuman()
+        {
+            HumanController human = Object.FindFirstObjectByType<HumanController>();
+            if (human == null)
+            {
+                if (s_dummyHuman)
+                    CMLog.Warn("Debug", "F12 Dummy Human: no human pawn in the scene (yet)");
+                return;
+            }
+            DummyHumanBot bot = human.GetComponent<DummyHumanBot>();
+            if (bot == null)
+            {
+                if (!s_dummyHuman)
+                    return;
+                bot = human.gameObject.AddComponent<DummyHumanBot>();
+            }
+            bot.enabled = s_dummyHuman;
+        }
 
         public static void ToggleOverlay()
         {

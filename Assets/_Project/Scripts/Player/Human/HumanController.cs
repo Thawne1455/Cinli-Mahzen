@@ -57,6 +57,7 @@ namespace CinliMahzen.Player
         private GameBalanceConfig _config;
         private INetBridge _net;
         private IHumanInput _humanInput;
+        private IHumanInput _inputOverride;
 
         private bool _sprinting;
         private float _pitch;
@@ -67,6 +68,23 @@ namespace CinliMahzen.Player
         public StaminaModel Stamina => _stamina;
 
         public bool IsSprinting => _sprinting;
+
+        /// <summary>Degrees of yaw per unit of <c>IHumanInput.Look.x</c> (the dummy bot converts its turn with it).</summary>
+        public float LookSensitivity => lookSensitivity;
+
+        /// <summary>
+        /// TODO 3.12 (debug): an input that wins over the player's / idle input while set — the dummy bot drives the human through it whether
+        /// or not the human is the locally played pawn. Null gives control back.
+        /// </summary>
+        public IHumanInput InputOverride
+        {
+            get => _inputOverride;
+            set
+            {
+                _inputOverride = value;
+                _humanInput = value ?? Input as IHumanInput;
+            }
+        }
 
         public bool IsGrounded => _controller != null && _controller.isGrounded;
 
@@ -136,7 +154,7 @@ namespace CinliMahzen.Player
 
         protected override void OnInputChanged()
         {
-            _humanInput = Input as IHumanInput;
+            _humanInput = _inputOverride ?? Input as IHumanInput;
         }
 
         /// <summary>
