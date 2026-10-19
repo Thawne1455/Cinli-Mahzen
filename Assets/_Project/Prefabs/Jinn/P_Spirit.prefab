@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1463419749000539370}
   - component: {fileID: 9106985865260379432}
+  - component: {fileID: 648419433892718026}
   m_Layer: 10
   m_Name: P_Spirit
   m_TagString: Untagged
@@ -54,6 +55,21 @@ MonoBehaviour:
   evilVisual: {fileID: 334678028726828897}
   goodVisual: {fileID: 6956494618719903995}
   lockCursor: 1
+--- !u!114 &648419433892718026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823931048353402277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f695c83d5b696847ae3716cacb8bcdd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CM.Jinn::CinliMahzen.Jinn.SpiritController
+  lookSensitivity: 0.1
+  pitchLimit: 85
+  debugTeleportDistance: 1
 --- !u!1 &3251197117622467448
 GameObject:
   m_ObjectHideFlags: 0

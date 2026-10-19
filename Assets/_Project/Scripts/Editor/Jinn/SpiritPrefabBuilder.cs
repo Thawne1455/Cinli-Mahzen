@@ -6,8 +6,9 @@ using UnityEngine;
 namespace CinliMahzen.Editor
 {
     /// <summary>
-    /// Builds Assets/_Project/Prefabs/Jinn/P_Spirit.prefab (TODO 1.3): root on layer SpiritPawn with <see cref="SpiritPawn"/> (no collider,
-    /// no Rigidbody — spirits fly kinematically and collide with nothing, Teknik §2), an "Eyes" child for the first-person camera, and the
+    /// Builds Assets/_Project/Prefabs/Jinn/P_Spirit.prefab (TODO 1.3, 1.6): root on layer SpiritPawn with <see cref="SpiritPawn"/> and
+    /// <see cref="SpiritController"/> (flight, reference focus, Spirit Bump; no collider, no Rigidbody — spirits fly kinematically and
+    /// collide with nothing, Teknik §2), an "Eyes" child for the first-person camera, and the
     /// two placeholder looks as nested prefabs, "Visual_Evil" (P_EvilJinnVisual, layer EvilJinnVisual) and "Visual_Good"
     /// (P_GoodJinnVisual, layer GoodJinnVisual), both inactive: SpiritPawn switches on the one matching its role. The look prefabs come from
     /// SandboxBBuilder (B0.2) and are built first when missing; they keep their own layers so camera culling treats them like before.
@@ -86,6 +87,9 @@ namespace CinliMahzen.Editor
                 Object.DestroyImmediate(rb);
 
             var pawn = GetOrAdd<SpiritPawn>(root);
+            // Sibling of the pawn (RequireComponent): flight, reference focus and Spirit Bump. It has no references to wire — it finds the
+            // pawn itself — and keeps its serialized feel values (look sensitivity, pitch limit) when the prefab is updated.
+            GetOrAdd<SpiritController>(root);
 
             Transform eyes = root.transform.Find(EyesName);
             if (eyes == null)
