@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CinliMahzen.World;
 using CinliMahzen.World.Graybox;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -16,10 +17,16 @@ namespace CinliMahzen.Editor
     /// Door leaves of stage gates and the front door are drawn but non-blocking in v0 (see DoorLeafNameSuffix).
     ///
     /// Idempotent: Build Graybox overwrites <c>P_House.prefab</c> (the asset keeps its GUID, so scene instances stay
-    /// linked). No markers yet (TODO 2.2); the house is recognised by hierarchy names only for now.
+    /// linked).
     ///
-    /// Hierarchy: P_House / Garden / Room_X / {Floor, Walls}, Garden/Posts, Garden/Ground;
-    /// P_House / Floor0 | Floor1 / Room_X / {Floor, Walls}, Floor0 | Floor1 / Posts; P_House / Stairs; P_House / Props.
+    /// TODO 2.2: the marker components of Teknik 8 and the HouseService are added from the fixed data in
+    /// <see cref="GrayboxMarkers"/> (room boxes, stage zones, gates, slots, lamps, spawns, ...). Every room group carries its
+    /// RoomMarker (trigger boxes, layer Ignore Raycast) and a "Markers" child with its point markers; the stage zones live
+    /// in P_House / Markers. Runtime code never looks the house up by these names, only through the markers.
+    ///
+    /// Hierarchy: P_House / Garden / Room_X / {Floor, Walls, Markers}, Garden/Posts, Garden/Ground;
+    /// P_House / Floor0 | Floor1 / Room_X / {Floor, Walls, Markers}, Floor0 | Floor1 / Posts; P_House / Stairs; P_House / Props;
+    /// P_House / Markers / Stage_N. The HouseService sits on P_House.
     /// </summary>
     public static class HouseGrayboxBuilder
     {
@@ -27,23 +34,29 @@ namespace CinliMahzen.Editor
         private const string MenuRoot = "CinliMahzen/House/";
         private const string EnvironmentFolder = "Assets/_Project/Prefabs/Environment";
         private const string WorldFolder = "Assets/_Project/Prefabs/World";
-        private const string HousePrefabPath = WorldFolder + "/P_House.prefab";
+        internal const string HousePrefabPath = WorldFolder + "/P_House.prefab";
         private const string MaterialFolder = "Assets/_Project/Art/Materials";
         private const string LitShaderName = "Universal Render Pipeline/Lit";
         private const string BaseColorProperty = "_BaseColor";
         private const string EnvironmentLayerName = "Environment";
         private const int EnvironmentLayerFallback = 6;
 
+        /// <summary>Markers and room volumes are non-physical: the built-in layer that raycasts ignore by default.</summary>
+        private const string MarkerLayerName = "Ignore Raycast";
+        private const int MarkerLayerFallback = 2;
+
         private const string HouseRootName = "P_House";
-        private const string GardenGroupName = "Garden";
-        private const string FloorGroupPrefix = "Floor";
+        private const string GardenGroupName = GrayboxNaming.GardenGroupName;
+        private const string FloorGroupPrefix = GrayboxNaming.FloorGroupPrefix;
         private const string StairsGroupName = "Stairs";
         private const string PropsGroupName = "Props";
-        private const string RoomPrefix = "Room_";
+        private const string RoomPrefix = GrayboxNaming.RoomPrefix;
         private const string RoomFloorGroupName = "Floor";
         private const string RoomWallsGroupName = "Walls";
         private const string PostsGroupName = "Posts";
         private const string GroundName = "Ground";
+        private const string MarkersGroupName = GrayboxNaming.MarkersGroupName;
+        private const string RewardPointName = "RewardPoint";
 
         // ---- measurements (docs/04_Asset_Eslestirme.md sections 1-2) --------------------------------------
         private const float CellSize = GrayboxLayout.CellSize;
@@ -66,7 +79,7 @@ namespace CinliMahzen.Editor
         private const float WallYawAlongZ = 90f;
 
         /// <summary>Only the garden stage (stage 0) is grouped under "Garden"; the other rooms go under their floor.</summary>
-        private const int GardenStage = 0;
+        private const int GardenStage = GrayboxNaming.GardenStage;
 
         /// <summary>
         /// In Env_WallDoorwayDoor the door leaf is the child mesh "wall_doorway_door" and it comes with its own closed
@@ -202,7 +215,7 @@ namespace CinliMahzen.Editor
             GameObject root = null;
             try
             {
-                var ctx = new BuildContext(ResolveEnvironmentLayer());
+                var ctx = new BuildContext(ResolveEnvironmentLayer(), ResolveMarkerLayer());
                 root = BuildHouse(ctx, layout);
                 if (ctx.Failed)
                 {
@@ -306,14 +319,18 @@ namespace CinliMahzen.Editor
             }
             Transform stairsGroup = Group(ctx, root, StairsGroupName);
             Transform propsGroup = Group(ctx, root, PropsGroupName);
+            Transform houseMarkers = Group(ctx, root, MarkersGroupName);
+            houseMarkers.gameObject.layer = ctx.MarkerLayer;
 
             // Rooms: floor tiles now, walls are filled in below from the planner (a shared wall belongs to one room).
             var wallGroups = new Dictionary<string, Transform>();
+            var roomGroups = new Dictionary<string, Transform>();
             for (int r = 0; r < layout.Rooms.Count; r++)
             {
                 GrayboxRoom room = layout.Rooms[r];
                 Transform parent = room.Stage == GardenStage ? garden : floorGroups[room.Floor];
                 Transform roomGroup = Group(ctx, parent, RoomPrefix + room.Name);
+                roomGroups.Add(room.Id, roomGroup);
                 Transform floorGroup = Group(ctx, roomGroup, RoomFloorGroupName);
                 wallGroups.Add(room.Id, Group(ctx, roomGroup, RoomWallsGroupName));
                 ctx.Rooms++;
@@ -331,7 +348,8 @@ namespace CinliMahzen.Editor
                 }
             }
 
-            // Walls, doors, fences, railings.
+            // Walls, doors, fences, railings. The door pieces of the stage gates are remembered for the StageGate markers.
+            var gateDoors = new Dictionary<GrayboxEdge, Transform>();
             List<GrayboxWallSegment> segments = GrayboxWallPlanner.PlanWalls(layout);
             for (int s = 0; s < segments.Count; s++)
             {
@@ -347,6 +365,7 @@ namespace CinliMahzen.Editor
                     if (spec.HasDoorLeaf)
                     {
                         DisableDoorLeafColliders(piece);
+                        gateDoors[edge] = piece.transform;
                     }
                 }
             }
@@ -384,6 +403,10 @@ namespace CinliMahzen.Editor
             {
                 BuildProp(ctx, layout.Props[i], i, propsGroup);
             }
+
+            // Markers (TODO 2.2) and the service that indexes them.
+            BuildMarkers(ctx, GrayboxMarkers.For(layout), roomGroups, houseMarkers, gateDoors);
+            root.gameObject.AddComponent<HouseService>();
 
             return root.gameObject;
         }
@@ -451,6 +474,171 @@ namespace CinliMahzen.Editor
                     + ") is not the stair cell centre (" + expectedX.ToString("0.00") + ", " + expectedZ.ToString("0.00")
                     + "). The model is probably turned the wrong way: check GrayboxStairs.ModelYawOffsetDegrees.");
             }
+        }
+
+        // ------------------------------------------------------------------------------------------------
+        // markers (TODO 2.2)
+        // ------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Creates one object per <see cref="GrayboxMarkerSpec"/> and puts the matching marker component on it. Room markers go on
+        /// the room group itself; every other room-bound marker goes into the room's "Markers" child; stage zones go into the
+        /// house-level "Markers" group. The positions come straight from the data (the house root is at the origin).
+        /// </summary>
+        private static void BuildMarkers(BuildContext ctx, GrayboxMarkers markers, Dictionary<string, Transform> roomGroups,
+            Transform houseMarkers, Dictionary<GrayboxEdge, Transform> gateDoors)
+        {
+            var markerGroups = new Dictionary<string, Transform>();
+            for (int i = 0; i < markers.Specs.Count; i++)
+            {
+                GrayboxMarkerSpec spec = markers.Specs[i];
+                Transform roomGroup;
+                if (spec.Kind != GrayboxMarkerKind.StageZone && !roomGroups.TryGetValue(spec.RoomKey, out roomGroup))
+                {
+                    Debug.LogError("[House] Marker " + spec.Path + " names room '" + spec.RoomKey + "', which has no room group.");
+                    ctx.Failed = true;
+                    continue;
+                }
+
+                switch (spec.Kind)
+                {
+                    case GrayboxMarkerKind.Room:
+                        AddRoomMarker(ctx, spec, roomGroups[spec.RoomKey]);
+                        break;
+
+                    case GrayboxMarkerKind.StageZone:
+                        AddStageZone(ctx, spec, houseMarkers);
+                        break;
+
+                    default:
+                        AddPointMarker(ctx, spec, MarkerGroupOf(ctx, spec.RoomKey, roomGroups, markerGroups), gateDoors);
+                        break;
+                }
+                ctx.Markers++;
+            }
+        }
+
+        private static void AddRoomMarker(BuildContext ctx, GrayboxMarkerSpec spec, Transform roomGroup)
+        {
+            GameObject go = roomGroup.gameObject;
+            go.layer = ctx.MarkerLayer;
+
+            var marker = go.AddComponent<RoomMarker>(); // RequireComponent adds the first BoxCollider
+            marker.Configure(GrayboxMarkers.RoomIdOf(spec.RoomKey), spec.RoomKey, spec.Floor, spec.IsOutdoor);
+
+            for (int b = 0; b < spec.Boxes.Count; b++)
+            {
+                BoxCollider box = b == 0 ? go.GetComponent<BoxCollider>() : go.AddComponent<BoxCollider>();
+                box.isTrigger = true;
+                box.center = go.transform.InverseTransformPoint(spec.Boxes[b].center);
+                box.size = spec.Boxes[b].size;
+            }
+        }
+
+        private static void AddStageZone(BuildContext ctx, GrayboxMarkerSpec spec, Transform houseMarkers)
+        {
+            GameObject go = NewMarkerObject(ctx, spec, houseMarkers);
+            var ids = new List<int>(spec.RoomKeys.Count);
+            for (int i = 0; i < spec.RoomKeys.Count; i++)
+            {
+                ids.Add(GrayboxMarkers.RoomIdOf(spec.RoomKeys[i]));
+            }
+            go.AddComponent<StageZone>().Configure(spec.Stage, ids);
+        }
+
+        private static void AddPointMarker(BuildContext ctx, GrayboxMarkerSpec spec, Transform parent, Dictionary<GrayboxEdge, Transform> gateDoors)
+        {
+            GameObject go = NewMarkerObject(ctx, spec, parent);
+            int roomId = GrayboxMarkers.RoomIdOf(spec.RoomKey);
+            switch (spec.Kind)
+            {
+                case GrayboxMarkerKind.PuzzleSlot:
+                {
+                    Transform reward = Group(ctx, go.transform, RewardPointName);
+                    reward.gameObject.layer = ctx.MarkerLayer;
+                    reward.position = spec.RewardPosition;
+                    go.AddComponent<PuzzleSlot>().Configure(spec.Stage, roomId, spec.Size, spec.AllowedTypes, reward);
+                    break;
+                }
+
+                case GrayboxMarkerKind.ReferenceSlot:
+                    go.AddComponent<ReferenceSlot>().Configure(roomId, spec.Size, spec.AllowedTypes);
+                    break;
+
+                case GrayboxMarkerKind.StageGate:
+                {
+                    Transform door;
+                    if (!gateDoors.TryGetValue(spec.Edge, out door))
+                    {
+                        Debug.LogError("[House] StageGate " + spec.Path + ": no door piece was built on edge " + spec.Edge + ".");
+                        ctx.Failed = true;
+                        door = go.transform;
+                    }
+                    go.AddComponent<StageGate>().Configure(spec.Stage, door);
+                    if (!string.IsNullOrEmpty(spec.ItemId))
+                    {
+                        go.AddComponent<GateLock>().Configure(spec.ItemId);
+                    }
+                    break;
+                }
+
+                case GrayboxMarkerKind.Lamp:
+                    go.AddComponent<LampMarker>().Configure(roomId);
+                    break;
+
+                case GrayboxMarkerKind.LightSwitch:
+                    go.AddComponent<LightSwitch>().Configure(roomId);
+                    break;
+
+                case GrayboxMarkerKind.KeyHideSpot:
+                    go.AddComponent<KeyHideSpot>();
+                    break;
+
+                case GrayboxMarkerKind.CologneSpawnSpot:
+                    go.AddComponent<CologneSpawnSpot>().Configure(roomId);
+                    break;
+
+                case GrayboxMarkerKind.HumanSpawn:
+                    go.AddComponent<HumanSpawnMarker>();
+                    break;
+
+                case GrayboxMarkerKind.JinnSpawn:
+                    go.AddComponent<JinnSpawnMarker>();
+                    break;
+
+                case GrayboxMarkerKind.ToolShedItem:
+                    go.AddComponent<ToolShedItemPoint>().Configure(spec.ItemId);
+                    break;
+
+                default:
+                    Debug.LogError("[House] Unhandled marker kind " + spec.Kind + " for " + spec.Path);
+                    ctx.Failed = true;
+                    break;
+            }
+        }
+
+        private static GameObject NewMarkerObject(BuildContext ctx, GrayboxMarkerSpec spec, Transform parent)
+        {
+            Transform t = Group(ctx, parent, spec.Name);
+            t.gameObject.layer = ctx.MarkerLayer;
+            t.position = spec.Position;
+            t.rotation = Quaternion.Euler(0f, spec.YawDegrees, 0f);
+            return t.gameObject;
+        }
+
+        /// <summary>The "Markers" child of a room group; created on first use.</summary>
+        private static Transform MarkerGroupOf(BuildContext ctx, string roomKey, Dictionary<string, Transform> roomGroups,
+            Dictionary<string, Transform> markerGroups)
+        {
+            Transform group;
+            if (markerGroups.TryGetValue(roomKey, out group))
+            {
+                return group;
+            }
+            group = Group(ctx, roomGroups[roomKey], MarkersGroupName);
+            group.gameObject.layer = ctx.MarkerLayer;
+            markerGroups.Add(roomKey, group);
+            return group;
         }
 
         // ------------------------------------------------------------------------------------------------
@@ -613,6 +801,12 @@ namespace CinliMahzen.Editor
             return layer;
         }
 
+        private static int ResolveMarkerLayer()
+        {
+            int layer = LayerMask.NameToLayer(MarkerLayerName);
+            return layer < 0 ? MarkerLayerFallback : layer;
+        }
+
         private static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path))
@@ -629,6 +823,7 @@ namespace CinliMahzen.Editor
         private sealed class BuildContext
         {
             public readonly int Layer;
+            public readonly int MarkerLayer;
             public readonly List<GrayboxCell> Cells = new List<GrayboxCell>();
             public bool Failed;
 
@@ -637,14 +832,16 @@ namespace CinliMahzen.Editor
             public int Posts;
             public int Stairs;
             public int Props;
+            public int Markers;
             public readonly int[] Pieces = new int[4]; // indexed by GrayboxWallKind
 
             private readonly Dictionary<string, GameObject> _prefabs = new Dictionary<string, GameObject>();
             private readonly Dictionary<string, Material> _materials = new Dictionary<string, Material>();
 
-            public BuildContext(int layer)
+            public BuildContext(int layer, int markerLayer)
             {
                 Layer = layer;
+                MarkerLayer = markerLayer;
             }
 
             public GameObject Prefab(string name)
@@ -705,7 +902,8 @@ namespace CinliMahzen.Editor
                 int railings = Pieces[(int)GrayboxWallKind.Railing];
                 return "[House] Graybox built -> " + path + ": " + Rooms + " rooms, " + FloorTiles + " floor tiles, "
                     + (doors + walls + fences + railings) + " wall pieces (" + walls + " walls, " + doors + " doors, "
-                    + fences + " fences, " + railings + " railings), " + Posts + " posts, " + Stairs + " stairs, " + Props + " props.";
+                    + fences + " fences, " + railings + " railings), " + Posts + " posts, " + Stairs + " stairs, " + Props + " props, "
+                    + Markers + " markers. Run CinliMahzen/House/Validate.";
             }
         }
     }

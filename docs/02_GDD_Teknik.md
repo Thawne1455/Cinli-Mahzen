@@ -515,6 +515,10 @@ Girdi: `HouseIndex` (odalar, slotlar), `PuzzleDefinition[]` havuzu, `GameBalance
 | `HumanSpawnMarker` / `JinnSpawnMarker` | — | 1 / 3 |
 | `ToolShedItemPoint` | itemId (`blessed_oil`) | Bahçede alet kulübesinde (Kutsanmış Yağ) |
 
+- **Dosyalar (CM.World):** marker bileşenleri `Scripts/World/Markers/`; `HouseService` (P_House kökünde, `Awake`'te `Index()`), `HouseIndex`/`HouseIndexBuilder` (düz veri), `RoomService`, `HouseInfo`, `HouseValidator` (kural sayıları `HouseContract`) `Scripts/World/House/`; graybox marker verisi `Scripts/World/Graybox/GrayboxMarkers.cs` (kurucu `Build Graybox` marker'ları + HouseService'i prefab'a ekler). `RoomMarker.roomId` int'tir (sabit tablo `GrayboxMarkers`, sona eklenir, sıra değişmez), `roomKey` Loc anahtarını verir (`room.<roomKey>`); L şekilli odaların birden fazla `BoxCollider`'ı olur, `RoomOf` yarı açık kutularla bakar, iç içe kutuda en küçük hacim kazanır (eşitse en düşük roomId). `RoomMarker.isOutdoor` (bahçe) lamba/düğme şartından muaftır.
+- **NetId:** `NetId` taşıyan marker'lar (`PuzzleSlot`, `ReferenceSlot`, `StageGate`, `LampMarker`, `LightSwitch`, `KeyHideSpot`, `CologneSpawnSpot`, `DigSpot`, `ToolShedItemPoint`) anahtarı `P_House köküne göreli hiyerarşi yolu + "#" + marker tipi` olan ordinal sıralamayla 1000'den ardışık id alır (>59999 hata); sıra, kök adı ve konumdan bağımsızdır, serileştirilmez, `Index()` atar ve `IEntityRegistry`'ye kaydeder.
+- **Doğrulama:** `CinliMahzen/House/Validate` açık sahnedeki (yoksa prefab'daki) `HouseService`'i indeksler, `HouseValidator` sonuçlarını loglar ve `House/Validate: N errors, M warnings` ile biter. `DigSpot` < 3 ve son aşamanın `StageGate`'i (mahzen kapağı) eksikliği **Warning**'dir (mahzen TODO 3.7'de gelir); diğer ihlaller Error.
+
 ---
 
 ## 9. Maç Yönetimi, Dinamik Süre ve Kademeli Puanlama (CM.Match)
