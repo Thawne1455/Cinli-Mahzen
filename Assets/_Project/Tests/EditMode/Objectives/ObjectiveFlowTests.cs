@@ -1,0 +1,282 @@
+using System.Collections.Generic;
+using CinliMahzen.Core;
+using CinliMahzen.Core.Events;
+using CinliMahzen.Core.Net;
+using CinliMahzen.Objectives;
+using NUnit.Framework;
+using UnityEngine;
+
+namespace CinliMahzen.Tests.EditMode.Objectives
+{
+    /// <summary>
+    /// TODO 2.7: <see cref="ObjectiveFlowCore"/> on the shared puzzle world. Stage 1 has two puzzles: slot 0 (the fixture's Paintings, reward
+    /// "paint") and slot 1 (a second Paintings, no reward); stage 2 has slot 2 (reward "shovel"). A fake scene records spawns, despawns
+    /// and opened gates; StageCompletedEvt is recorded too (the MatchController adds the time bonus from it).
+    /// </summary>
+    public class ObjectiveFlowTests : PuzzleSystemFixture
+    {
+        private const int SlotB = 1;
+        private const int SlotC = 2;
+        private static readonly Vector3 RewardA = new Vector3(0f, 1f, 1f);
+        private static readonly Vector3 RewardC = new Vector3(5f, 1f, 0f);
+
+        private sealed class FakeScene : IObjectiveScene
+        {
+            public readonly Dictionary<NetId, string> Items = new Dictionary<NetId, string>();
+            public readonly Dictionary<NetId, Vector3> Positions = new Dictionary<NetId, Vector3>();
+            public readonly List<int> OpenedGates = new List<int>();
+            public readonly List<NetId> Despawned = new List<NetId>();
+            public System.Func<PlayerId, Vector3?> Pawn;
+
+            public void SpawnItem(NetId item, string itemId, Vector3 position)
+            {
+                Items[item] = itemId;
+                Positions[item] = position;
+            }
+
+            public void DespawnItem(NetId item)
+            {
+                Items.Remove(item);
+                Despawned.Add(item);
+            }
+
+            public void OpenGate(int stage) => OpenedGates.Add(stage);
+
+            public Vector3? PawnPosition(PlayerId player) => Pawn(player);
+        }
+
+        private FakeScene _scene;
+        private ObjectiveFlowCore _flow;
+        private int _nextId;
+        private readonly List<StageCompletedEvt> _stages = new List<StageCompletedEvt>();
+        private readonly List<NetMsg> _flowMsgs = new List<NetMsg>();
+
+        [SetUp]
+        public void SetUpFlow()
+        {
+            _nextId = NetId.RuntimeMin;
+            _scene = new FakeScene { Pawn = PawnPositionOf };
+            _flow = new ObjectiveFlowCore(Bridge, Puzzles, Players, Config.ItemSlotCount, _scene, () => new NetId(_nextId++));
+            _flow.Attach();
+
+            Puzzles.RegisterSlot(SlotB, NewPaintings(new Vector3(0f, 0f, 0.5f), SlotStage));
+            Puzzles.RegisterSlot(SlotC, NewPaintings(new Vector3(0f, 0f, -0.5f), 2));
+            _flow.BeginRound(new[]
+            {
+                new ObjectivePuzzleInfo(Slot, SlotStage, "paint", RewardA),
+                new ObjectivePuzzleInfo(SlotB, SlotStage, "", Vector3.zero),
+                new ObjectivePuzzleInfo(SlotC, 2, "shovel", RewardC),
+            }, 2);
+
+            _stages.Clear();
+            _flowMsgs.Clear();
+            EventBus.Subscribe<StageCompletedEvt>(_stages.Add);
+            foreach (MsgCode code in new[] { MsgCode.GateOpened, MsgCode.ItemSpawned, MsgCode.ItemDropped, MsgCode.ItemPickedUp, MsgCode.InventoryChanged })
+                Bridge.Register(code, _flowMsgs.Add);
+        }
+
+        [TearDown]
+        public void TearDownFlow()
+        {
+            _flow.Detach();
+        }
+
+        private List<NetMsg> FlowSent(MsgCode code)
+        {
+            return _flowMsgs.FindAll(m => m.Code == code);
+        }
+
+        private void Complete(int slot)
+        {
+            Assert.AreEqual(PuzzleDenyReason.None, Puzzles.ProcessConfirmAuthority(HumanId, slot), "confirm slot " + slot);
+        }
+
+        private NetId OnlyGroundItem(string itemId)
+        {
+            foreach (KeyValuePair<NetId, string> pair in _flow.GroundItems)
+            {
+                if (pair.Value == itemId)
+                    return pair.Key;
+            }
+            Assert.Fail(itemId + " is not on the ground");
+            return NetId.Invalid;
+        }
+
+        // ---------- start ----------
+
+        [Test]
+        public void BeginRound_StartsInTheGarden()
+        {
+            Assert.AreEqual(0, Puzzles.StageIndex);
+            Assert.AreEqual(3, Puzzles.StageCount, "garden + 2 puzzle stages");
+            Assert.AreEqual(ObjectivePhase.Garden, Puzzles.Phase);
+            Assert.IsFalse(_flow.IsGateOpen(0));
+        }
+
+        // ---------- rewards and gates ----------
+
+        [Test]
+        public void CompletingARewardPuzzle_SpawnsItsItemAtTheRewardPoint_ButTheGateWaits()
+        {
+            Complete(Slot);
+
+            Assert.AreEqual(1, FlowSent(MsgCode.ItemSpawned).Count);
+            NetId paint = OnlyGroundItem("paint");
+            Assert.GreaterOrEqual(paint.Value, NetId.RuntimeMin);
+            Assert.AreEqual(RewardA, _scene.Positions[paint]);
+            Assert.AreEqual(0, FlowSent(MsgCode.GateOpened).Count, "the other stage 1 puzzle is still open");
+        }
+
+        [Test]
+        public void CompletingTheLastPuzzleOfAStage_OpensItsGate_AndAdvancesTheStage()
+        {
+            Complete(Slot);
+            Complete(SlotB);
+
+            Assert.AreEqual(1, FlowSent(MsgCode.GateOpened).Count);
+            CollectionAssert.AreEqual(new[] { SlotStage }, _scene.OpenedGates);
+            Assert.AreEqual(1, _stages.Count);
+            Assert.AreEqual(SlotStage, _stages[0].Stage);
+            Assert.AreEqual(SlotStage + 1, Puzzles.StageIndex);
+            Assert.AreEqual(ObjectivePhase.House, Puzzles.Phase);
+            Assert.IsTrue(_flow.IsGateOpen(SlotStage));
+        }
+
+        [Test]
+        public void TheLastStagesGate_LeadsToTheCellar()
+        {
+            Complete(SlotC);
+
+            Assert.AreEqual(3, Puzzles.StageIndex);
+            Assert.AreEqual(ObjectivePhase.Cellar, Puzzles.Phase);
+            Assert.IsNotNull(OnlyGroundItem("shovel"));
+        }
+
+        [Test]
+        public void ARewardlessPuzzle_SpawnsNothing()
+        {
+            Complete(SlotB);
+            Assert.AreEqual(0, FlowSent(MsgCode.ItemSpawned).Count);
+        }
+
+        [Test]
+        public void CompleteCurrentStage_OpensTheGardenGateFirst_ThenRefusesAgain()
+        {
+            Assert.IsTrue(_flow.CompleteCurrentStageAuthority());
+            Assert.AreEqual(1, Puzzles.StageIndex);
+            Assert.AreEqual(ObjectivePhase.House, Puzzles.Phase);
+            CollectionAssert.AreEqual(new[] { 0 }, _scene.OpenedGates);
+
+            Assert.IsFalse(_flow.OpenGateAuthority(0), "already open");
+            Assert.AreEqual(1, _stages.Count);
+        }
+
+        // ---------- inventory ----------
+
+        [Test]
+        public void HumanPicksUpTheReward_ItLeavesTheGround_AndTheInventoryHasIt()
+        {
+            Complete(Slot);
+            NetId paint = OnlyGroundItem("paint");
+
+            Assert.IsTrue(_flow.PickupAuthority(HumanId, paint));
+
+            Assert.IsTrue(_flow.HasItem(HumanId, "paint"));
+            Assert.AreEqual(0, _flow.GroundItems.Count);
+            CollectionAssert.Contains(_scene.Despawned, paint);
+            Assert.AreEqual(1, FlowSent(MsgCode.ItemPickedUp).Count);
+            Assert.AreEqual(1, FlowSent(MsgCode.InventoryChanged).Count);
+            Assert.IsFalse(_flow.PickupAuthority(HumanId, paint), "already taken");
+        }
+
+        [Test]
+        public void JinnsCannotPickUpItems()
+        {
+            Complete(Slot);
+            NetId paint = OnlyGroundItem("paint");
+
+            Assert.IsFalse(_flow.PickupAuthority(EvilId, paint));
+            Assert.IsFalse(_flow.PickupAuthority(GoodJinnId, paint));
+            Assert.AreEqual(1, _flow.GroundItems.Count);
+        }
+
+        [Test]
+        public void TheInventory_IsWhatThePuzzleSystemAsksForItems()
+        {
+            GameServices.Register<IInventoryQuery>(_flow);
+            Runtime = NewPaintedPuzzle(Vector3.zero);
+            Puzzles.RegisterSlot(7, Runtime);
+
+            Assert.AreEqual(PuzzleDenyReason.MissingItem, Puzzles.ProcessOpAuthority(HumanId, 7, PuzzleOp.Set(0, 0)));
+
+            Complete(Slot);
+            Assert.IsTrue(_flow.PickupAuthority(HumanId, OnlyGroundItem("paint")));
+            Assert.AreEqual(PuzzleDenyReason.None, Puzzles.ProcessOpAuthority(HumanId, 7, PuzzleOp.Set(0, 0)));
+        }
+
+        [Test]
+        public void DropRequest_PutsTheItemAtTheHumansFeet_WithANewId()
+        {
+            Complete(Slot);
+            NetId reward = OnlyGroundItem("paint");
+            _flow.PickupAuthority(HumanId, reward);
+            _flowMsgs.Clear();
+
+            SendAs(HumanId, ReqDropItemMsg.Encode(0));
+
+            Assert.IsFalse(_flow.HasItem(HumanId, "paint"));
+            Assert.AreEqual(1, FlowSent(MsgCode.ItemDropped).Count);
+            NetId dropped = OnlyGroundItem("paint");
+            Assert.AreNotEqual(reward, dropped);
+            Assert.AreEqual(PawnPositions[HumanId], _scene.Positions[dropped]);
+        }
+
+        [Test]
+        public void DropRequest_ForAnEmptySlot_DoesNothing()
+        {
+            SendAs(HumanId, ReqDropItemMsg.Encode(1));
+            Assert.AreEqual(0, _flowMsgs.Count);
+        }
+
+        [Test]
+        public void FaintingHuman_DropsTheLastPickedItem()
+        {
+            Complete(Slot);
+            Complete(SlotC);
+            _flow.PickupAuthority(HumanId, OnlyGroundItem("paint"));
+            _flow.PickupAuthority(HumanId, OnlyGroundItem("shovel"));
+
+            EventBus.Publish(new HumanFaintedEvt(default(DamageInfo), 1));
+
+            Assert.IsTrue(_flow.HasItem(HumanId, "paint"));
+            Assert.IsFalse(_flow.HasItem(HumanId, "shovel"));
+            Assert.IsNotNull(OnlyGroundItem("shovel"));
+        }
+
+        [Test]
+        public void NewRound_EmptiesTheInventory_AndRemovesGroundItems()
+        {
+            Complete(Slot);
+            NetId paint = OnlyGroundItem("paint");
+            Complete(SlotC);
+            _flow.PickupAuthority(HumanId, OnlyGroundItem("shovel"));
+
+            _flow.BeginRound(new[] { new ObjectivePuzzleInfo(Slot, SlotStage, "", Vector3.zero) }, 2);
+
+            Assert.IsFalse(_flow.HasItem(HumanId, "shovel"));
+            Assert.AreEqual(0, _flow.GroundItems.Count);
+            CollectionAssert.Contains(_scene.Despawned, paint);
+            Assert.AreEqual(0, Puzzles.StageIndex);
+            Assert.IsFalse(_flow.IsGateOpen(SlotStage));
+        }
+
+        [Test]
+        public void DebugJson_DescribesStageGatesInventoryAndGround()
+        {
+            Complete(Slot);
+            string json = _flow.BuildDebugJson();
+            StringAssert.Contains("\"stage\":0", json);
+            StringAssert.Contains("paint@", json);
+        }
+    }
+}

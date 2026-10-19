@@ -198,14 +198,23 @@ namespace CinliMahzen.DebugTools
         }
 
         /// <summary>
-        /// F11 / "Complete Current Stage": for now only the time half of a stage - the authority adds StageTimeBonus to the Sunrise
-        /// counter (RoundTimeAdded). Opening the gate and solving the stage's puzzles arrive with the stage gates (TODO 2.7).
+        /// F11 / "Complete Current Stage" (TODO 2.7): the authority opens the gate of the current stage through
+        /// <see cref="IObjectiveDebugCommands"/> (GateOpened → door, StageCompletedEvt → MatchController adds StageTimeBonus). Without the
+        /// objectives in the scene only the time half happens: StageTimeBonus is added to the Sunrise counter directly.
         /// </summary>
         private static void AddStageTimeBonus()
         {
             MatchController match = FindMatchController("Complete Current Stage");
             if (match == null)
                 return;
+            if (GameServices.TryGet(out IObjectiveDebugCommands objectives))
+            {
+                if (objectives.CompleteCurrentStageAuthority())
+                    CMLog.Info("Debug", "Complete Current Stage: gate opened (+StageTimeBonus)");
+                else
+                    CMLog.Warn("Debug", "Complete Current Stage: the current stage's gate is already open");
+                return;
+            }
             if (match.AddStageTimeBonusAuthority())
                 CMLog.Info("Debug", "Complete Current Stage: +StageTimeBonus (stage gates 2.7)");
             else

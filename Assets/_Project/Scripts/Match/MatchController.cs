@@ -18,7 +18,7 @@ namespace CinliMahzen.Match
     /// <c>MatchStateChanged</c> broadcast; entering RoundSetup also broadcasts <c>RoundSetup{seed, roles}</c> (roles from
     /// <see cref="RoleRotation"/>) and — offline — completes the setup in the same frame; entering RoundEnd also broadcasts
     /// <c>RoundEnded</c>. The round's inputs reach the authority as local events: <see cref="HumanFaintedEvt"/> (3 faints end it),
-    /// <see cref="TreasureDugEvt"/>, and <see cref="AddStageTimeBonusAuthority"/> (stage gates, TODO 2.7 → <c>RoundTimeAdded</c>).</para>
+    /// <see cref="TreasureDugEvt"/>, and <see cref="StageCompletedEvt"/> (a stage gate opened, TODO 2.7 → <see cref="AddStageTimeBonusAuthority"/> → <c>RoundTimeAdded</c>).</para>
     ///
     /// <para><b>Every machine</b> (the authority included) applies the broadcasts: a <see cref="MatchMirror"/> backs
     /// <see cref="IMatchInfo"/>; <c>RoundSetup</c> hands the roles to the registry (whose <c>RolesChanged</c> makes the scene's
@@ -60,6 +60,7 @@ namespace CinliMahzen.Match
         private Action<NetMsg> _onRoundEnded;
         private Action<HumanFaintedEvt> _onHumanFainted;
         private Action<TreasureDugEvt> _onTreasureDug;
+        private Action<StageCompletedEvt> _onStageCompleted;
 
         // ---- IMatchInfo (the mirror: what every machine has been told) ----
 
@@ -107,6 +108,7 @@ namespace CinliMahzen.Match
             _onRoundEnded = OnRoundEndedMsg;
             _onHumanFainted = OnHumanFaintedEvt;
             _onTreasureDug = OnTreasureDugEvt;
+            _onStageCompleted = OnStageCompletedEvt;
 
             GameServices.Register<IMatchInfo>(this);
             _registered = true;
@@ -125,6 +127,7 @@ namespace CinliMahzen.Match
             _net.Register(MsgCode.RoundEnded, _onRoundEnded);
             EventBus.Subscribe(_onHumanFainted);
             EventBus.Subscribe(_onTreasureDug);
+            EventBus.Subscribe(_onStageCompleted);
 
             _startPending = autoStart && _machine.State == MatchState.Lobby;
         }
@@ -142,6 +145,7 @@ namespace CinliMahzen.Match
             _net.Unregister(MsgCode.RoundEnded, _onRoundEnded);
             EventBus.Unsubscribe(_onHumanFainted);
             EventBus.Unsubscribe(_onTreasureDug);
+            EventBus.Unsubscribe(_onStageCompleted);
         }
 
         private void OnDestroy()
@@ -333,6 +337,13 @@ namespace CinliMahzen.Match
             {
                 Publish(transition);
             }
+        }
+
+        /// <summary>TODO 2.7: a stage gate opened (Objectives' GateOpened → StageCompletedEvt on every machine); the authority adds StageTimeBonus.</summary>
+        private void OnStageCompletedEvt(StageCompletedEvt evt)
+        {
+            if (_net.IsAuthority)
+                AddStageTimeBonusAuthority();
         }
 
         private void OnTreasureDugEvt(TreasureDugEvt evt)

@@ -175,8 +175,7 @@ namespace CinliMahzen.Player
             // The MatchController ends the round from HumanFaintedEvt.FaintCount >= FaintsToLose (the Lost faint included), in the same frame.
             net.Broadcast(HumanFaintedMsg.Encode(info, result.FaintCount));
 
-            // TODO 2.7 (Inventory): drop the selected quest item (ItemDropped broadcast) when the human faints - before the HumanFainted
-            // broadcast above if the drop must happen even on the Lost faint, because Match ends the round from HumanFaintedEvt.
+            // The quest item drop on fainting is done by Objectives' ObjectiveFlowCore, which listens to the same HumanFaintedEvt (TODO 2.7).
         }
 
         /// <summary>
