@@ -70,5 +70,13 @@ namespace CinliMahzen.Editor
         [MenuItem(Root + "Damage Human 1", true)]
         [MenuItem(Root + "Toggle Immortal Human (F5)", true)]
         private static bool HealthPlayingOnly() => EditorApplication.isPlaying;
+
+        // ---- Match (TODO 1.10) ----
+
+        [MenuItem(Root + "Skip Match State")]
+        public static void SkipMatchState() => DebugCommands.SkipMatchState();
+
+        [MenuItem(Root + "Skip Match State", true)]
+        private static bool MatchPlayingOnly() => EditorApplication.isPlaying;
     }
 }

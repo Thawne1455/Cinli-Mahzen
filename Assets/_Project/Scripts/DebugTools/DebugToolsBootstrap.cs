@@ -1,6 +1,7 @@
 using System.Text;
 using CinliMahzen.Core;
 using CinliMahzen.Core.Net;
+using CinliMahzen.Match;
 using UnityEngine;
 
 namespace CinliMahzen.DebugTools
@@ -52,7 +53,15 @@ namespace CinliMahzen.DebugTools
                   .Append(",\"faints\":").Append(m.Faints)
                   .Append(",\"stateEndTime\":").Append(m.StateEndTime < double.MaxValue
                       ? m.StateEndTime.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) : "null")
-                  .Append(",\"stub\":").Append(m is StubMatchInfo ? "true" : "false").Append('}');
+                  .Append(",\"left\":").Append(net != null && m.StateEndTime < double.MaxValue
+                      ? Mathf.Max(0f, (float)(m.StateEndTime - net.Time)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) : "null");
+                if (m is MatchController mc)
+                {
+                    sb.Append(",\"seed\":").Append(mc.Seed)
+                      .Append(",\"lastResult\":").Append(DebugState.Quote(mc.LastResult.ToString()))
+                      .Append(",\"lastReason\":").Append(DebugState.Quote(mc.LastReason.ToString()));
+                }
+                sb.Append(",\"stub\":").Append(m is StubMatchInfo ? "true" : "false").Append('}');
             }
 
             IObjectiveInfo o = GameServices.Get<IObjectiveInfo>();

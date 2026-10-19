@@ -92,7 +92,7 @@
 | [ ] | 1.7 | Possession akışı (MonoBehaviour) + mesajlar + orbit kamera | P.4, 1.6 | L |
 | [ ] | 1.8 | Aksiyonlar: Throw, HomingSlipper, Hop, Lunge, Slide, Topple, PlayTune, ReviveSplash | 1.7, 1.5 | L |
 | [x] | 1.9 | Graybox ev v0 (zemin kat + 1. kat + bahçe, primitive/KayKit, marker'sız) | P.2 | M |
-| [~] | 1.10 | MatchStateMachine minimal (dinamik sayaç 360s + 90s bonus, Faint/Timeout bitişi) | 1.3, 1.5 | M |
+| [x] | 1.10 | MatchStateMachine minimal (dinamik sayaç 360s + 90s bonus, Faint/Timeout bitişi) | 1.3, 1.5 | M |
 
 ### 1.1 — Human controller
 - `02_GDD_Teknik.md §5.1–5.2`. `HumanMotorState` düz C# + test (Fainted/Interacting'de hareket yok).
@@ -158,7 +158,7 @@
 |---|---|---|---|---|
 | [x] | 2.1 | `PuzzleState` (toplu sabotaj, cooldown, referans dönüş/tuzak) + `PuzzleDefinition` SO + testler | P.3 | S |
 | [x] | 2.2 | Ev marker'ları (§8: `CologneSpawnSpot` dahil) + `HouseService.Index` + `HouseValidator` + `IRoomService` | 1.9 | M |
-| [ ] | 2.3 | `RoundSetupPlanner` + `RoundPlanValidator` + testler (500 seed) | 2.1, 2.2 | L |
+| [~] | 2.3 | `RoundSetupPlanner` + `RoundPlanValidator` + testler (500 seed) | 2.1, 2.2 | L |
 | [ ] | 2.4 | `PuzzleSystem` + mesajlar (Op / Toplu Sabotaj / Confirm / Completed) + round-trip testleri | 2.1, 1.4 | M |
 | [ ] | 2.5 | Bulmaca P1 **Portreler**: `PuzzleView`, `PuzzlePart`, `ConfirmLever`, `PuzzleReference` (Ruh Perdesi) | 2.4 | M |
 | [ ] | 2.6 | Kötü cin **Toplu Sabotaj** (`PuzzleScrambleTarget`, 1.5s basılı, 15s cd, fener koruması) | 2.5, 1.7 | M |

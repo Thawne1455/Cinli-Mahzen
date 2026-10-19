@@ -246,6 +246,34 @@ namespace CinliMahzen.Match
         }
 
         /// <summary>
+        /// Debug "Skip Match State": pulls the end of the current timed state (RoleReveal, Intro, Playing, RoundEnd) back to
+        /// <paramref name="now"/>, so the next <see cref="Tick"/> leaves it. Skipping Playing therefore ends the round by Timeout.
+        /// Only the clock moves; the schedule logic is untouched (the next state's duration starts at the pulled-in end).
+        /// False — nothing changes — in Lobby, RoundSetup and MatchEnd (no timer) and when the state is already due.
+        /// The caller re-broadcasts the new <see cref="StateEndTime"/> (<c>MatchStateChanged</c> with the unchanged state).
+        /// </summary>
+        public bool TrySkipTimer(double now)
+        {
+            switch (State)
+            {
+                case MatchState.RoleReveal:
+                case MatchState.Intro:
+                case MatchState.Playing:
+                case MatchState.RoundEnd:
+                    if (StateEndTime > now)
+                    {
+                        StateEndTime = now;
+                        return true;
+                    }
+
+                    return false;
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
         /// Any state except Lobby → Lobby: a finished match (play again) or an aborted one. Clears round data,
         /// <see cref="LastResult"/> and <see cref="LastReason"/>. False when already in Lobby.
         /// </summary>

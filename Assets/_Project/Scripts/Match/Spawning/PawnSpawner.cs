@@ -10,10 +10,11 @@ namespace CinliMahzen.Match
     /// pawns only through <see cref="PawnBase"/>, so CM.Match needs neither CM.Player nor CM.Jinn; the prefabs are assigned in the scene
     /// (CinliMahzen/Setup/Add Pawn Spawner To Open Scene).
     /// <para>
-    /// When it spawns: in <c>Start</c> if the registry already holds roles (the bootstrap assigns round 0 in hotseat), and again on every
-    /// <see cref="IPlayerRegistry.RolesChanged"/> (new round). <see cref="SpawnAll"/> always destroys the previous pawns first, so it is
-    /// idempotent. Pawns are configured while inactive (instantiated under a disabled holder), then activated, so they register in the
-    /// EntityRegistry once with their final NetId and a CharacterController never starts at the prefab's pose.
+    /// When it spawns: on every <see cref="IPlayerRegistry.RolesChanged"/> (the MatchController assigns each round's roles; in Sandbox the hotseat
+    /// bootstrap assigns round 0 once the scene has loaded), and in <c>Start</c> if the registry holds roles that no RolesChanged has spawned yet.
+    /// <see cref="SpawnAll"/> always destroys the previous pawns first, so it is idempotent. Pawns are configured while inactive
+    /// (instantiated under a disabled holder), then activated, so they register in the EntityRegistry once with their final NetId and a
+    /// CharacterController never starts at the prefab's pose.
     /// </para>
     /// <para>
     /// Hand-placed pawns (the old Sandbox P_Human): the spawner owns the NetIds it plans. A scene pawn it did not create that holds one of
@@ -60,7 +61,8 @@ namespace CinliMahzen.Match
         private void Start()
         {
             // Spawning waits for Start so every scene Awake (CameraRig, services) has run before a pawn binds to them.
-            if (_registry != null && PawnSpawnPlanner.HasAnyRole(_registry.Players))
+            // Roles that arrived before Start (RolesChanged right after the scene loaded) have been spawned already: do not redo it.
+            if (_registry != null && _spawned.Count == 0 && PawnSpawnPlanner.HasAnyRole(_registry.Players))
                 SpawnAll(_registry);
         }
 

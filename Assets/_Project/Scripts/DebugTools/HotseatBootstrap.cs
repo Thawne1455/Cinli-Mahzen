@@ -3,15 +3,18 @@ using System.Text;
 using CinliMahzen.Core;
 using CinliMahzen.Match;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CinliMahzen.DebugTools
 {
     /// <summary>
-    /// Hotseat start (TODO 1.3): during auto-bootstrap it assigns round 0 of the role rotation to the registry
-    /// (P1 Human, P2 Good Jinn, P3-P4 Evil Jinn, Oyun §10) and registers the "players" Dump State section.
-    /// CM.Core cannot see CM.Match, so the table comes from here rather than from GameBootstrap. Once the MatchController exists
-    /// (TODO 1.10 integration) it assigns the roles of every round itself and this start-up assignment is only the
-    /// "press Play in any scene" convenience; PawnSpawners in the scene react to the registry's RolesChanged either way.
+    /// Hotseat start (TODO 1.3): once the first scene has loaded it assigns round 0 of the role rotation to the registry
+    /// (P1 Human, P2 Good Jinn, P3-P4 Evil Jinn, Oyun §10) - unless that scene has a <see cref="MatchController"/>, which then assigns
+    /// the roles of every round itself (TODO 1.10) - and registers the "players" Dump State section.
+    /// CM.Core cannot see CM.Match, so the table comes from here rather than from GameBootstrap. The assignment is only the
+    /// "press Play in any scene" convenience (Sandbox has no MatchController). It waits for <c>sceneLoaded</c> because the scene's
+    /// objects do not exist yet during the BeforeSceneLoad bootstrap, so a MatchController could not be asked for before.
+    /// PawnSpawners in the scene react to the registry's RolesChanged either way.
     /// </summary>
     internal static class HotseatBootstrap
     {
@@ -28,8 +31,28 @@ namespace CinliMahzen.DebugTools
         {
             DebugState.Register(DebugStateKey, BuildPlayersJson);
 
+            Scene active = SceneManager.GetActiveScene();
+            if (active.IsValid() && active.isLoaded)
+            {
+                AssignRoundZeroUnlessMatchOwnsRoles();
+                return;
+            }
+            SceneManager.sceneLoaded -= OnFirstSceneLoaded; // domain reload may be off: never subscribe twice
+            SceneManager.sceneLoaded += OnFirstSceneLoaded;
+        }
+
+        private static void OnFirstSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            SceneManager.sceneLoaded -= OnFirstSceneLoaded;
+            AssignRoundZeroUnlessMatchOwnsRoles();
+        }
+
+        private static void AssignRoundZeroUnlessMatchOwnsRoles()
+        {
             var registry = GameServices.Players as OfflinePlayerRegistry;
             if (registry == null)
+                return;
+            if (Object.FindFirstObjectByType<MatchController>() != null)
                 return;
             Role[] roles = RoleRotation.CreateRoles(FirstRound, registry.Players.Count);
             if (!registry.SetRoles(roles))

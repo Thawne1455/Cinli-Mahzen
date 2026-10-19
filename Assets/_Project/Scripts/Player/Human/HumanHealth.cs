@@ -172,15 +172,11 @@ namespace CinliMahzen.Player
             if (result.Outcome != DamageOutcome.Fainted && result.Outcome != DamageOutcome.Lost)
                 return;
 
+            // The MatchController ends the round from HumanFaintedEvt.FaintCount >= FaintsToLose (the Lost faint included), in the same frame.
             net.Broadcast(HumanFaintedMsg.Encode(info, result.FaintCount));
 
-            // TODO 2.7 (Inventory): drop the selected quest item here (ItemDropped broadcast) before the round-end check below.
-            if (result.Outcome == DamageOutcome.Lost)
-            {
-                // Match (TODO 1.10) ends the round itself from HumanFaintedEvt.FaintCount >= FaintsToLose; until its controller
-                // is wired in, this log is the round-end marker. Drop it when MatchController logs/ends the round.
-                CMLog.Info("Match", "JinnsWin(Faint) - human fainted " + result.FaintCount + "/" + _config.FaintsToLose + " times");
-            }
+            // TODO 2.7 (Inventory): drop the selected quest item (ItemDropped broadcast) when the human faints - before the HumanFainted
+            // broadcast above if the drop must happen even on the Lost faint, because Match ends the round from HumanFaintedEvt.
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using CinliMahzen.Core;
 using CinliMahzen.Core.Net;
+using CinliMahzen.Match;
 using CinliMahzen.Player;
 using UnityEngine;
 
@@ -36,8 +37,8 @@ namespace CinliMahzen.DebugTools
         public static void ToggleImmortalHuman() => ToggleImmortal();
         public static void ToggleInfiniteEnergy() => Todo("F6 Infinite Energy", "1.7 Possession");
         public static void ToggleRevealAll() => Todo("F7 Reveal All", "3.9 Visibility");
-        public static void RestartRound() => Todo("F8 Restart Round (New Seed)", "1.10 Match");
-        public static void CompleteCurrentStage() => Todo("F11 Complete Current Stage (+StageTimeBonus)", "2.7 StageGate");
+        public static void RestartRound() => RestartMatch();
+        public static void CompleteCurrentStage() => AddStageTimeBonus();
         public static void ToggleDummyHuman() => Todo("F12 Toggle Dummy Human", "3.12 Dummy bot");
 
         public static void ToggleOverlay()
@@ -168,6 +169,65 @@ namespace CinliMahzen.DebugTools
                 return;
             HitHuman(health, 1, DamageFlags.None, "debug.damage");
             CMLog.Info("Debug", "Damage Human 1: hp " + health.Hp + ", faints " + health.Faints);
+        }
+
+        // ---- Match (TODO 1.10) ----
+
+        /// <summary>
+        /// Menu "Skip Match State": the authority pulls the end of the current timed match state to now (RoleReveal 3 s, Intro 5 s,
+        /// RoundEnd 8 s - to shorten the waits in an MCP run; in Playing it ends the round by Timeout). RoundSetup and MatchEnd have no timer.
+        /// </summary>
+        public static void SkipMatchState()
+        {
+            MatchController match = FindMatchController("Skip Match State");
+            if (match == null)
+                return;
+            MatchState before = match.State;
+            if (match.SkipStateTimer())
+                CMLog.Info("Debug", "Skip Match State: " + before + " -> " + match.State);
+        }
+
+        /// <summary>F8 / "Restart Round (New Seed)": the authority restarts the match with a new match seed (round 0, roles and layout re-rolled).</summary>
+        private static void RestartMatch()
+        {
+            MatchController match = FindMatchController("Restart Round (New Seed)");
+            if (match == null)
+                return;
+            if (match.RestartWithNewSeed())
+                CMLog.Info("Debug", "Restart Round (New Seed): match restarted - round " + match.RoundIndex + ", round seed " + match.Seed);
+        }
+
+        /// <summary>
+        /// F11 / "Complete Current Stage": for now only the time half of a stage - the authority adds StageTimeBonus to the Sunrise
+        /// counter (RoundTimeAdded). Opening the gate and solving the stage's puzzles arrive with the stage gates (TODO 2.7).
+        /// </summary>
+        private static void AddStageTimeBonus()
+        {
+            MatchController match = FindMatchController("Complete Current Stage");
+            if (match == null)
+                return;
+            if (match.AddStageTimeBonusAuthority())
+                CMLog.Info("Debug", "Complete Current Stage: +StageTimeBonus (stage gates 2.7)");
+            else
+                CMLog.Warn("Debug", "Complete Current Stage: the match is not Playing (state " + match.State + ") - no time added");
+        }
+
+        /// <summary>The scene's MatchController, only on the authority (match state is authority-only). Logs and returns null otherwise.</summary>
+        private static MatchController FindMatchController(string command)
+        {
+            INetBridge net = GameServices.Net;
+            if (net == null || !net.IsAuthority)
+            {
+                CMLog.Warn("Debug", command + ": this machine is not the authority");
+                return null;
+            }
+            var match = GameServices.Match as MatchController;
+            if (match == null)
+            {
+                CMLog.Warn("Debug", command + ": no MatchController in the scene (CinliMahzen/Setup/Add Match Controller To Open Scene)");
+                return null;
+            }
+            return match;
         }
 
         private static void ToggleImmortal()

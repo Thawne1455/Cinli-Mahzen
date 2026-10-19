@@ -1,6 +1,7 @@
 using System.Text;
 using CinliMahzen.Core;
 using CinliMahzen.Core.Net;
+using CinliMahzen.Match;
 using UnityEngine;
 
 namespace CinliMahzen.DebugTools
@@ -57,6 +58,12 @@ namespace CinliMahzen.DebugTools
                    .Append("  faints ").Append(match.Faints);
                 if (net != null && match.StateEndTime < double.MaxValue)
                     _sb.Append("  left ").Append(Mathf.Max(0f, (float)(match.StateEndTime - net.Time)).ToString("0.0")).Append('s');
+                if (match is MatchController mc)
+                {
+                    _sb.Append("  seed ").Append(mc.Seed);
+                    if (mc.LastResult != RoundResult.None)
+                        _sb.Append("  last ").Append(mc.LastResult.ToString()).Append('(').Append(mc.LastReason.ToString()).Append(')');
+                }
                 _sb.Append(match is StubMatchInfo ? "  (stub)" : string.Empty).Append('\n');
             }
 
