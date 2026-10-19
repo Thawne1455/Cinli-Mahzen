@@ -39,8 +39,42 @@ namespace CinliMahzen.Objectives
     /// <see cref="BeginRound"/> runs on every machine at the same round start (from the same plan), so all of them hold the same puzzle list.
     /// Stage 0 (garden, front door) has no puzzles: its gate opens with the house key (TODO 3.6) or <see cref="CompleteCurrentStageAuthority"/>.
     /// </summary>
-    public sealed class ObjectiveFlowCore : IInventoryQuery, IObjectiveDebugCommands
+    public sealed class ObjectiveFlowCore : IInventoryQuery, IObjectiveDebugCommands, IObjectiveInteractions
     {
+        /// <summary>A locked gate (StageGate with a GateLock): which stage it ends and which item opens it.</summary>
+        public readonly struct LockedGate
+        {
+            public readonly NetId Gate;
+            public readonly int Stage;
+            public readonly string ItemId;
+
+            public LockedGate(NetId gate, int stage, string itemId)
+            {
+                Gate = gate;
+                Stage = stage;
+                ItemId = itemId ?? string.Empty;
+            }
+        }
+
+        /// <summary>A guaranteed item in the tool shed (ToolShedItemPoint).</summary>
+        public readonly struct ShedItem
+        {
+            public readonly NetId Point;
+            public readonly string ItemId;
+
+            public ShedItem(NetId point, string itemId)
+            {
+                Point = point;
+                ItemId = itemId ?? string.Empty;
+            }
+        }
+
+        /// <summary>ItemDefinition.Id of the house key (found in the garden, opens the front door).</summary>
+        public const string HouseKeyItemId = "house_key";
+
+        /// <summary>ItemDefinition.Id of the Blessed Oil (no slot: it upgrades the lantern).</summary>
+        public const string BlessedOilItemId = "blessed_oil";
+
         private const string Category = "Objectives";
 
         private readonly INetBridge _net;
@@ -55,6 +89,13 @@ namespace CinliMahzen.Objectives
         private readonly Dictionary<NetId, string> _groundItems = new Dictionary<NetId, string>();
         private readonly List<NetId> _scratch = new List<NetId>(8);
         private int _stagesActive;
+        private NetId _houseKeySpot;
+        private bool _keyFound;
+        private readonly List<LockedGate> _lockedGates = new List<LockedGate>(4);
+        private readonly List<ShedItem> _shedItems = new List<ShedItem>(2);
+        private readonly HashSet<NetId> _takenShedItems = new HashSet<NetId>();
+        private readonly Action<NetMsg> _onKeyFound;
+        private readonly Action<NetMsg> _onOil;
 
         private readonly Action<NetMsg> _onGateOpened;
         private readonly Action<NetMsg> _onItemSpawned;
@@ -83,6 +124,8 @@ namespace CinliMahzen.Objectives
             _onReqDrop = OnReqDropItem;
             _onPuzzleCompleted = OnPuzzleCompleted;
             _onHumanFainted = OnHumanFainted;
+            _onKeyFound = OnKeyFound;
+            _onOil = OnBlessedOilCollected;
         }
 
         public InventoryState Inventory => _inventory;
@@ -115,6 +158,8 @@ namespace CinliMahzen.Objectives
             _net.Register(MsgCode.ItemPickedUp, _onItemPickedUp);
             _net.Register(MsgCode.InventoryChanged, _onInventoryChanged);
             _net.Register(MsgCode.ReqDropItem, _onReqDrop);
+            _net.Register(MsgCode.KeyFound, _onKeyFound);
+            _net.Register(MsgCode.BlessedOilCollected, _onOil);
             EventBus.Subscribe(_onPuzzleCompleted);
             EventBus.Subscribe(_onHumanFainted);
         }
@@ -130,6 +175,8 @@ namespace CinliMahzen.Objectives
             _net.Unregister(MsgCode.ItemPickedUp, _onItemPickedUp);
             _net.Unregister(MsgCode.InventoryChanged, _onInventoryChanged);
             _net.Unregister(MsgCode.ReqDropItem, _onReqDrop);
+            _net.Unregister(MsgCode.KeyFound, _onKeyFound);
+            _net.Unregister(MsgCode.BlessedOilCollected, _onOil);
             EventBus.Unsubscribe(_onPuzzleCompleted);
             EventBus.Unsubscribe(_onHumanFainted);
         }
@@ -163,6 +210,145 @@ namespace CinliMahzen.Objectives
             _puzzles.StageIndex = 0;
             _puzzles.StageCount = stagesActive + 1;
             _puzzles.Phase = ObjectivePhase.Garden;
+
+            _houseKeySpot = NetId.Invalid;
+            _keyFound = false;
+            _lockedGates.Clear();
+            _shedItems.Clear();
+            _takenShedItems.Clear();
+        }
+
+        /// <summary>
+        /// Every machine, right after <see cref="BeginRound"/> (TODO 3.6): the garden of this round — where the house key hides, the locked gates
+        /// and the tool shed items.
+        /// </summary>
+        public void SetGarden(NetId houseKeySpot, IReadOnlyList<LockedGate> lockedGates, IReadOnlyList<ShedItem> shedItems)
+        {
+            _houseKeySpot = houseKeySpot;
+            _keyFound = false;
+            _lockedGates.Clear();
+            if (lockedGates != null)
+            {
+                for (int i = 0; i < lockedGates.Count; i++)
+                    _lockedGates.Add(lockedGates[i]);
+            }
+            _shedItems.Clear();
+            if (shedItems != null)
+            {
+                for (int i = 0; i < shedItems.Count; i++)
+                    _shedItems.Add(shedItems[i]);
+            }
+            _takenShedItems.Clear();
+        }
+
+        public bool IsKeyFound => _keyFound;
+
+        // ---- IObjectiveInteractions (TODO 3.6) ----
+
+        public void SearchSpotAuthority(PlayerId who, NetId spot)
+        {
+            Debug.Assert(_net.IsAuthority, "SearchSpotAuthority must only run on the authority");
+            if (_players.GetRole(who) != Role.Human)
+                return;
+            if (_keyFound || spot != _houseKeySpot)
+            {
+                CMLog.Info(Category, who + " searched " + spot + ": nothing here");
+                return;
+            }
+            _net.Broadcast(KeyFoundMsg.Encode(spot, who));
+            GiveOrDrop(who, HouseKeyItemId);
+        }
+
+        public void UseGateAuthority(PlayerId who, NetId gate)
+        {
+            Debug.Assert(_net.IsAuthority, "UseGateAuthority must only run on the authority");
+            if (_players.GetRole(who) != Role.Human)
+                return;
+            int i = IndexOfGate(gate);
+            if (i < 0 || _openedGates.Contains(_lockedGates[i].Stage))
+                return;
+            LockedGate locked = _lockedGates[i];
+            int slot = _inventory.IndexOf(who, locked.ItemId);
+            if (slot < 0)
+            {
+                CMLog.Info(Category, who + " tried gate " + gate + " without " + locked.ItemId);
+                return;
+            }
+            // The key stays in the lock: its slot is free again.
+            _inventory.TryRemoveAt(who, slot, out string _);
+            _net.Broadcast(InventoryChangedMsg.Encode(who, _inventory.Snapshot(who)));
+            OpenGateAuthority(locked.Stage);
+        }
+
+        public void CollectToolShedItemAuthority(PlayerId who, NetId point)
+        {
+            Debug.Assert(_net.IsAuthority, "CollectToolShedItemAuthority must only run on the authority");
+            if (_players.GetRole(who) != Role.Human || !IsToolShedItemAvailable(point))
+                return;
+            string itemId = ShedItemAt(point);
+            // The message marks the point as taken everywhere; only the Blessed Oil upgrades the lantern, any other shed item is a quest item.
+            _net.Broadcast(BlessedOilCollectedMsg.Encode(point, who));
+            if (itemId != BlessedOilItemId)
+                GiveOrDrop(who, itemId);
+        }
+
+        public bool IsToolShedItemAvailable(NetId point)
+        {
+            return ShedItemAt(point).Length > 0 && !_takenShedItems.Contains(point);
+        }
+
+        public bool IsGateClosed(NetId gate)
+        {
+            int i = IndexOfGate(gate);
+            return i >= 0 && !_openedGates.Contains(_lockedGates[i].Stage);
+        }
+
+        private void GiveOrDrop(PlayerId who, string itemId)
+        {
+            if (_inventory.TryAdd(who, itemId) >= 0)
+            {
+                _net.Broadcast(InventoryChangedMsg.Encode(who, _inventory.Snapshot(who)));
+                return;
+            }
+            Vector3? at = _scene.PawnPosition(who);
+            _net.Broadcast(ItemSpawnedMsg.Encode(_allocateId(), itemId, at ?? Vector3.zero, true));
+        }
+
+        private int IndexOfGate(NetId gate)
+        {
+            for (int i = 0; i < _lockedGates.Count; i++)
+            {
+                if (_lockedGates[i].Gate == gate)
+                    return i;
+            }
+            return -1;
+        }
+
+        private string ShedItemAt(NetId point)
+        {
+            for (int i = 0; i < _shedItems.Count; i++)
+            {
+                if (_shedItems[i].Point == point)
+                    return _shedItems[i].ItemId;
+            }
+            return string.Empty;
+        }
+
+        private void OnKeyFound(NetMsg msg)
+        {
+            if (!KeyFoundMsg.TryDecode(msg, out NetId spot, out PlayerId _) || _keyFound)
+                return;
+            _keyFound = true;
+            _scene.OnKeyFound(spot);
+        }
+
+        private void OnBlessedOilCollected(NetMsg msg)
+        {
+            if (!BlessedOilCollectedMsg.TryDecode(msg, out NetId point, out PlayerId who) || !_takenShedItems.Add(point))
+                return;
+            _scene.OnToolShedItemTaken(point);
+            if (ShedItemAt(point) == BlessedOilItemId)
+                EventBus.Publish(new BlessedOilCollectedEvt(who));
         }
 
         // ---- authority entry points ----

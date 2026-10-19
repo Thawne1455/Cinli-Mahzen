@@ -28,6 +28,7 @@ namespace CinliMahzen.Objectives
         private const string Category = "RoundSetup";
         private const string DebugStateKey = "objectives";
         private const string InteractableLayerName = "Interactable";
+        private const string SpiritOnlyLayerName = "SpiritOnly";
 
         [Tooltip("PuzzleDefinition pool (PZ_*). Order does not matter for the plan.")]
         [SerializeField] private PuzzleDefinition[] pool;
@@ -35,12 +36,17 @@ namespace CinliMahzen.Objectives
         [SerializeField] private ItemDefinition[] items;
         [Tooltip("Edge (m) of the placeholder cube of an item without a prefab.")]
         [SerializeField] private float placeholderSize = 0.3f;
+        [Tooltip("Size (m) of the jinn-only glow over the house key's hiding place (TODO 3.6).")]
+        [SerializeField] private float keyGlowSize = 0.4f;
 
         private readonly RoundSetupPlanner _planner = new RoundSetupPlanner();
         private readonly List<GameObject> _roundObjects = new List<GameObject>(16);
         private readonly Dictionary<NetId, ItemPickup> _pickups = new Dictionary<NetId, ItemPickup>();
         private readonly List<ObjectivePuzzleInfo> _infos = new List<ObjectivePuzzleInfo>(8);
         private readonly List<StageGate> _gates = new List<StageGate>(4);
+        private readonly Dictionary<NetId, GameObject> _gardenVisuals = new Dictionary<NetId, GameObject>();
+        private readonly List<ObjectiveFlowCore.LockedGate> _lockedGates = new List<ObjectiveFlowCore.LockedGate>(4);
+        private readonly List<ObjectiveFlowCore.ShedItem> _shedItems = new List<ObjectiveFlowCore.ShedItem>(2);
 
         private PuzzleSystem _system;
         private ObjectiveFlowCore _flow;
@@ -76,6 +82,7 @@ namespace CinliMahzen.Objectives
             _flow.Attach();
             GameServices.Register<IInventoryQuery>(_flow);
             GameServices.Register<IObjectiveDebugCommands>(_flow);
+            GameServices.Register<IObjectiveInteractions>(_flow);
             DebugState.Register(DebugStateKey, _flow.BuildDebugJson);
             EventBus.Subscribe<RoundStartedEvt>(OnRoundStarted);
             _started = true;
@@ -89,6 +96,7 @@ namespace CinliMahzen.Objectives
             _flow.Detach();
             GameServices.Unregister<IInventoryQuery>(_flow);
             GameServices.Unregister<IObjectiveDebugCommands>(_flow);
+            GameServices.Unregister<IObjectiveInteractions>(_flow);
             DebugState.Unregister(DebugStateKey);
         }
 
@@ -119,6 +127,7 @@ namespace CinliMahzen.Objectives
                 BuildPuzzle(core, entities, _plan.Puzzles[i], i);
 
             _flow.BeginRound(_infos, settings.StagesActive);
+            SetUpGarden();
             CMLog.Info(Category, "Round set up from seed " + seed + ": " + _plan.Puzzles.Count + " puzzles, hash " + _plan.ComputeHash().ToString("X16"));
             return true;
         }
@@ -166,6 +175,68 @@ namespace CinliMahzen.Objectives
             _infos.Add(new ObjectivePuzzleInfo(slotKey, p.StageIndex, p.RewardItemId, RewardPositionOf(p.PuzzleSlotId, position)));
         }
 
+        /// <summary>TODO 3.6: the key's hiding place (with a jinn-only glow), the locked gates and the tool shed items.</summary>
+        private void SetUpGarden()
+        {
+            HouseIndex index = _house.HouseIndex;
+            _lockedGates.Clear();
+            for (int i = 0; i < index.Gates.Count; i++)
+            {
+                if (index.Gates[i].HasLock)
+                    _lockedGates.Add(new ObjectiveFlowCore.LockedGate(index.Gates[i].NetId, index.Gates[i].StageIndex, index.Gates[i].RequiredItemId));
+            }
+            _shedItems.Clear();
+            for (int i = 0; i < index.ToolShedItems.Count; i++)
+            {
+                HouseSpotEntry point = index.ToolShedItems[i];
+                _shedItems.Add(new ObjectiveFlowCore.ShedItem(point.NetId, point.ItemId));
+                _gardenVisuals[point.NetId] = Placeholder("Shed_" + point.ItemId, point.Position, placeholderSize, -1);
+            }
+            _flow.SetGarden(_plan.HouseKeySpotId, _lockedGates, _shedItems);
+
+            for (int i = 0; i < index.KeyHideSpots.Count; i++)
+            {
+                if (index.KeyHideSpots[i].NetId != _plan.HouseKeySpotId)
+                    continue;
+                // The jinns (both) see where the key hides; distance rules come with the visibility service (TODO 3.9).
+                _gardenVisuals[_plan.HouseKeySpotId] = Placeholder("KeyGlow", index.KeyHideSpots[i].Position + Vector3.up * 0.5f, keyGlowSize,
+                    LayerMask.NameToLayer(SpiritOnlyLayerName));
+            }
+        }
+
+        private GameObject Placeholder(string name, Vector3 position, float size, int layer)
+        {
+            GameObject go = GameObject.CreatePrimitive(layer >= 0 ? PrimitiveType.Sphere : PrimitiveType.Cube);
+            go.name = name;
+            Destroy(go.GetComponent<Collider>());
+            go.transform.position = position;
+            go.transform.localScale = Vector3.one * size;
+            if (layer >= 0)
+                go.layer = layer;
+            _roundObjects.Add(go);
+            return go;
+        }
+
+        public void OnKeyFound(NetId spot)
+        {
+            RemoveGardenVisual(spot);
+        }
+
+        public void OnToolShedItemTaken(NetId point)
+        {
+            RemoveGardenVisual(point);
+        }
+
+        private void RemoveGardenVisual(NetId id)
+        {
+            if (_gardenVisuals.TryGetValue(id, out GameObject go))
+            {
+                _gardenVisuals.Remove(id);
+                if (go != null)
+                    Destroy(go);
+            }
+        }
+
         private Vector3 RewardPositionOf(NetId slotId, Vector3 fallback)
         {
             IReadOnlyList<HousePuzzleSlotEntry> slots = _house.HouseIndex.PuzzleSlots;
@@ -206,6 +277,7 @@ namespace CinliMahzen.Objectives
                     Destroy(_roundObjects[i]);
             }
             _roundObjects.Clear();
+            _gardenVisuals.Clear();
             _infos.Clear();
             _system.ClearSlots();
             for (int i = 0; i < _gates.Count; i++)

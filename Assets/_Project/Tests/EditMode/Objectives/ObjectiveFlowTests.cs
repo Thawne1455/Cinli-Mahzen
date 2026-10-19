@@ -20,12 +20,14 @@ namespace CinliMahzen.Tests.EditMode.Objectives
         private static readonly Vector3 RewardA = new Vector3(0f, 1f, 1f);
         private static readonly Vector3 RewardC = new Vector3(5f, 1f, 0f);
 
-        private sealed class FakeScene : IObjectiveScene
+        internal sealed class FakeScene : IObjectiveScene
         {
             public readonly Dictionary<NetId, string> Items = new Dictionary<NetId, string>();
             public readonly Dictionary<NetId, Vector3> Positions = new Dictionary<NetId, Vector3>();
             public readonly List<int> OpenedGates = new List<int>();
             public readonly List<NetId> Despawned = new List<NetId>();
+            public readonly List<NetId> KeysFound = new List<NetId>();
+            public readonly List<NetId> ShedTaken = new List<NetId>();
             public System.Func<PlayerId, Vector3?> Pawn;
 
             public void SpawnItem(NetId item, string itemId, Vector3 position)
@@ -41,6 +43,10 @@ namespace CinliMahzen.Tests.EditMode.Objectives
             }
 
             public void OpenGate(int stage) => OpenedGates.Add(stage);
+
+            public void OnKeyFound(NetId spot) => KeysFound.Add(spot);
+
+            public void OnToolShedItemTaken(NetId point) => ShedTaken.Add(point);
 
             public Vector3? PawnPosition(PlayerId player) => Pawn(player);
         }
@@ -277,6 +283,101 @@ namespace CinliMahzen.Tests.EditMode.Objectives
             string json = _flow.BuildDebugJson();
             StringAssert.Contains("\"stage\":0", json);
             StringAssert.Contains("paint@", json);
+        }
+
+        // ---------- garden (TODO 3.6) ----------
+
+        private static readonly NetId KeySpot = new NetId(1010);
+        private static readonly NetId OtherSpot = new NetId(1011);
+        private static readonly NetId FrontDoor = new NetId(1020);
+        private static readonly NetId OilPoint = new NetId(1030);
+
+        private void SetGarden()
+        {
+            _flow.SetGarden(KeySpot,
+                new[] { new ObjectiveFlowCore.LockedGate(FrontDoor, 0, ObjectiveFlowCore.HouseKeyItemId) },
+                new[] { new ObjectiveFlowCore.ShedItem(OilPoint, ObjectiveFlowCore.BlessedOilItemId) });
+        }
+
+        [Test]
+        public void Search_FindsTheKeyOnlyInThePlannedSpot()
+        {
+            SetGarden();
+            _flow.SearchSpotAuthority(HumanId, OtherSpot);
+            Assert.IsFalse(_flow.HasItem(HumanId, ObjectiveFlowCore.HouseKeyItemId));
+
+            _flow.SearchSpotAuthority(EvilId, KeySpot);
+            Assert.IsFalse(_flow.IsKeyFound, "only the human searches");
+
+            _flow.SearchSpotAuthority(HumanId, KeySpot);
+            Assert.IsTrue(_flow.IsKeyFound);
+            Assert.IsTrue(_flow.HasItem(HumanId, ObjectiveFlowCore.HouseKeyItemId));
+            CollectionAssert.AreEqual(new[] { KeySpot }, _scene.KeysFound);
+
+            _flow.SearchSpotAuthority(HumanId, KeySpot);
+            Assert.AreEqual(1, _scene.KeysFound.Count, "found once");
+        }
+
+        [Test]
+        public void FrontDoor_OpensWithTheKey_UsesItUp_AndAdvancesTheStage()
+        {
+            SetGarden();
+            Assert.IsTrue(_flow.IsGateClosed(FrontDoor));
+            _flow.UseGateAuthority(HumanId, FrontDoor);
+            Assert.AreEqual(0, _stages.Count, "no key yet");
+
+            _flow.SearchSpotAuthority(HumanId, KeySpot);
+            _flow.UseGateAuthority(HumanId, FrontDoor);
+
+            Assert.AreEqual(1, _stages.Count);
+            Assert.AreEqual(0, _stages[0].Stage);
+            Assert.AreEqual(1, Puzzles.StageIndex);
+            Assert.IsFalse(_flow.IsGateClosed(FrontDoor));
+            Assert.IsFalse(_flow.HasItem(HumanId, ObjectiveFlowCore.HouseKeyItemId), "the key stays in the lock");
+        }
+
+        [Test]
+        public void BlessedOil_IsTakenOnce_AndPublishesTheEvent_WithoutASlot()
+        {
+            SetGarden();
+            var collected = new List<BlessedOilCollectedEvt>();
+            EventBus.Subscribe<BlessedOilCollectedEvt>(collected.Add);
+
+            Assert.IsTrue(_flow.IsToolShedItemAvailable(OilPoint));
+            _flow.CollectToolShedItemAuthority(HumanId, OilPoint);
+
+            Assert.AreEqual(1, collected.Count);
+            Assert.AreEqual(HumanId, collected[0].Collector);
+            Assert.IsFalse(_flow.IsToolShedItemAvailable(OilPoint));
+            CollectionAssert.AreEqual(new[] { OilPoint }, _scene.ShedTaken);
+            Assert.IsFalse(_flow.HasItem(HumanId, ObjectiveFlowCore.BlessedOilItemId), "the oil takes no inventory slot");
+
+            _flow.CollectToolShedItemAuthority(HumanId, OilPoint);
+            Assert.AreEqual(1, collected.Count);
+        }
+
+        [Test]
+        public void KeyWithAFullInventory_LandsAtTheHumansFeet()
+        {
+            SetGarden();
+            _flow.Inventory.TryAdd(HumanId, "a");
+            _flow.Inventory.TryAdd(HumanId, "b");
+            _flow.Inventory.TryAdd(HumanId, "c");
+
+            _flow.SearchSpotAuthority(HumanId, KeySpot);
+
+            Assert.IsNotNull(OnlyGroundItem(ObjectiveFlowCore.HouseKeyItemId));
+        }
+
+        [Test]
+        public void GardenCodecs_RoundTrip()
+        {
+            Assert.IsTrue(KeyFoundMsg.TryDecode(KeyFoundMsg.Encode(KeySpot, HumanId), out NetId spot, out PlayerId who));
+            Assert.AreEqual(KeySpot, spot);
+            Assert.AreEqual(HumanId, who);
+            Assert.IsTrue(BlessedOilCollectedMsg.TryDecode(BlessedOilCollectedMsg.Encode(OilPoint, HumanId), out NetId point, out PlayerId by));
+            Assert.AreEqual(OilPoint, point);
+            Assert.AreEqual(HumanId, by);
         }
     }
 }

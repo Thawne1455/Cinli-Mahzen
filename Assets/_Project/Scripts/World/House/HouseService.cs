@@ -30,6 +30,8 @@ namespace CinliMahzen.World
         private const string InteractableLayerName = "Interactable";
         private static readonly Vector3 SwitchColliderSize = new Vector3(0.3f, 0.3f, 0.2f);
         private static readonly Vector3 LampColliderSize = new Vector3(0.5f, 0.5f, 0.5f);
+        private static readonly Vector3 SearchColliderSize = new Vector3(0.8f, 0.8f, 0.8f);
+        private static readonly Vector3 GateColliderSize = new Vector3(1.6f, 2.2f, 0.6f);
         private const char PathSeparator = '/';
 
         [Tooltip("Metres added to every side of the union of the room boxes for IHouseInfo.Bounds (spirits are clamped inside).")]
@@ -178,17 +180,37 @@ namespace CinliMahzen.World
                 else if (_netMarkers[i] is LightSwitch light)
                 {
                     light.BindLights(_lights);
-                    if (light.GetComponent<Collider>() == null)
-                    {
-                        var box = light.gameObject.AddComponent<BoxCollider>();
-                        box.size = SwitchColliderSize;
-                    }
-                    if (interactable >= 0)
-                        light.gameObject.layer = interactable;
+                    MakeInteractable(light.gameObject, SwitchColliderSize, false, interactable);
+                }
+                // TODO 3.6: the garden's interactive markers (search, locked gates, the tool shed item).
+                else if (_netMarkers[i] is KeyHideSpot hide)
+                {
+                    MakeInteractable(hide.gameObject, SearchColliderSize, true, interactable);
+                }
+                else if (_netMarkers[i] is ToolShedItemPoint shed)
+                {
+                    MakeInteractable(shed.gameObject, SearchColliderSize, true, interactable);
+                }
+                else if (_netMarkers[i] is StageGate gate && gate.GetComponent<GateLock>() != null)
+                {
+                    MakeInteractable(gate.gameObject, GateColliderSize, true, interactable, GateColliderSize.y * 0.5f);
                 }
             }
             _onLampChanged = _onLampChanged ?? OnLampChanged;
             _lights.LampChanged += _onLampChanged;
+        }
+
+        private static void MakeInteractable(GameObject go, Vector3 size, bool trigger, int layer, float centerHeight = 0f)
+        {
+            if (go.GetComponent<Collider>() == null)
+            {
+                var box = go.AddComponent<BoxCollider>();
+                box.size = size;
+                box.center = new Vector3(0f, centerHeight, 0f);
+                box.isTrigger = trigger;
+            }
+            if (layer >= 0)
+                go.layer = layer;
         }
 
         private void OnLampChanged(NetId lamp, LampState state)

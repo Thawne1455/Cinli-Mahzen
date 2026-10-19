@@ -18,6 +18,12 @@ namespace CinliMahzen.Objectives
         /// <summary>Every machine: open the door(s) of the gate that ends <paramref name="stage"/>.</summary>
         void OpenGate(int stage);
 
+        /// <summary>Every machine (TODO 3.6): the house key was found at <paramref name="spot"/> (its glow goes out).</summary>
+        void OnKeyFound(NetId spot);
+
+        /// <summary>Every machine (TODO 3.6): the tool shed item at <paramref name="point"/> was taken (its visual goes away).</summary>
+        void OnToolShedItemTaken(NetId point);
+
         /// <summary>Authority: where <paramref name="player"/>'s pawn stands (a dropped item lands there), or null.</summary>
         Vector3? PawnPosition(PlayerId player);
     }
