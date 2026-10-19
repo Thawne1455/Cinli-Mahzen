@@ -167,7 +167,7 @@ Offline'da `OfflineNetBridge` aynı frame içinde döngüye sokar. `...Authority
                     ReqExorcise, ExorciseProgress, ExorciseResult, ReqPing, PingPlaced,
                     RageStarted, PossessedMove, ObjectStateChanged, ReqLampLight, ReqLampRepair,
                     ReqFocusReference, ReferenceFocusChanged, ReqSpiritBump, SpiritBumped,
-                    CologneReviveTriggered
+                    CologneReviveTriggered, ReqUnpossess
 100-139 Dünya/Bulmaca: HouseReady, ReqPuzzleOp, PuzzleStateChanged, ReqPuzzleScramble, PuzzleScrambled,
                     ReqPuzzleConfirm, PuzzleConfirmResult, PuzzleCompleted, StageCompleted,
                     GateOpened, ItemSpawned, ItemPickedUp, LightsChanged, RadioStateChanged,
@@ -330,6 +330,8 @@ Free -> Entering(PossessTime) -> Possessed(Lurking <-> Charging -> Recovering) -
 
 - `PossessDenyReason` değerleri byte olarak ağa gider: `NotEvilJinn` -> `RoleNotAllowed` (1, aynı değer), `8` ve `9` (v1 kutsama/tuz) emekli — yeniden kullanılmaz; yeni değerler sonda: `Lit = 13`, `GoodJinnNotAllowed = 14`.
 - Kutsama (bless) ve tuz v2.1'de yoktur (`IPossessionBlocker*` kaldırıldı). `PossessEndReason.Salted` -> `RoomLit = 2`: kötü cin içerideyken oda aydınlanırsa `LitRoomEjectDelay` (2 sn) sonra `Eject` ile dışarı atılır (lamba hariç).
+
+- **Akış (TODO 1.7):** düz C# `PossessionAuthority` (otorite; arbiter'ı sarar, `ReqPossess{obj}` → `PossessBegan{player, obj, enterEnd}` / `PossessDenied{player, obj, reason}`, `ReqUnpossess` → `PossessEnded{player, obj, reason, spent}`, kare başı `TickAuthority`: giriş bitince `PossessCompleted`, tek kullanım bitince `PossessEnded(Spent)`, aydınlık odada `LitRoomEjectDelay` sonra `PossessEnded(RoomLit)`; tekme → `PossessEnded(Kicked)` + `KickStun` kadar `Stunned`) ve `PossessionMirror` (her makine; yayınları uygular, `PossessionChangedEvt` yayınlar, yeni raundda içerideki her cin için `Free` olayı). Sahnede ince `PossessionSystem` (`IPossessionQuery`, Dump State `possession`; `CinliMahzen/Setup/Add Possession System To Open Scene`) ve her eşyada `Possessable` (`INetEntity`, `IKickable`, giriş titremesi). NetId: sahne başında `Possessable`'lar hiyerarşi yolu (sahne adı + isim[kardeş sırası]) ordinal sırasıyla `40000`'den ardışık id alır; çalışma zamanında doğanlar kendi id'sini getirir. Cin tarafı (`P_Spirit`): `PossessionCameraBinder` (içerideyken gövde gizli, kamera `SetOrbit(obj, CameraDistance)`, ruh eşyayı takip eder), `JinnPossessInput` (E / Shift+E bakılan eşyaya `ReqPossess`, içerideyken Space/E `ReqUnpossess`). `LocalInputSource` iyi ve kötü cin için içerideyken `Possessed` haritasını açar (hotseat geçişinde de). Debug: `Possess Nearest (local jinn)`, `Unpossess (local jinn)`, `Kick Possessed Objects`, `Setup/Add Test Possessable Chair To Open Scene`.
 
 ### 6.3 PossessableDefinition ve Özel Eşyalar (v2.1)
 Mevcut alanlar + `bool allowGoodJinn`, `bool isLamp` (`size == Lamp` ile tutarlı olmalı), `PossessableSize size {Small=0, Slipper=1, Large=2, Shelf=3, Lamp=4, Radio=5, Cologne=6, QuestItem=7}`. v1'e özgü `isSearchableContainer` kaldırıldı.

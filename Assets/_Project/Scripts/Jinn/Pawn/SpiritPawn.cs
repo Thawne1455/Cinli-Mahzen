@@ -32,12 +32,52 @@ namespace CinliMahzen.Jinn
         [SerializeField] private bool lockCursor = true;
 
         private bool _isLocalView;
+        private Transform _possessedTarget;
+        private float _possessedDistance;
 
         /// <summary>Camera anchor of the pawn.</summary>
         public Transform Eyes => eyes != null ? eyes : transform;
 
         /// <summary>True while this pawn is the one being played on this machine (set by the locality flow, same moment its input is bound).</summary>
         public bool IsLocalView => _isLocalView;
+
+        /// <summary>True while the jinn is inside an object (its body is hidden; the local camera orbits the object).</summary>
+        public bool IsInPossessedView => _possessedTarget != null;
+
+        /// <summary>
+        /// The jinn is now inside an object (TODO 1.7, called by PossessionCameraBinder): the body is hidden and, while this pawn is played,
+        /// the camera orbits <paramref name="target"/> at <paramref name="distance"/> (&lt;= 0: the rig's default).
+        /// </summary>
+        public void EnterPossessedView(Transform target, float distance)
+        {
+            _possessedTarget = target;
+            _possessedDistance = distance;
+            if (_isLocalView)
+                AttachOrbitCamera();
+            RefreshVisual();
+        }
+
+        /// <summary>The jinn came out: the body shows again and the played pawn's camera goes back to <see cref="Eyes"/>.</summary>
+        public void ExitPossessedView()
+        {
+            if (_possessedTarget == null)
+                return;
+            _possessedTarget = null;
+            if (_isLocalView)
+                AttachFpsCamera(Eyes);
+            RefreshVisual();
+        }
+
+        private void AttachOrbitCamera()
+        {
+            ICameraRig rig = GameServices.Get<ICameraRig>();
+            if (rig == null)
+            {
+                CMLog.Warn("Pawn", name + ": no ICameraRig registered — orbit camera not attached");
+                return;
+            }
+            rig.SetOrbit(_possessedTarget, _possessedDistance);
+        }
 
         protected override void OnOwnerChanged()
         {
@@ -58,7 +98,10 @@ namespace CinliMahzen.Jinn
                     AcquireCursorLock();
                 else
                     ReleaseCursorLock();
-                AttachFpsCamera(Eyes);
+                if (_possessedTarget != null)
+                    AttachOrbitCamera();
+                else
+                    AttachFpsCamera(Eyes);
             }
             else
             {
@@ -69,7 +112,7 @@ namespace CinliMahzen.Jinn
 
         private void RefreshVisual()
         {
-            bool shown = !_isLocalView;
+            bool shown = !_isLocalView && _possessedTarget == null;
             if (evilVisual != null)
                 evilVisual.SetActive(shown && Role == Role.EvilJinn);
             if (goodVisual != null)

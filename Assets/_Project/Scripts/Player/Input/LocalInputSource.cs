@@ -16,6 +16,8 @@ namespace CinliMahzen.Player
         private readonly CMInput _actions;
         private readonly Func<PlayerId> _localPlayer;
         private Role _role;
+        // Which players are inside an object (any jinn, not only the local one): hotseat switches to a possessing jinn must land in Possessed.
+        private readonly bool[] _insideByPlayer = new bool[256];
 
         /// <param name="localPlayer">Defaults to GameServices.Net/Players local player.</param>
         public LocalInputSource(Func<PlayerId> localPlayer = null)
@@ -70,15 +72,26 @@ namespace CinliMahzen.Player
         private void OnLocalRoleChanged(LocalRoleChangedEvt e)
         {
             _role = e.Role;
-            SetMode(ModeForRole(e.Role));
+            SetMode(CurrentMode());
         }
 
         private void OnPossessionChanged(PossessionChangedEvt e)
         {
-            if (_role != Role.EvilJinn || e.Player != _localPlayer())
+            if (!e.Player.IsValid)
                 return;
-            bool inside = e.State == PossessionPhase.Lurking || e.State == PossessionPhase.Charging || e.State == PossessionPhase.Recovering;
-            SetMode(inside ? InputMode.Possessed : InputMode.Spirit);
+            _insideByPlayer[e.Player.Value] = e.State == PossessionPhase.Lurking || e.State == PossessionPhase.Charging || e.State == PossessionPhase.Recovering;
+            if (e.Player == _localPlayer())
+                SetMode(CurrentMode());
+        }
+
+        /// <summary>The map for the local player now: its role's map, or Possessed while a local jinn (evil or good) is inside an object.</summary>
+        private InputMode CurrentMode()
+        {
+            InputMode mode = ModeForRole(_role);
+            PlayerId local = _localPlayer();
+            if (mode == InputMode.Spirit && local.IsValid && _insideByPlayer[local.Value])
+                return InputMode.Possessed;
+            return mode;
         }
 
         public static InputMode ModeForRole(Role role)
@@ -97,7 +110,8 @@ namespace CinliMahzen.Player
 
         IPawnInput ILocalInputProvider.AcquireLocal(Role role)
         {
-            SetMode(ModeForRole(role));
+            _role = role;
+            SetMode(CurrentMode());
             return this;
         }
 

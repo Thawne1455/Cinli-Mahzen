@@ -90,6 +90,9 @@ namespace CinliMahzen.Editor
             // Sibling of the pawn (RequireComponent): flight, reference focus and Spirit Bump. It has no references to wire — it finds the
             // pawn itself — and keeps its serialized feel values (look sensitivity, pitch limit) when the prefab is updated.
             GetOrAdd<SpiritController>(root);
+            // TODO 1.7: follows the possessed object (hidden body, orbit camera) and sends the possess / unpossess requests.
+            GetOrAdd<PossessionCameraBinder>(root);
+            GetOrAdd<JinnPossessInput>(root);
 
             Transform eyes = root.transform.Find(EyesName);
             if (eyes == null)

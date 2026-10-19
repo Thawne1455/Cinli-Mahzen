@@ -89,7 +89,7 @@
 | [x] | 1.4 | Interactor (raycast, basılı tutma, ipucu event'i) | 1.1 | S |
 | [x] | 1.5 | HumanHealth + bayılma + Kolonya ile anında ayılma + kaybetme (otoriter) | 1.1 | M |
 | [x] | 1.6 | SpiritController (uçuş, noclip, sınır) + Ruh Çarpışması (`SpiritBump`) | 1.2 | M |
-| [ ] | 1.7 | Possession akışı (MonoBehaviour) + mesajlar + orbit kamera | P.4, 1.6 | L |
+| [~] | 1.7 | Possession akışı (MonoBehaviour) + mesajlar + orbit kamera | P.4, 1.6 | L |
 | [ ] | 1.8 | Aksiyonlar: Throw, HomingSlipper, Hop, Lunge, Slide, Topple, PlayTune, ReviveSplash | 1.7, 1.5 | L |
 | [x] | 1.9 | Graybox ev v0 (zemin kat + 1. kat + bahçe, primitive/KayKit, marker'sız) | P.2 | M |
 | [x] | 1.10 | MatchStateMachine minimal (dinamik sayaç 360s + 90s bonus, Faint/Timeout bitişi) | 1.3, 1.5 | M |

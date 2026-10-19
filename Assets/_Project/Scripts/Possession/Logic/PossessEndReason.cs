@@ -13,5 +13,7 @@ namespace CinliMahzen.Possession
         Spent = 3,
         /// <summary>Round end, object removed, debug.</summary>
         Forced = 4,
+        /// <summary>The human kicked the object; the jinn is also stunned for <c>KickStun</c>.</summary>
+        Kicked = 5,
     }
 }
