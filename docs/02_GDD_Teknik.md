@@ -194,6 +194,7 @@ Ana event'ler (v2.1):
 |---|---|---|
 | `RoundStartedEvt{roundIndex, seed}` | Match | herkes |
 | `RoundTimeAddedEvt{bonusSeconds, newEndTime}` | Match | UI, Audio |
+| `ColdBreathChangedEvt{active}` | Visibility (lokal) | UI, Audio |
 | `HumanDamagedEvt{info, hpAfter}` | Player | UI, Audio, Stats |
 | `HumanFaintedEvt{info, faintCount}` / `HumanRevivedEvt{byCologne}` | Player | Match, UI, Stats |
 | `BlessedOilCollectedEvt{collector}` | Player | UI, Audio, Objectives |
@@ -367,6 +368,12 @@ Asset'lerde GDD'de olmayan, seçilmiş teknik değerler: küçük fırlatılanla
 - **Lamba Yak / Onar (`E`, `ISpiritInput.PrimaryPressed` / `PrimaryHeld`):** `ReqLampLight` (anında) / `ReqLampRepair` (`2 sn` basılı). **Uygulama:** `LampMarker` `ISpiritHoldTarget`'tır (çalışma zamanında Interactable trigger collider), iyi cin `SpiritInteractor` ile `LampLightRange` içinden hedefler; Off → anında, Broken → `RepairHoldTime`. Otorite `LightService.ProcessLampRequestAuthority` (rol GoodJinn, durum, piyon mesafesi ≤ `LampLightRange + NetRangeTolerance`) → `LightsChanged{lamp, On}` (onarılan lamba yanar).
 - **İşaret (`Q`, `ISpiritInput.PingPressed`), Kov (`R` basılı `1.5 sn`, `ISpiritInput.ExorciseHeld`):** `ReqPing`, `ReqExorcise`. **Uygulama:** `GoodJinnAbilityInput` (P_Spirit). İşaret: gözden ışın (≤ 30 m, yoksa 10 m ileri) → `ReqPing{point}` → `PingSystem` (otorite: rol, `PingCooldown`) → `PingPlaced{player, point, until}`; her makinede en fazla `PingMaxActive` (yenisi en eskisini siler), `PingDuration` sonra söner; `PingRunner` herkesin gördüğü parlayan küre çizer. Kov: içinde başkası olan, bakılan eşya (`ExorciseRange` içinde) üzerinde `ExorciseHoldTime` R → `ReqExorcise{obj}` → `PossessionAuthority.ProcessExorciseAuthority` (rol GoodJinn, `ExorciseCooldown`, içeride kötü cin, mesafe ≤ `ExorciseRange + NetRangeTolerance`) → `PossessEnded(Exorcised)` + `JinnStunned{player, now + ExorciseStun}` + `ExorcisePossessLock` boyunca `Stunned`. **Sersemlik:** `JinnStunned` (tekmede de, `KickStun`) → `SpiritController` o süre uçmaz.
 - **Eşyaya Gir (`Shift+E`, `ISpiritInput.PossessAsGoodPressed`):** Kaydırma, görev eşyası taşıma ve Limon Kolonyası ile ayıltma.
+
+### 6.6 Görünürlük Servisi ve Soğuk Nefes (TODO 3.9, CM.Visibility)
+- **Katman + mesafe:** Hangi rolün hangi katmanı hiç göremeyeceğine kamera culling maskesi karar verir (`CullingMasks`, §2). Oyun §12'deki mesafe kuralları ise `VisibilityRules`'tadır (düz C#, testli: `Tests/EditMode/Visibility/`): iyi cin kötü ruhu ≤ `GoodSightSpiritRange`, eşyada bekleyeni ≤ `GoodSightLurkRange`, şarj edeni (kırmızı) ≤ `GoodSightChargeRange` mesafeden görür; kötü takım her şeyi görür, insan hiçbirini görmez. `IsInside(phase)` = Lurking / Charging / Recovering (Entering'de beden hâlâ uçuyor).
+- **`VisibilityService`** (`VisibilityBootstrap` gizli kalıcı obje olarak kurar; Dump `visibility`): yalnız lokal ve kozmetiktir, otorite gerektirmez. Piyonları (`PawnBase`) sadece roster değişebilecekken bulur (`RolesChanged`, `LocalPlayerChanged`, `RoundStartedEvt`, önbellekteki piyon yok olunca), her frame değil. Her frame lokal piyonun konumuna göre: kötü ruh bedeninin renderer'larını `Renderer.enabled` ile açar/kapar (SpiritPawn'ın görsel `SetActive`'ine dokunmaz; içerideyken herkes için gizli); `PossessionChangedEvt` ile tutulan "içeride" kayıtlarından eşyanın üstüne iz küresi koyar (katman `XRayOutline`, insan kamerası çizmez; bekleme soluk, şarj kırmızı); `ReferenceFocusChangedEvt` ile odaklanan iyi cinin etrafına parıltı küresi açar (katman `SpiritOnly`: iki cin türü de görür, insan görmez; kendi gözünde gizli).
+- **Soğuk nefes:** lokal oyuncu insansa, eşya içinde olmayan en yakın kötü ruh ≤ `ColdBreathRange` iken `ColdBreathChangedEvt{Active}` yayınlanır (değişince; UI/ses dinler).
+- **İşaret:** `PingRunner` lokal rol kötü cinse ping kürelerini gizler (hotseat geçişi / rol değişiminde yeniden değerlendirir).
 
 ---
 

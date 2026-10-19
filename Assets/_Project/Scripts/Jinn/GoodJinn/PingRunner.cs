@@ -7,7 +7,8 @@ namespace CinliMahzen.Jinn
 {
     /// <summary>
     /// Scene side of <see cref="PingSystem"/> (TODO 3.5): ticks it and draws each live ping as a glowing sphere everybody sees (Default layer).
-    /// Created hidden and persistent by <c>SpiritBootstrap</c>.
+    /// Created hidden and persistent by <c>SpiritBootstrap</c>. TODO 3.9 (Oyun §12): the evil jinns never see pings, so the glows are hidden
+    /// while the local player is an evil jinn (re-checked on hotseat switches and role changes).
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PingRunner : MonoBehaviour
@@ -18,6 +19,8 @@ namespace CinliMahzen.Jinn
         private readonly Dictionary<int, GameObject> _glows = new Dictionary<int, GameObject>();
         private PingSystem _system;
         private INetBridge _net;
+        private IPlayerRegistry _players;
+        private bool _glowsVisible = true;
 
         public PingSystem System => _system;
 
@@ -34,16 +37,43 @@ namespace CinliMahzen.Jinn
             _system = PingSystem.FromConfig(_net, players, config);
             _system.PingAdded += OnPingAdded;
             _system.PingRemoved += OnPingRemoved;
+            _players = players;
         }
 
         private void OnEnable()
         {
             _system?.Attach();
+            if (_players != null)
+            {
+                _players.LocalPlayerChanged += OnLocalPlayerChanged;
+                _players.RolesChanged += RefreshGlowVisibility;
+                RefreshGlowVisibility();
+            }
         }
 
         private void OnDisable()
         {
             _system?.Detach();
+            if (_players != null)
+            {
+                _players.LocalPlayerChanged -= OnLocalPlayerChanged;
+                _players.RolesChanged -= RefreshGlowVisibility;
+            }
+        }
+
+        private void OnLocalPlayerChanged(PlayerId player)
+        {
+            RefreshGlowVisibility();
+        }
+
+        private void RefreshGlowVisibility()
+        {
+            _glowsVisible = _players.GetRole(_players.LocalPlayer) != Role.EvilJinn;
+            foreach (KeyValuePair<int, GameObject> pair in _glows)
+            {
+                if (pair.Value != null)
+                    pair.Value.SetActive(_glowsVisible);
+            }
         }
 
         private void Update()
@@ -65,6 +95,7 @@ namespace CinliMahzen.Jinn
                 r.material.EnableKeyword("_EMISSION");
                 r.material.SetColor("_EmissionColor", glowColor * 2f);
             }
+            glow.SetActive(_glowsVisible);
             _glows[ping.Id] = glow;
         }
 
