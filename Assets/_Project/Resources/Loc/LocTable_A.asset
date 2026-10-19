@@ -67,6 +67,12 @@ MonoBehaviour:
   - key: interact.cancelled
     tr: "\u0130ptal edildi"
     en: Cancelled
+  - key: interact.puzzle_turn
+    tr: "\xC7evir"
+    en: Turn
+  - key: interact.puzzle_confirm
+    tr: "Kolu \xE7ek"
+    en: Pull the lever
   - key: menu.title
     tr: Cinli Mahzen
     en: Cinli Mahzen

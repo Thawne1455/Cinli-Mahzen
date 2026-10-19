@@ -21,6 +21,9 @@ namespace CinliMahzen.Editor
         private const int TestSlot = 0;
         private const int TestStage = 1;
         private const float PlacementDistance = 1f;
+        private const float ViewDistance = 1.5f;
+        private const float ViewHeight = 1.6f;
+        private const float ReferenceSideDistance = 3f;
 
         private static readonly int[] PaintingsValueCounts = { 4, 4, 4 };
         private static readonly int[] PaintingsSolution = { 1, 3, 0 };
@@ -45,6 +48,68 @@ namespace CinliMahzen.Editor
             int room = GameServices.Get<IRoomService>().RoomOf(position);
             system.RegisterSlot(TestSlot, new PuzzleSlotRuntime(state, string.Empty, position, room, TestStage));
             CMLog.Info(Category, "Test puzzle in slot " + TestSlot + " at " + position + " (room " + room + "), solved. " + system.Core.BuildDebugJson());
+        }
+
+        /// <summary>
+        /// TODO 2.5: registers the test puzzle (as above) and also spawns <c>P_Puzzle_Paintings</c> 1.5 m in front of the human, facing it,
+        /// bound to the slot (ordinal 0), plus <c>P_PuzzleRef_Paintings</c> 3 m to its right showing the answer behind the Spirit Veil.
+        /// Build the prefabs first (CinliMahzen/Setup/Build Paintings Puzzle Prefabs).
+        /// </summary>
+        [MenuItem(Root + "Spawn Test Paintings Puzzle (view + reference)")]
+        public static void SpawnTestPaintings()
+        {
+            var puzzlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PaintingsPuzzleBuilder.PuzzlePrefabPath);
+            var referencePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PaintingsPuzzleBuilder.ReferencePrefabPath);
+            if (puzzlePrefab == null || referencePrefab == null)
+            {
+                CMLog.Warn(Category, "Paintings prefabs missing - run CinliMahzen/Setup/Build Paintings Puzzle Prefabs first");
+                return;
+            }
+
+            PawnBase human = FindHuman();
+            Vector3 origin = human != null ? human.transform.position : Vector3.zero;
+            Vector3 forward = human != null ? Vector3.ProjectOnPlane(human.transform.forward, Vector3.up).normalized : Vector3.forward;
+            if (forward.sqrMagnitude < 0.01f)
+                forward = Vector3.forward;
+            Vector3 position = origin + forward * ViewDistance + Vector3.up * ViewHeight;
+            Quaternion facing = Quaternion.LookRotation(-forward, Vector3.up);
+
+            PuzzleSystem system = FindSystem();
+            if (system == null)
+            {
+                system = new GameObject("PuzzleSystem").AddComponent<PuzzleSystem>();
+                CMLog.Info(Category, "No PuzzleSystem in the scene - created a temporary one (not saved)");
+            }
+            if (system.Core == null)
+            {
+                CMLog.Warn(Category, "PuzzleSystem is inert (GameServices missing) - nothing spawned");
+                return;
+            }
+
+            var state = new PuzzleState(PaintingsValueCounts, PaintingsSolution, PuzzleOpKind.Cycle);
+            int room = GameServices.Get<IRoomService>().RoomOf(position);
+            var runtime = new PuzzleSlotRuntime(state, string.Empty, position, room, TestStage);
+            system.RegisterSlot(TestSlot, runtime);
+
+            GameObject view = UnityEngine.Object.Instantiate(puzzlePrefab, position, facing);
+            view.name = "Test_P_Puzzle_Paintings";
+            PuzzleView puzzleView = view.GetComponent<PuzzleView>();
+            if (puzzleView == null || !puzzleView.Bind(system.Core, TestSlot, 0))
+            {
+                CMLog.Warn(Category, "P_Puzzle_Paintings could not be bound (see the error above)");
+                return;
+            }
+            Transform leverTransform = view.GetComponentInChildren<ConfirmLever>() != null ? view.GetComponentInChildren<ConfirmLever>().transform : null;
+            if (leverTransform != null)
+                runtime.ConfirmPosition = leverTransform.position;
+
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            GameObject reference = UnityEngine.Object.Instantiate(referencePrefab, position + right * ReferenceSideDistance, facing);
+            reference.name = "Test_P_PuzzleRef_Paintings";
+            reference.GetComponent<PuzzleReference>()?.Bind(state.Solution, state.ReferenceRotation, state.TrapValues);
+
+            CMLog.Info(Category, "Spawned the test Paintings puzzle at " + position + " (slot " + TestSlot + ", solved) and its reference; "
+                + system.Core.BuildDebugJson());
         }
 
         [MenuItem(Root + "Scramble Test Puzzle As Evil")]
@@ -78,6 +143,7 @@ namespace CinliMahzen.Editor
         }
 
         [MenuItem(Root + "Register Test Puzzle (Paintings 3x4)", true)]
+        [MenuItem(Root + "Spawn Test Paintings Puzzle (view + reference)", true)]
         [MenuItem(Root + "Scramble Test Puzzle As Evil", true)]
         [MenuItem(Root + "Cycle Part 0 As Human", true)]
         [MenuItem(Root + "Confirm Test Puzzle", true)]
@@ -151,6 +217,17 @@ namespace CinliMahzen.Editor
                 }
             }
             return false;
+        }
+
+        private static PawnBase FindHuman()
+        {
+            PawnBase[] pawns = UnityEngine.Object.FindObjectsByType<PawnBase>(FindObjectsSortMode.None);
+            for (int i = 0; i < pawns.Length; i++)
+            {
+                if (pawns[i].Role == Role.Human)
+                    return pawns[i];
+            }
+            return null;
         }
 
         /// <summary>1 m in front of the human's pawn; the human status bridge's position when no human pawn exists.</summary>

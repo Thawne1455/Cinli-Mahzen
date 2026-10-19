@@ -160,7 +160,7 @@
 | [x] | 2.2 | Ev marker'ları (§8: `CologneSpawnSpot` dahil) + `HouseService.Index` + `HouseValidator` + `IRoomService` | 1.9 | M |
 | [~] | 2.3 | `RoundSetupPlanner` + `RoundPlanValidator` + testler (500 seed) | 2.1, 2.2 | L |
 | [~] | 2.4 | `PuzzleSystem` + mesajlar (Op / Toplu Sabotaj / Confirm / Completed) + round-trip testleri | 2.1, 1.4 | M |
-| [ ] | 2.5 | Bulmaca P1 **Portreler**: `PuzzleView`, `PuzzlePart`, `ConfirmLever`, `PuzzleReference` (Ruh Perdesi) | 2.4 | M |
+| [~] | 2.5 | Bulmaca P1 **Portreler**: `PuzzleView`, `PuzzlePart`, `ConfirmLever`, `PuzzleReference` (Ruh Perdesi) | 2.4 | M |
 | [ ] | 2.6 | Kötü cin **Toplu Sabotaj** (`PuzzleScrambleTarget`, 1.5s basılı, 15s cd, fener koruması) | 2.5, 1.7 | M |
 | [ ] | 2.7 | `RoundSetupApplier` + `StageGate` (+90 sn bonus) + `ItemReward` + Inventory | 2.3, 2.5 | M |
 
