@@ -75,6 +75,12 @@ namespace CinliMahzen.Objectives
         /// <summary>ItemDefinition.Id of the Blessed Oil (no slot: it upgrades the lantern).</summary>
         public const string BlessedOilItemId = "blessed_oil";
 
+        /// <summary>ItemDefinition.Id of the cellar key (the last puzzle stage's gate gives it; it opens the cellar hatch).</summary>
+        public const string CellarKeyItemId = "cellar_key";
+
+        /// <summary>ItemDefinition.Id of the shovel (needed to dig).</summary>
+        public const string ShovelItemId = "shovel";
+
         private const string Category = "Objectives";
 
         private readonly INetBridge _net;
@@ -94,6 +100,16 @@ namespace CinliMahzen.Objectives
         private readonly List<LockedGate> _lockedGates = new List<LockedGate>(4);
         private readonly List<ShedItem> _shedItems = new List<ShedItem>(2);
         private readonly HashSet<NetId> _takenShedItems = new HashSet<NetId>();
+        private NetId _digSpot;
+        private int _digCheckpoints = 3;
+        private float _digLayerTime = 6f;
+        private bool _hasCellarHatch;
+        private int _digLayers;
+        private bool _treasureDug;
+        private bool _rage;
+        private Vector3 _lastRewardPosition;
+        private readonly Action<NetMsg> _onCheckpoint;
+        private readonly Action<NetMsg> _onTreasure;
         private readonly Action<NetMsg> _onKeyFound;
         private readonly Action<NetMsg> _onOil;
 
@@ -126,6 +142,8 @@ namespace CinliMahzen.Objectives
             _onHumanFainted = OnHumanFainted;
             _onKeyFound = OnKeyFound;
             _onOil = OnBlessedOilCollected;
+            _onCheckpoint = OnDigCheckpoint;
+            _onTreasure = OnTreasureDug;
         }
 
         public InventoryState Inventory => _inventory;
@@ -159,6 +177,8 @@ namespace CinliMahzen.Objectives
             _net.Register(MsgCode.InventoryChanged, _onInventoryChanged);
             _net.Register(MsgCode.ReqDropItem, _onReqDrop);
             _net.Register(MsgCode.KeyFound, _onKeyFound);
+            _net.Register(MsgCode.DigCheckpointReached, _onCheckpoint);
+            _net.Register(MsgCode.TreasureDug, _onTreasure);
             _net.Register(MsgCode.BlessedOilCollected, _onOil);
             EventBus.Subscribe(_onPuzzleCompleted);
             EventBus.Subscribe(_onHumanFainted);
@@ -176,6 +196,8 @@ namespace CinliMahzen.Objectives
             _net.Unregister(MsgCode.InventoryChanged, _onInventoryChanged);
             _net.Unregister(MsgCode.ReqDropItem, _onReqDrop);
             _net.Unregister(MsgCode.KeyFound, _onKeyFound);
+            _net.Unregister(MsgCode.DigCheckpointReached, _onCheckpoint);
+            _net.Unregister(MsgCode.TreasureDug, _onTreasure);
             _net.Unregister(MsgCode.BlessedOilCollected, _onOil);
             EventBus.Unsubscribe(_onPuzzleCompleted);
             EventBus.Unsubscribe(_onHumanFainted);
@@ -213,6 +235,13 @@ namespace CinliMahzen.Objectives
 
             _houseKeySpot = NetId.Invalid;
             _keyFound = false;
+            _digSpot = NetId.Invalid;
+            _digLayers = 0;
+            _treasureDug = false;
+            _rage = false;
+            _hasCellarHatch = false;
+            _puzzles.DigCheckpoint = 0;
+            _puzzles.DigProgress = 0f;
             _lockedGates.Clear();
             _shedItems.Clear();
             _takenShedItems.Clear();
@@ -242,6 +271,67 @@ namespace CinliMahzen.Objectives
         }
 
         public bool IsKeyFound => _keyFound;
+
+        /// <summary>
+        /// Every machine, after <see cref="SetGarden"/> (TODO 3.7): the real dig site, the layer count and time, and whether the house has a locked
+        /// cellar hatch (the gate of stage StagesActive + 1). Without a hatch the cellar opens as soon as the last puzzle stage is done.
+        /// </summary>
+        public void SetCellar(NetId digSpot, int checkpoints, float layerTime, bool hasCellarHatch)
+        {
+            _digSpot = digSpot;
+            _digCheckpoints = checkpoints > 0 ? checkpoints : 1;
+            _digLayerTime = layerTime;
+            _hasCellarHatch = hasCellarHatch;
+            _digLayers = 0;
+            _treasureDug = false;
+        }
+
+        public int DigLayers => _digLayers;
+
+        public bool IsTreasureDug => _treasureDug;
+
+        public bool IsRageActive => _rage;
+
+        public float DigLayerTime => _digLayerTime;
+
+        public bool CanDigAt(PlayerId who, NetId spot)
+        {
+            return !_treasureDug && spot.IsValid && spot == _digSpot && _puzzles.Phase == ObjectivePhase.Cellar && _inventory.Has(who, ShovelItemId);
+        }
+
+        public void DigAuthority(PlayerId who, NetId spot)
+        {
+            Debug.Assert(_net.IsAuthority, "DigAuthority must only run on the authority");
+            if (_players.GetRole(who) != Role.Human || !CanDigAt(who, spot))
+            {
+                CMLog.Info(Category, who + " cannot dig at " + spot + " (not the real spot, cellar closed, no shovel or already dug)");
+                return;
+            }
+            int layer = _digLayers + 1;
+            _net.Broadcast(CellarMsgs.EncodeCheckpoint(spot, layer));
+            if (layer >= _digCheckpoints)
+                _net.Broadcast(CellarMsgs.EncodeTreasure(who));
+        }
+
+        private void OnDigCheckpoint(NetMsg msg)
+        {
+            if (!CellarMsgs.TryDecodeCheckpoint(msg, out NetId _, out int layer) || layer <= _digLayers)
+                return;
+            _digLayers = layer;
+            _puzzles.DigCheckpoint = layer;
+            _puzzles.DigProgress = (float)layer / _digCheckpoints;
+            EventBus.Publish(new DigProgressEvt(_puzzles.DigProgress, layer));
+        }
+
+        private void OnTreasureDug(NetMsg msg)
+        {
+            if (!CellarMsgs.TryDecodeTreasure(msg, out PlayerId digger) || _treasureDug)
+                return;
+            _treasureDug = true;
+            _puzzles.Phase = ObjectivePhase.Done;
+            CMLog.Info(Category, "Treasure dug by " + digger);
+            EventBus.Publish(new TreasureDugEvt(digger));
+        }
 
         // ---- IObjectiveInteractions (TODO 3.6) ----
 
@@ -419,6 +509,7 @@ namespace CinliMahzen.Objectives
                 return;
 
             ObjectivePuzzleInfo info = _round[index];
+            _lastRewardPosition = info.RewardPosition;
             if (info.RewardItemId.Length > 0)
                 _net.Broadcast(ItemSpawnedMsg.Encode(_allocateId(), info.RewardItemId, info.RewardPosition));
 
@@ -440,10 +531,27 @@ namespace CinliMahzen.Objectives
             if (stage + 1 > _puzzles.StageIndex)
             {
                 _puzzles.StageIndex = stage + 1;
-                _puzzles.Phase = stage + 1 > _stagesActive ? ObjectivePhase.Cellar : ObjectivePhase.House;
+                // TODO 3.7: the cellar opens with its hatch (the gate of stage StagesActive + 1), or right after the last puzzle stage
+                // when the house has no hatch.
+                bool cellar = stage > _stagesActive || (stage == _stagesActive && !_hasCellarHatch);
+                _puzzles.Phase = cellar ? ObjectivePhase.Cellar : ObjectivePhase.House;
             }
+            if (_net.IsAuthority)
+                OnGateOpenedAuthority(stage);
             CMLog.Info(Category, "Gate of stage " + stage + " open - now stage " + _puzzles.StageIndex + " (" + _puzzles.Phase + ")");
             EventBus.Publish(new StageCompletedEvt(stage));
+        }
+
+        /// <summary>The last puzzle stage gives the cellar key (when there is a hatch to open); the cellar starts the jinns' Öfke.</summary>
+        private void OnGateOpenedAuthority(int stage)
+        {
+            if (stage == _stagesActive && _hasCellarHatch)
+                _net.Broadcast(ItemSpawnedMsg.Encode(_allocateId(), CellarKeyItemId, _lastRewardPosition));
+            if (_puzzles.Phase == ObjectivePhase.Cellar && !_rage)
+            {
+                _rage = true;
+                _net.Broadcast(CellarMsgs.EncodeRage(true));
+            }
         }
 
         private void OnItemSpawned(NetMsg msg)

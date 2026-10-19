@@ -38,6 +38,7 @@ namespace CinliMahzen.Possession
         private const int MaxOverlaps = 8;
 
         private readonly Collider[] _overlaps = new Collider[MaxOverlaps];
+        private readonly List<PawnBase> _goodJinnPawns = new List<PawnBase>(2);
         private int _humanMask;
         private int _environmentMask;
         private PossessionActionRunner _actions;
@@ -85,7 +86,12 @@ namespace CinliMahzen.Possession
 
             _authority = PossessionAuthority.FromConfig(_net, this, config);
             _mirror = new PossessionMirror(_net);
-            _actions = new PossessionActionRunner(_net, _authority, this, config.CologneReviveRange, config.NetRangeTolerance);
+            _actions = new PossessionActionRunner(_net, _authority, this, config.CologneReviveRange, config.NetRangeTolerance)
+            {
+                SpiritBlockRadius = config.SpiritBlockRadius,
+                SpiritBlockCost = config.SpiritBlockEnergyCost,
+                RageCooldownMult = config.RageCooldownMult,
+            };
             _humanMask = LayerMask.GetMask(HumanHitboxLayer);
             _environmentMask = LayerMask.GetMask(EnvironmentLayer);
             _onObjectMoved = OnObjectMoved;
@@ -324,6 +330,9 @@ namespace CinliMahzen.Possession
 
         private void OnProjectileSpawned(NetMsg msg)
         {
+            // The good jinn pawns the authority checks for a Spirit Block while this throw flies (looked up once per throw).
+            if (_net.IsAuthority)
+                CacheGoodJinnPawns();
             if (!ProjectileSpawnedMsg.TryDecode(msg, out NetId obj, out ProjectilePath path))
                 return;
             Possessable.Find(obj)?.BeginFlight(path);
@@ -399,6 +408,34 @@ namespace CinliMahzen.Possession
 
         public bool IsHumanFainted => GameServices.Get<IHumanStatusQuery>().IsFainted;
 
+        public bool IsCellarPhase => GameServices.Get<IObjectiveInfo>().Phase == ObjectivePhase.Cellar;
+
+        public bool CastGoodJinn(Vector3 from, Vector3 to, float radius, out PlayerId goodJinn, out Vector3 point)
+        {
+            goodJinn = PlayerId.None;
+            point = to;
+            if (_goodJinnPawns.Count == 0)
+                return false;
+            Vector3 d = to - from;
+            float lengthSqr = d.sqrMagnitude;
+            float best = float.MaxValue;
+            for (int i = 0; i < _goodJinnPawns.Count; i++)
+            {
+                PawnBase pawn = _goodJinnPawns[i];
+                if (pawn == null)
+                    continue;
+                Vector3 c = pawn.transform.position;
+                float t = lengthSqr > 0f ? Mathf.Clamp01(Vector3.Dot(c - from, d) / lengthSqr) : 0f;
+                Vector3 closest = from + d * t;
+                if ((closest - c).sqrMagnitude > radius * radius || t >= best)
+                    continue;
+                best = t;
+                goodJinn = pawn.Owner;
+                point = closest;
+            }
+            return goodJinn.IsValid;
+        }
+
         public Vector3 HumanPosition => GameServices.Get<IHumanStatusQuery>().Position;
 
         private bool FirstHuman(int count, out HumanTarget target)
@@ -449,6 +486,17 @@ namespace CinliMahzen.Possession
                 if (to.sqrMagnitude > 1e-6f && Vector3.Angle(dir, to) > angleDeg)
                     continue;
                 results.Add(p.NetId);
+            }
+        }
+
+        private void CacheGoodJinnPawns()
+        {
+            _goodJinnPawns.Clear();
+            PawnBase[] pawns = FindObjectsByType<PawnBase>(FindObjectsSortMode.None);
+            for (int i = 0; i < pawns.Length; i++)
+            {
+                if (pawns[i].Role == Role.GoodJinn)
+                    _goodJinnPawns.Add(pawns[i]);
             }
         }
 

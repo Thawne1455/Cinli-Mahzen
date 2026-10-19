@@ -285,6 +285,77 @@ namespace CinliMahzen.Tests.EditMode.Objectives
             StringAssert.Contains("paint@", json);
         }
 
+        // ---------- cellar (TODO 3.7) ----------
+
+        private static readonly NetId DigAt = new NetId(1040);
+
+        [Test]
+        public void WithAHatch_TheLastStageGivesTheCellarKey_AndTheHatchOpensTheCellar_WithRage()
+        {
+            var rage = new List<NetMsg>();
+            Bridge.Register(MsgCode.RageStarted, rage.Add);
+            _flow.SetGarden(NetId.Invalid, new[] { new ObjectiveFlowCore.LockedGate(new NetId(1050), 3, ObjectiveFlowCore.CellarKeyItemId) }, null);
+            _flow.SetCellar(DigAt, 3, 6f, true);
+
+            Complete(SlotC);
+            Assert.AreEqual(ObjectivePhase.House, Puzzles.Phase, "the hatch is still closed");
+            NetId key = OnlyGroundItem(ObjectiveFlowCore.CellarKeyItemId);
+            Assert.AreEqual(0, rage.Count);
+
+            Assert.IsTrue(_flow.PickupAuthority(HumanId, key));
+            _flow.UseGateAuthority(HumanId, new NetId(1050));
+
+            Assert.AreEqual(ObjectivePhase.Cellar, Puzzles.Phase);
+            Assert.AreEqual(1, rage.Count);
+            Assert.IsTrue(CellarMsgs.TryDecodeRage(rage[0], out bool active));
+            Assert.IsTrue(active);
+        }
+
+        [Test]
+        public void Digging_NeedsTheShovelTheCellarAndTheRealSpot_ThreeLayers_ThenTreasure()
+        {
+            var dug = new List<TreasureDugEvt>();
+            var progress = new List<DigProgressEvt>();
+            EventBus.Subscribe<TreasureDugEvt>(dug.Add);
+            EventBus.Subscribe<DigProgressEvt>(progress.Add);
+            _flow.SetCellar(DigAt, 3, 6f, false);
+            Assert.AreEqual(6f, _flow.DigLayerTime);
+
+            Assert.IsFalse(_flow.CanDigAt(HumanId, DigAt), "the cellar is closed");
+            Complete(SlotC);
+            Assert.AreEqual(ObjectivePhase.Cellar, Puzzles.Phase, "no hatch: the last stage opens the cellar");
+            Assert.IsFalse(_flow.CanDigAt(HumanId, DigAt), "no shovel yet");
+            _flow.PickupAuthority(HumanId, OnlyGroundItem("shovel"));
+            Assert.IsFalse(_flow.CanDigAt(HumanId, new NetId(1041)), "not the real spot");
+            Assert.IsTrue(_flow.CanDigAt(HumanId, DigAt));
+
+            _flow.DigAuthority(HumanId, DigAt);
+            _flow.DigAuthority(HumanId, DigAt);
+            Assert.AreEqual(2, _flow.DigLayers);
+            Assert.AreEqual(2, Puzzles.DigCheckpoint);
+            Assert.AreEqual(2f / 3f, Puzzles.DigProgress, 1e-5f);
+            Assert.AreEqual(0, dug.Count);
+
+            _flow.DigAuthority(HumanId, DigAt);
+            Assert.AreEqual(1, dug.Count);
+            Assert.AreEqual(HumanId, dug[0].Digger);
+            Assert.AreEqual(ObjectivePhase.Done, Puzzles.Phase);
+            Assert.AreEqual(3, progress.Count);
+            Assert.IsFalse(_flow.CanDigAt(HumanId, DigAt), "dug up");
+        }
+
+        [Test]
+        public void CellarCodecs_RoundTrip()
+        {
+            Assert.IsTrue(CellarMsgs.TryDecodeCheckpoint(CellarMsgs.EncodeCheckpoint(DigAt, 2), out NetId spot, out int layer));
+            Assert.AreEqual(DigAt, spot);
+            Assert.AreEqual(2, layer);
+            Assert.IsTrue(CellarMsgs.TryDecodeTreasure(CellarMsgs.EncodeTreasure(HumanId), out PlayerId who));
+            Assert.AreEqual(HumanId, who);
+            Assert.IsTrue(CellarMsgs.TryDecodeRage(CellarMsgs.EncodeRage(false), out bool active));
+            Assert.IsFalse(active);
+        }
+
         // ---------- garden (TODO 3.6) ----------
 
         private static readonly NetId KeySpot = new NetId(1010);

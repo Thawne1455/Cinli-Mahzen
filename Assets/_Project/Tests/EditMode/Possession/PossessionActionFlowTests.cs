@@ -90,6 +90,28 @@ namespace CinliMahzen.Tests.EditMode.Possession
 
             public bool IsHumanFainted => Fainted;
 
+            public bool Cellar;
+            public PlayerId GoodJinn = PlayerId.None;
+            public Vector3 GoodJinnAt;
+
+            public bool IsCellarPhase => Cellar;
+
+            public bool CastGoodJinn(Vector3 from, Vector3 to, float radius, out PlayerId goodJinn, out Vector3 point)
+            {
+                goodJinn = PlayerId.None;
+                point = to;
+                if (!GoodJinn.IsValid)
+                    return false;
+                Vector3 d = to - from;
+                float t = d.sqrMagnitude > 0f ? Mathf.Clamp01(Vector3.Dot(GoodJinnAt - from, d) / d.sqrMagnitude) : 0f;
+                Vector3 closest = from + d * t;
+                if ((closest - GoodJinnAt).magnitude > radius)
+                    return false;
+                goodJinn = GoodJinn;
+                point = closest;
+                return true;
+            }
+
             public Vector3 HumanPosition => HumanAt;
         }
 
@@ -123,7 +145,12 @@ namespace CinliMahzen.Tests.EditMode.Possession
 
             _authority = new PossessionAuthority(_bridge, _possessionWorld, new PossessionRules(3f, 0.5f, 1.2f, 10f), 2f, 2.5f);
             _mirror = new PossessionMirror(_bridge);
-            _runner = new PossessionActionRunner(_bridge, _authority, _world, 3f, 0.5f);
+            _runner = new PossessionActionRunner(_bridge, _authority, _world, 3f, 0.5f)
+            {
+                SpiritBlockRadius = 1f,
+                SpiritBlockCost = 30f,
+                RageCooldownMult = 0.6f,
+            };
             _authority.Attach();
             _mirror.Attach();
             _runner.Attach();
@@ -514,6 +541,72 @@ namespace CinliMahzen.Tests.EditMode.Possession
             Enter(EvilId, stool);
             _world.Wall = 0f;
             Assert.AreEqual(ActionDenyReason.Blocked, _runner.ProcessHopAuthority(EvilId, Vector3.forward));
+        }
+
+        // ---------- cellar (TODO 3.7) ----------
+
+        [Test]
+        public void SpiritBlock_InTheCellar_StopsTheThrow_AndCostsTheGoodJinn()
+        {
+            NetId bottle = Place("PD_Bottle", Vector3.zero);
+            _world.HumanAt = new Vector3(0f, 1.6f, 5f);
+            _world.Cellar = true;
+            _world.GoodJinn = GoodId;
+            _world.GoodJinnAt = new Vector3(0f, 1.2f, 2.5f);
+            _energy.SetEnergy(GoodId, 50f);
+            _bridge.Register(MsgCode.SpiritBlockedProjectile, _sent.Add);
+            Enter(EvilId, bottle);
+
+            Act(EvilId, 0, Vector3.forward);
+            Tick(0.5);
+            Run(1.0);
+
+            Assert.AreEqual(1, Sent(MsgCode.SpiritBlockedProjectile).Count);
+            Assert.AreEqual(0, _world.Human.Hits.Count, "the human is protected");
+            Assert.AreEqual(20f, _energy.Get(GoodId), "30 energy");
+            Assert.IsTrue(ProjectileImpactMsg.TryDecode(Sent(MsgCode.ProjectileImpact)[0], out _, out _, out bool hit));
+            Assert.IsFalse(hit);
+        }
+
+        [Test]
+        public void SpiritBlock_NeedsTheCellar_AndEnoughEnergy()
+        {
+            NetId bottle = Place("PD_Bottle", Vector3.zero);
+            NetId plate = Place("PD_Plate", new Vector3(2f, 0f, 0f));
+            _world.HumanAt = new Vector3(0f, 1.6f, 5f);
+            _world.GoodJinn = GoodId;
+            _world.GoodJinnAt = new Vector3(0f, 1.2f, 2.5f);
+            Enter(EvilId, bottle);
+
+            Act(EvilId, 0, Vector3.forward);
+            Tick(0.5);
+            Run(1.0);
+            Assert.AreEqual(1, _world.Human.Hits.Count, "outside the cellar the good jinn does not block");
+
+            _world.Cellar = true;
+            _energy.SetEnergy(GoodId, 10f);
+            _world.HumanAt = new Vector3(2f, 1.6f, 5f);
+            _world.GoodJinnAt = new Vector3(2f, 1.2f, 2.5f);
+            Run(3.0);
+            Enter(EvilId, plate);
+            Act(EvilId, 0, Vector3.forward);
+            Tick(0.5);
+            Run(1.0);
+            Assert.AreEqual(2, _world.Human.Hits.Count, "too little energy: it goes through");
+        }
+
+        [Test]
+        public void Rage_ShortensCooldowns()
+        {
+            NetId slipper = Place("PD_Slipper", Vector3.zero);
+            _world.HumanAt = new Vector3(50f, 0f, 0f);
+            Enter(EvilId, slipper);
+            _bridge.Broadcast(CellarMsgs.EncodeRage(true));
+
+            Act(EvilId, 0, Vector3.forward);
+            Tick(0.6);
+            double readyAt = _runner.CooldownReadyAt(slipper, 0);
+            Assert.AreEqual(_now + 15d * 0.6d, readyAt, 1e-6, "15 s × RageCooldownMult");
         }
 
         // ---------- round ----------

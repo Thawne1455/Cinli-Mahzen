@@ -92,10 +92,10 @@ namespace CinliMahzen.Objectives
         public ObjectivePhase Phase { get; set; } = ObjectivePhase.Garden;
 
         /// <summary>Always 0 until the cellar dig exists (TODO 3.x).</summary>
-        public float DigProgress => 0f;
+        public float DigProgress { get; set; }
 
         /// <summary>Always 0 until the cellar dig exists (TODO 3.x).</summary>
-        public int DigCheckpoint => 0;
+        public int DigCheckpoint { get; set; }
 
         /// <summary>True when the puzzle in <paramref name="slot"/> is confirmed (locked). False for an unknown slot.</summary>
         public bool IsPuzzleDone(int slot)

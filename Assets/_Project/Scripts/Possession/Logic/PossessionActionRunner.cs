@@ -43,6 +43,7 @@ namespace CinliMahzen.Possession
 
         private readonly Action<NetMsg> _onReqAction;
         private readonly Action<NetMsg> _onReqMove;
+        private readonly Action<NetMsg> _onRage;
         private readonly Action<PossessionTransitionInfo> _onTransition;
         private readonly Action<RoundStartedEvt> _onRoundStarted;
         private bool _attached;
@@ -66,9 +67,18 @@ namespace CinliMahzen.Possession
 
             _onReqAction = OnReqAction;
             _onReqMove = OnReqMove;
+            _onRage = OnRageStarted;
             _onTransition = OnTransition;
             _onRoundStarted = OnRoundStarted;
         }
+
+        /// <summary>Spirit Block (cellar): radius (m) of the good jinn's body and the energy one block costs. 0 radius = off.</summary>
+        public float SpiritBlockRadius { get; set; }
+
+        public float SpiritBlockCost { get; set; }
+
+        /// <summary>Öfke: action cooldowns and re-enter cooldowns are scaled by this while RageStarted is on (RageCooldownMult).</summary>
+        public float RageCooldownMult { get; set; } = 1f;
 
         /// <summary>Projectiles in the air (authority).</summary>
         public int FlightCount => _flights.Count;
@@ -80,6 +90,7 @@ namespace CinliMahzen.Possession
             _attached = true;
             _net.Register(MsgCode.ReqAction, _onReqAction);
             _net.Register(MsgCode.PossessedMove, _onReqMove);
+            _net.Register(MsgCode.RageStarted, _onRage);
             _authority.TransitionOccurred += _onTransition;
             EventBus.Subscribe(_onRoundStarted);
         }
@@ -91,6 +102,7 @@ namespace CinliMahzen.Possession
             _attached = false;
             _net.Unregister(MsgCode.ReqAction, _onReqAction);
             _net.Unregister(MsgCode.PossessedMove, _onReqMove);
+            _net.Unregister(MsgCode.RageStarted, _onRage);
             _authority.TransitionOccurred -= _onTransition;
             EventBus.Unsubscribe(_onRoundStarted);
         }
@@ -136,6 +148,11 @@ namespace CinliMahzen.Possession
                 Flight f = _flights[i];
                 Vector3 next = f.Path.PositionAt(now);
                 float radius = Mathf.Max(0.05f, f.Action.ShapeSize.x);
+                if (TrySpiritBlock(f, next))
+                {
+                    _flights.RemoveAt(i);
+                    continue;
+                }
                 if (_world.CastSegment(f.Last, next, radius, out Vector3 point, out HumanTarget target))
                 {
                     _flights.RemoveAt(i);
@@ -324,6 +341,36 @@ namespace CinliMahzen.Possession
             if (offset == Vector3.zero)
                 offset = new Vector3(0f, size.y * 0.5f, size.z * 0.5f);
             return _world.FindHumanInBox(position + rotation * offset, size * 0.5f, rotation, out target);
+        }
+
+        /// <summary>
+        /// TODO 3.7: in the cellar a projectile that passes through the good jinn's spirit stops there, harmless, if the good jinn can pay
+        /// SpiritBlockCost (SpiritBlockedProjectile, then the object drops: ProjectileImpact without a hit).
+        /// </summary>
+        private bool TrySpiritBlock(Flight f, Vector3 next)
+        {
+            if (SpiritBlockRadius <= 0f || !_world.IsCellarPhase)
+                return false;
+            if (!_world.CastGoodJinn(f.Last, next, SpiritBlockRadius, out PlayerId good, out Vector3 point))
+                return false;
+            IJinnEnergyService energy = GameServices.Get<IJinnEnergyService>();
+            if (energy != null && !energy.TrySpendAuthority(good, SpiritBlockCost))
+                return false;
+            _net.Broadcast(SpiritBlockedMsg.Encode(good, f.Obj, point));
+            float down = _world.FreeDistance(point, Vector3.down, 0.1f, 10f);
+            _net.Broadcast(ProjectileImpactMsg.Encode(f.Obj, point + Vector3.down * down, false));
+            CMLog.Info(Category, good + " spirit-blocked " + f.Obj);
+            return true;
+        }
+
+        private void OnRageStarted(NetMsg msg)
+        {
+            if (!_net.IsAuthority || !CellarMsgs.TryDecodeRage(msg, out bool active))
+                return;
+            float mult = active ? RageCooldownMult : 1f;
+            double now = _net.Time;
+            _cooldowns.SetMultiplier(mult, now);
+            _authority.Arbiter.SetCooldownMultiplier(mult, now);
         }
 
         private void Impact(Flight f, Vector3 point, HumanTarget target)

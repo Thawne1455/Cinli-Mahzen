@@ -46,6 +46,15 @@ namespace CinliMahzen.Possession
 
         bool IsHumanFainted { get; }
 
+        /// <summary>TODO 3.7: the round is in the cellar finale (the good jinn's Spirit Block works only there).</summary>
+        bool IsCellarPhase { get; }
+
+        /// <summary>
+        /// TODO 3.7: the first good jinn spirit (a sphere of <paramref name="radius"/> around its pawn) the segment passes through, and where.
+        /// Spirits have no colliders, so this is plain geometry against the good jinn pawns.
+        /// </summary>
+        bool CastGoodJinn(Vector3 from, Vector3 to, float radius, out PlayerId goodJinn, out Vector3 point);
+
         Vector3 HumanPosition { get; }
     }
 }

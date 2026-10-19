@@ -187,6 +187,10 @@ namespace CinliMahzen.World
                 {
                     MakeInteractable(hide.gameObject, SearchColliderSize, true, interactable);
                 }
+                else if (_netMarkers[i] is DigSpot dig)
+                {
+                    MakeInteractable(dig.gameObject, SearchColliderSize, true, interactable);
+                }
                 else if (_netMarkers[i] is ToolShedItemPoint shed)
                 {
                     MakeInteractable(shed.gameObject, SearchColliderSize, true, interactable);

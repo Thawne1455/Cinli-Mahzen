@@ -73,6 +73,9 @@ MonoBehaviour:
   - key: interact.puzzle_confirm
     tr: "Kolu \xE7ek"
     en: Pull the lever
+  - key: interact.dig
+    tr: "[Bas\u0131l\u0131 tut] Kaz"
+    en: '[Hold] Dig'
   - key: interact.search
     tr: "[Bas\u0131l\u0131 tut] Ara"
     en: '[Hold] Search'

@@ -531,6 +531,12 @@ Girdi: `HouseIndex` (odalar, slotlar), `PuzzleDefinition[]` havuzu, `GameBalance
 - **`StageGate` + `GateLock`** (ön kapı, `house_key`): `UseGateAuthority` — eşya envanterdeyse eşya kilitte kalır (slot boşalır, `InventoryChanged`) ve `OpenGateAuthority(stage)` → `GateOpened` → `StageCompletedEvt` → `+StageTimeBonus`.
 - **`ToolShedItemPoint`** (`blessed_oil`): `CollectToolShedItemAuthority` — raund başına bir kez, `BlessedOilCollected{point, player}` → her makinede görsel kalkar, yağ ise `BlessedOilCollectedEvt` (fener güçlenmesi 3.8; slot kaplamaz), başka bir eşya ise envantere.
 
+### 7.8 Mahzen finali (TODO 3.7)
+- **Bodrum anahtarı ve kapak:** evde aşama `StagesActive + 1` için kilitli bir geçit (mahzen kapağı, `cellar_key`) varsa son bulmaca aşamasının geçidi açılınca otorite `cellar_key`'i son tamamlanan bulmacanın ödül noktasında doğurur; faz `House` kalır, kapak `UseGateAuthority` ile açılınca `Cellar` olur. Kapak yoksa (graybox v0) son bulmaca aşaması doğrudan `Cellar`'ı açar.
+- **Öfke:** faz `Cellar` olunca otorite `RageStarted{true}` yayınlar → `JinnEnergyService.SetRageAuthority` (kötü cin dolumu ×`RageRegenMult`), `PossessionActionRunner` aksiyon ve yeniden girme bekleme süreleri ×`RageCooldownMult`; yeni raundda sıfırlanır. (Tasarım "kazı başladığında" der; kazının başladığı an otoriteye ayrı bir istekle gelmediği için mahzene girişte başlar.)
+- **Kazı:** `DigSpot` `IInteractable`'dır (`IObjectiveInteractions`), basılı süre = bir katman (`DigTotalTime / DigCheckpoints` = 6 sn). Her tamamlanan basış `DigAuthority` → (insan, faz `Cellar`, plandaki `DigSpotId`, envanterde kürek) `DigCheckpointReached{spot, layer}` (katman korunur; bırakılınca yarım katman kaybolur) → `IObjectiveInfo.DigCheckpoint/DigProgress` + `DigProgressEvt`; son katmanda `TreasureDug{player}` → `TreasureDugEvt` (MatchController SeekersWin), faz `Done`. Gerçek kazı noktası iki cine `SpiritOnly` parıltıyla görünür. Test: `CinliMahzen/Setup/Add Test Dig Spots To House In Open Scene` (mahzen geometrisi 4.1'de).
+- **Ruh Siperi:** faz `Cellar` iken otoritenin mermi adımı, segment iyi cin piyonunun `SpiritBlockRadius` küresinden geçiyorsa ve iyi cin `SpiritBlockEnergyCost` ödeyebiliyorsa mermiyi orada durdurur (hasar yok) → `SpiritBlockedProjectile{good, obj, point}` (+ `SpiritBlockedEvt`) ve eşya yere düşer (`ProjectileImpact` isabetsiz). İyi cin piyonları atış başına bir kez aranır.
+
 ---
 
 ## 8. Ev Kontratı (Marker'lar) ⭐

@@ -30,6 +30,7 @@ namespace CinliMahzen.Possession
         private readonly Action<NetMsg> _onTelegraph;
         private readonly Action<NetMsg> _onResolved;
         private readonly Action<NetMsg> _onObjectState;
+        private readonly Action<NetMsg> _onBlocked;
         private readonly Action<RoundStartedEvt> _onRoundStarted;
         private bool _attached;
 
@@ -50,6 +51,7 @@ namespace CinliMahzen.Possession
             _onTelegraph = OnActionTelegraph;
             _onResolved = OnActionResolved;
             _onObjectState = OnObjectStateChanged;
+            _onBlocked = OnSpiritBlocked;
             _onRoundStarted = OnRoundStarted;
         }
 
@@ -68,6 +70,7 @@ namespace CinliMahzen.Possession
             _net.Register(MsgCode.ActionTelegraph, _onTelegraph);
             _net.Register(MsgCode.ActionResolved, _onResolved);
             _net.Register(MsgCode.ObjectStateChanged, _onObjectState);
+            _net.Register(MsgCode.SpiritBlockedProjectile, _onBlocked);
             EventBus.Subscribe(_onRoundStarted);
         }
 
@@ -83,6 +86,7 @@ namespace CinliMahzen.Possession
             _net.Unregister(MsgCode.ActionTelegraph, _onTelegraph);
             _net.Unregister(MsgCode.ActionResolved, _onResolved);
             _net.Unregister(MsgCode.ObjectStateChanged, _onObjectState);
+            _net.Unregister(MsgCode.SpiritBlockedProjectile, _onBlocked);
             EventBus.Unsubscribe(_onRoundStarted);
         }
 
@@ -236,6 +240,12 @@ namespace CinliMahzen.Possession
                 return;
             }
             SetPhase(obj, phase);
+        }
+
+        private void OnSpiritBlocked(NetMsg msg)
+        {
+            if (SpiritBlockedMsg.TryDecode(msg, out PlayerId good, out NetId obj, out UnityEngine.Vector3 _))
+                EventBus.Publish(new SpiritBlockedEvt(good, obj));
         }
 
         private void OnRoundStarted(RoundStartedEvt evt)

@@ -20,5 +20,14 @@ namespace CinliMahzen.Core
 
         /// <summary>Local prediction for prompts: the gate is still closed.</summary>
         bool IsGateClosed(NetId gate);
+
+        /// <summary>The human finished one dig layer (one hold of <see cref="DigLayerTime"/>) at <paramref name="spot"/> (DigSpot NetId). TODO 3.7.</summary>
+        void DigAuthority(PlayerId who, NetId spot);
+
+        /// <summary>Local prediction for prompts: <paramref name="spot"/> is the real dig site, the cellar is open and the treasure is still buried.</summary>
+        bool CanDigAt(PlayerId who, NetId spot);
+
+        /// <summary>Seconds of one dig layer (DigTotalTime / DigCheckpoints).</summary>
+        float DigLayerTime { get; }
     }
 }

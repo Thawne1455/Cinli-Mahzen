@@ -26,6 +26,7 @@ namespace CinliMahzen.Jinn
         private readonly JinnEnergyCore[] _cores = new JinnEnergyCore[Slots];
         private readonly Role[] _roleOfCore = new Role[Slots];
         private readonly Action<NetMsg> _onChanged;
+        private readonly Action<NetMsg> _onRage;
         private readonly Action _onRolesChanged;
         private readonly Action<RoundStartedEvt> _onRoundStarted;
         private readonly float[] _drainPerSecond = new float[Slots];
@@ -39,6 +40,7 @@ namespace CinliMahzen.Jinn
             _evil = evil;
             _good = good;
             _onChanged = OnEnergyChanged;
+            _onRage = OnRageStarted;
             _onRolesChanged = ResetAll;
             _onRoundStarted = e => ResetAll();
         }
@@ -88,6 +90,7 @@ namespace CinliMahzen.Jinn
                 return;
             _attached = true;
             _net.Register(MsgCode.EnergyChanged, _onChanged);
+            _net.Register(MsgCode.RageStarted, _onRage);
             _players.RolesChanged += _onRolesChanged;
             EventBus.Subscribe(_onRoundStarted);
             ResetAll();
@@ -99,6 +102,7 @@ namespace CinliMahzen.Jinn
                 return;
             _attached = false;
             _net.Unregister(MsgCode.EnergyChanged, _onChanged);
+            _net.Unregister(MsgCode.RageStarted, _onRage);
             _players.RolesChanged -= _onRolesChanged;
             EventBus.Unsubscribe(_onRoundStarted);
         }
@@ -186,6 +190,13 @@ namespace CinliMahzen.Jinn
                 _cores[info.Id.Value] = core;
                 _roleOfCore[info.Id.Value] = info.Role;
             }
+        }
+
+        /// <summary>TODO 3.7: Öfke (the cellar dig) — the authority's evil tanks regenerate ×RageRegenMult.</summary>
+        private void OnRageStarted(NetMsg msg)
+        {
+            if (_net.IsAuthority && CellarMsgs.TryDecodeRage(msg, out bool active))
+                SetRageAuthority(active);
         }
 
         private void OnEnergyChanged(NetMsg msg)
