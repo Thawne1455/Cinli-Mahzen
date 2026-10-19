@@ -27,10 +27,6 @@ namespace CinliMahzen.Core
         [SerializeField] private GameObject interactivePrefab;
         [SerializeField] private GameObject referencePrefab;
         [SerializeField] private PuzzleSlotSize size;
-        [Tooltip("The reference is drawn rotated by a seeded 0/90/180/270 degrees (Sigil).")]
-        [SerializeField] private bool referenceRotates;
-        [Tooltip("Crossed-out decoy values shown on the reference (Wires: 2). When > 0 the answer uses distinct values and the traps are values the answer does not use.")]
-        [SerializeField] private int trapCount;
 
         public PuzzleType Type => type;
 
@@ -59,16 +55,6 @@ namespace CinliMahzen.Core
 
         public bool HasRequiredItem => !string.IsNullOrEmpty(requiredItemId);
 
-        /// <summary>True when RoundSetupPlanner draws a ReferenceRotation (0/90/180/270) for this puzzle (Sigil); otherwise it is always 0.</summary>
-        public bool ReferenceRotates => referenceRotates;
-
-        /// <summary>
-        /// Number of crossed-out decoy values on the reference (Wires: 2). When &gt; 0 the planner gives every part a DIFFERENT
-        /// answer value and picks the traps among the values the answer does not use, so PartCount + TrapCount must not exceed
-        /// the smallest K.
-        /// </summary>
-        public int TrapCount => trapCount;
-
         /// <summary>
         /// True for pure permutation puzzles (OpKind is exactly Swap — Jigsaw): the N parts hold the values 0..N-1 each exactly once.
         /// Mixed kinds such as Books (Swap | Cycle) are NOT treated as permutations for now: sabotage assigns every part a
@@ -94,32 +80,7 @@ namespace CinliMahzen.Core
             return copy;
         }
 
-        /// <summary>Smallest K over all parts (0 when there are no parts).</summary>
-        public int MinValueCountOfParts
-        {
-            get
-            {
-                int count = PartCount;
-                if (count == 0)
-                {
-                    return 0;
-                }
-                int min = valueCounts[0];
-                for (int i = 1; i < count; i++)
-                {
-                    if (valueCounts[i] < min)
-                    {
-                        min = valueCounts[i];
-                    }
-                }
-                return min;
-            }
-        }
-
-        /// <summary>
-        /// Appends data problems (empty nameKey, empty or too small valueCounts, no operation, inconsistent permutation,
-        /// negative trapCount, traps that do not fit next to a distinct-valued answer, traps on a permutation puzzle).
-        /// </summary>
+        /// <summary>Appends data problems (empty nameKey, empty or too small valueCounts, no operation, inconsistent permutation).</summary>
         public void CollectProblems(List<string> problems)
         {
             if (problems == null)
@@ -163,23 +124,6 @@ namespace CinliMahzen.Core
                         problems.Add(name + ": permutation puzzle needs valueCounts[" + i + "] == PartCount (" + count + "), is " + valueCounts[i]);
                         break;
                     }
-                }
-            }
-
-            if (trapCount < 0)
-            {
-                problems.Add(name + ": trapCount is negative (" + trapCount + ")");
-            }
-            else if (trapCount > 0)
-            {
-                if (IsPermutation)
-                {
-                    problems.Add(name + ": a permutation puzzle cannot have trap values");
-                }
-                else if (count > 0 && count + trapCount > MinValueCountOfParts)
-                {
-                    problems.Add(name + ": PartCount (" + count + ") + trapCount (" + trapCount + ") exceeds the smallest K ("
-                        + MinValueCountOfParts + "); a distinct answer plus unused trap values does not fit");
                 }
             }
         }
