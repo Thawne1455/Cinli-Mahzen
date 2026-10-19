@@ -228,6 +228,8 @@ IHumanStatusQuery
 {
     Vector3 Position { get; }
     bool IsFainted { get; }
+    int Hp { get; } int MaxHp { get; } int Faints { get; }  // TODO 3.11 (HUD)
+    float Stamina01 { get; }            // TODO 3.11: yalnız sahibi makinede simüle; başkalarında 1
     bool IsBlessedLanternActive { get; }
     bool IsInLanternSafeZone(Vector3 worldPos); // Mesafe <= LanternSafeZoneRadius ve fener güçlü/açık
 }
@@ -606,6 +608,7 @@ uGUI + TextMeshPro. `UIRoot` Canvas 1920x1080 referans.
 - **İnsan HUD:** Sabit fener durumu (Zayıf / Kutsanmış Yağlı), 3 görev eşyası slotu, 3 kademeli kazı barı, `+90 sn` süre eklenme animasyonu.
 - **İyi Cin HUD:** Sağ Tık Ruh Perdesi odaklanma göstergesi, Ruh Çarpışması bulanıklık efekti, Mahzen Ruh Siperi bildirimi.
 - **Kötü Cin HUD:** Bulmaca sabotaj dolum barı (`1.5 sn`) ve bulmacanın kalan sabotaj bekleme süresi (`15 sn`), Fener Koruması uyarı ikonu.
+- **Uygulama (TODO 3.11, yer tutucu çizim):** `UI/Hud/` — `HudState` (düz C#, testli: `Tests/EditMode/UI/HudStateTests`) değişimle gelen değerleri tutar: envanter (`InventoryChanged`), Öfke (`RageStarted`), çözülen bulmaca, son sabotaj bekleme bitişi (`PuzzleScrambledEvt`), `+90 sn` zamanı, lokal odak, etkileşim ipucu, oyuncu başına possession fazı, soğuk nefes, raund puan farkları (`ScoreChangedEvt`), raund sonucu, `MatchEndedEvt`. `HudView` (IMGUI, `HudBootstrap` gizli kalıcı obje kurar; Lobby/RoundSetup'ta çizmez) canlı değerleri Core servislerinden okur (`IHumanStatusQuery` Hp/MaxHp/Faints/Stamina01, `IJinnEnergyService`, `IObjectiveInfo`, `IMatchInfo`, `ICameraRig`) ve rol HUD'unu, Rol Açıklama'yı, Raund Raporu'nu (sonuç, neden, oyuncu başına toplam + bu raund farkı) ve Maç Sonu'nu (kazanan / berabere, puan tablosu, F8 ipucu) çizer. Metinler `Loc` anahtarlı (`hud.*`), yalnız arkasındaki sayı değişince yeniden kurulur (`HudFormat`: saat, kalp, blok bar, 8 yönlü ok). **Eksik (M4 cilası):** uGUI/TMP görsel geçişi, iyi cin yetenek bekleme sayaçları ve kötü cin aksiyon kartları (Core'da eşya aksiyonu sorgusu yok), aşama başına bulmaca adları.
 
 ---
 

@@ -64,6 +64,16 @@ namespace CinliMahzen.Player
 
         public Vector3 Position => transform.position;
 
+        /// <summary>TODO 3.11: the pawn's sprint stamina (HumanController's StaminaModel, local simulation), 0..1.</summary>
+        public float Stamina01
+        {
+            get
+            {
+                StaminaModel stamina = _human != null ? _human.Stamina : null;
+                return stamina != null && stamina.Max > 0f ? stamina.Value / stamina.Max : 1f;
+            }
+        }
+
         /// <summary>Mirrored: true from the HumanFainted message until the HumanRevived message.</summary>
         public bool IsFainted => _mirror != null && _mirror.IsFainted;
 
