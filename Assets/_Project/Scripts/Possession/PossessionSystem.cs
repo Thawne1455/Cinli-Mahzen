@@ -23,7 +23,7 @@ namespace CinliMahzen.Possession
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(ExecutionOrder)]
-    public sealed class PossessionSystem : MonoBehaviour, IPossessionWorld, IPossessionQuery
+    public sealed class PossessionSystem : MonoBehaviour, IPossessionWorld, IPossessionQuery, IActionWorld
     {
         /// <summary>After HouseService (-100), before ordinary scripts.</summary>
         public const int ExecutionOrder = -50;
@@ -33,6 +33,20 @@ namespace CinliMahzen.Possession
 
         private const string DebugStateKey = "possession";
         private const string LogCategory = "Possession";
+        private const string HumanHitboxLayer = "HumanHitbox";
+        private const string EnvironmentLayer = "Environment";
+        private const int MaxOverlaps = 8;
+
+        private readonly Collider[] _overlaps = new Collider[MaxOverlaps];
+        private int _humanMask;
+        private int _environmentMask;
+        private PossessionActionRunner _actions;
+
+        // Cached once so Register/Unregister never allocate a new delegate.
+        private Action<NetMsg> _onObjectMoved;
+        private Action<NetMsg> _onActionResolved;
+        private Action<NetMsg> _onProjectileSpawned;
+        private Action<NetMsg> _onProjectileImpact;
 
         private readonly List<Possessable> _sorted = new List<Possessable>(64);
 
@@ -71,7 +85,17 @@ namespace CinliMahzen.Possession
 
             _authority = PossessionAuthority.FromConfig(_net, this, config);
             _mirror = new PossessionMirror(_net);
+            _actions = new PossessionActionRunner(_net, _authority, this, config.CologneReviveRange, config.NetRangeTolerance);
+            _humanMask = LayerMask.GetMask(HumanHitboxLayer);
+            _environmentMask = LayerMask.GetMask(EnvironmentLayer);
+            _onObjectMoved = OnObjectMoved;
+            _onActionResolved = OnActionResolved;
+            _onProjectileSpawned = OnProjectileSpawned;
+            _onProjectileImpact = OnProjectileImpact;
         }
+
+        /// <summary>The actions of possessed objects (authority side). Null when inert.</summary>
+        public PossessionActionRunner Actions => _actions;
 
         private void OnEnable()
         {
@@ -83,6 +107,11 @@ namespace CinliMahzen.Possession
 
             _authority.Attach();
             _mirror.Attach();
+            _actions.Attach();
+            _net.Register(MsgCode.ObjectMoved, _onObjectMoved);
+            _net.Register(MsgCode.ActionResolved, _onActionResolved);
+            _net.Register(MsgCode.ProjectileSpawned, _onProjectileSpawned);
+            _net.Register(MsgCode.ProjectileImpact, _onProjectileImpact);
             GameServices.Register<IPossessionQuery>(this);
             DebugState.Register(DebugStateKey, _mirror.BuildDebugJson);
 
@@ -105,6 +134,11 @@ namespace CinliMahzen.Possession
                 return;
             _authority.Detach();
             _mirror.Detach();
+            _actions.Detach();
+            _net.Unregister(MsgCode.ObjectMoved, _onObjectMoved);
+            _net.Unregister(MsgCode.ActionResolved, _onActionResolved);
+            _net.Unregister(MsgCode.ProjectileSpawned, _onProjectileSpawned);
+            _net.Unregister(MsgCode.ProjectileImpact, _onProjectileImpact);
             GameServices.Unregister<IPossessionQuery>(this);
             if (Instance == this)
             {
@@ -116,7 +150,11 @@ namespace CinliMahzen.Possession
         private void Update()
         {
             if (_net.IsAuthority)
-                _authority.TickAuthority(_net.Time);
+            {
+                double now = _net.Time;
+                _authority.TickAuthority(now);
+                _actions.TickAuthority(now);
+            }
         }
 
         // ---- possessable registry ----
@@ -252,6 +290,133 @@ namespace CinliMahzen.Possession
             Vector3 from = pawn.transform.position;
             distance = Vector3.Distance(from, p.ClosestPoint(from));
             return true;
+        }
+
+        // ---- pose broadcasts (every machine, TODO 1.8) ----
+
+        private void OnObjectMoved(NetMsg msg)
+        {
+            if (!ObjectMovedMsg.TryDecode(msg, out NetId obj, out Vector3 position, out float yaw))
+                return;
+            Possessable.Find(obj)?.SetPose(position, yaw);
+        }
+
+        private void OnActionResolved(NetMsg msg)
+        {
+            if (!ActionResolvedMsg.TryDecode(msg, out NetId obj, out int index, out bool _, out bool _, out Vector3 end, out float yaw, out double recoverUntil))
+                return;
+            Possessable p = Possessable.Find(obj);
+            if (p == null || p.Definition == null)
+                return;
+            PossessableActionDef action = p.Definition.GetAction(index);
+            if (action == null)
+                return;
+            if (action.Id == "lunge" || action.Id == "slide")
+            {
+                float travel = Mathf.Max(0f, (float)(recoverUntil - _net.Time) - action.RecoverTime);
+                p.MoveTo(end, yaw, travel);
+            }
+            else
+            {
+                p.ShowActionResult(action.Id);
+            }
+        }
+
+        private void OnProjectileSpawned(NetMsg msg)
+        {
+            if (!ProjectileSpawnedMsg.TryDecode(msg, out NetId obj, out ProjectilePath path))
+                return;
+            Possessable.Find(obj)?.BeginFlight(path);
+        }
+
+        private void OnProjectileImpact(NetMsg msg)
+        {
+            if (!ProjectileImpactMsg.TryDecode(msg, out NetId obj, out Vector3 point, out bool _))
+                return;
+            Possessable p = Possessable.Find(obj);
+            if (p == null)
+                return;
+            // A single-use throwable (bottle, plate, candle) breaks on impact; the slipper and flung items land intact.
+            PossessableActionDef primary = p.Definition != null ? p.Definition.Primary : null;
+            bool breaks = primary != null && primary.SingleUse && primary.Shape == ActionShape.Projectile;
+            p.Land(point, breaks);
+        }
+
+        // ---- IActionWorld (authority, on request / per projectile step) ----
+
+        public bool TryGetObject(NetId obj, out PossessableDefinition definition, out Vector3 position, out float yaw)
+        {
+            Possessable p = Possessable.Find(obj);
+            if (p == null)
+            {
+                definition = null;
+                position = Vector3.zero;
+                yaw = 0f;
+                return false;
+            }
+            definition = p.Definition;
+            position = p.Position;
+            yaw = p.Yaw;
+            return true;
+        }
+
+        public bool FindHumanInBox(Vector3 center, Vector3 halfExtents, Quaternion rotation, out HumanTarget target)
+        {
+            int count = Physics.OverlapBoxNonAlloc(center, halfExtents, _overlaps, rotation, _humanMask, QueryTriggerInteraction.Collide);
+            return FirstHuman(count, out target);
+        }
+
+        public bool CastSegment(Vector3 from, Vector3 to, float radius, out Vector3 point, out HumanTarget target)
+        {
+            target = default;
+            point = to;
+            Vector3 delta = to - from;
+            float length = delta.magnitude;
+            if (length < 1e-5f)
+                return false;
+            if (!Physics.SphereCast(from, radius, delta / length, out RaycastHit hit, length, _humanMask | _environmentMask, QueryTriggerInteraction.Collide))
+                return false;
+            point = from + delta / length * hit.distance;
+            if (((1 << hit.collider.gameObject.layer) & _humanMask) != 0)
+                target = TargetOf(hit.collider);
+            return true;
+        }
+
+        public float FreeDistance(Vector3 origin, Vector3 direction, float radius, float maxDistance)
+        {
+            if (maxDistance <= 0f || direction.sqrMagnitude < 1e-8f)
+                return 0f;
+            return Physics.SphereCast(origin, radius, direction.normalized, out RaycastHit hit, maxDistance, _environmentMask, QueryTriggerInteraction.Ignore)
+                ? hit.distance
+                : maxDistance;
+        }
+
+        public int RoomOf(Vector3 position)
+        {
+            IRoomService rooms = GameServices.Get<IRoomService>();
+            return rooms != null ? rooms.RoomOf(position) : -1;
+        }
+
+        public bool IsHumanFainted => GameServices.Get<IHumanStatusQuery>().IsFainted;
+
+        public Vector3 HumanPosition => GameServices.Get<IHumanStatusQuery>().Position;
+
+        private bool FirstHuman(int count, out HumanTarget target)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                target = TargetOf(_overlaps[i]);
+                if (target.IsValid)
+                    return true;
+            }
+            target = default;
+            return false;
+        }
+
+        private static HumanTarget TargetOf(Collider c)
+        {
+            IDamageable damageable = c.GetComponentInParent<IDamageable>();
+            return damageable != null ? new HumanTarget(damageable, c.GetComponentInParent<IStatusReceiver>()) : default;
         }
 
         // ---- IPossessionQuery ----

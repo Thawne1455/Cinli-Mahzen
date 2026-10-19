@@ -21,7 +21,7 @@ namespace CinliMahzen.Core.Net
         ReqExorcise = 74, ExorciseProgress = 75, ExorciseResult = 76, ReqPing = 77, PingPlaced = 78,
         RageStarted = 79, PossessedMove = 80, ObjectStateChanged = 81, ReqLampLight = 82, ReqLampRepair = 83,
         ReqFocusReference = 84, ReferenceFocusChanged = 85, ReqSpiritBump = 86, SpiritBumped = 87, CologneReviveTriggered = 88,
-        ReqUnpossess = 89,
+        ReqUnpossess = 89, ObjectMoved = 90,
 
         // --- 100-139 World & Puzzles ---
         HouseReady = 100, ReqPuzzleOp = 101, PuzzleStateChanged = 102, ReqPuzzleScramble = 103, PuzzleScrambled = 104,

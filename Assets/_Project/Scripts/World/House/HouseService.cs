@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using CinliMahzen.Core;
+using CinliMahzen.Core.Events;
+using CinliMahzen.Core.Net;
 using UnityEngine;
 
 namespace CinliMahzen.World
@@ -36,6 +38,8 @@ namespace CinliMahzen.World
         private HouseInfo _info;
         private IEntityRegistry _registry;
         private bool _published;
+        private INetBridge _net;
+        private System.Action<NetMsg> _onRadio;
 
         /// <summary>True after a successful <see cref="Index"/> (until <see cref="Release"/>).</summary>
         public bool IsIndexed
@@ -119,8 +123,24 @@ namespace CinliMahzen.World
             DebugState.Register(DebugStateKey, BuildDebugJson);
             _published = true;
 
+            // TODO 1.8: the Old Radio's play_tune mutes its room on every machine.
+            _net = GameServices.Net;
+            if (_net != null)
+            {
+                _onRadio = _onRadio ?? OnRadioStateChanged;
+                _net.Register(MsgCode.RadioStateChanged, _onRadio);
+            }
+
             CMLog.Info(LogCategory, "Indexed " + Summary(index));
             return true;
+        }
+
+        private void OnRadioStateChanged(NetMsg msg)
+        {
+            if (_roomState == null || !RadioStateChangedMsg.TryDecode(msg, out int room, out double until))
+                return;
+            if (_roomState.SuppressNoiseUntil(room, until))
+                EventBus.Publish(new RadioStateChangedEvt(room, true));
         }
 
         /// <summary>
@@ -146,6 +166,12 @@ namespace CinliMahzen.World
                 _registry = null;
             }
             _netMarkers.Clear();
+
+            if (_net != null)
+            {
+                _net.Unregister(MsgCode.RadioStateChanged, _onRadio);
+                _net = null;
+            }
 
             if (_published)
             {

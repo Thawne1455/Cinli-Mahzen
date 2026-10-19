@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CinliMahzen.Core;
 using CinliMahzen.Core.Events;
+using CinliMahzen.Core.Net;
 using UnityEngine;
 
 namespace CinliMahzen.Possession
@@ -29,6 +30,20 @@ namespace CinliMahzen.Possession
         private Quaternion _visualRestRotation;
         private bool _shaking;
 
+        // TODO 1.8: pose changes from the authority's broadcasts (every machine applies the same ones).
+        private Vector3 _startPosition;
+        private Quaternion _startRotation;
+        private bool _moving;
+        private Vector3 _moveFrom;
+        private Vector3 _moveTo;
+        private Quaternion _rotFrom;
+        private Quaternion _rotTo;
+        private float _moveElapsed;
+        private float _moveDuration;
+        private bool _flying;
+        private ProjectilePath _flight;
+        private bool _broken;
+
         /// <summary>Every enabled possessable in the loaded scenes. Do not modify.</summary>
         public static IReadOnlyList<Possessable> All => s_all;
 
@@ -46,6 +61,86 @@ namespace CinliMahzen.Possession
         public PossessionPhase Phase => _phase;
 
         public Vector3 Position => transform.position;
+
+        /// <summary>Facing (degrees around world up).</summary>
+        public float Yaw => transform.eulerAngles.y;
+
+        /// <summary>True while thrown (between ProjectileSpawned and ProjectileImpact).</summary>
+        public bool IsFlying => _flying;
+
+        /// <summary>True after a single-use throw broke it (hidden until the next round).</summary>
+        public bool IsBroken => _broken;
+
+        // ---- poses from broadcasts (TODO 1.8) ----
+
+        /// <summary>Snaps to a pose (hop: ObjectMoved).</summary>
+        public void SetPose(Vector3 position, float yaw)
+        {
+            _moving = false;
+            _flying = false;
+            transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+        }
+
+        /// <summary>Slides / dashes to a pose over <paramref name="duration"/> seconds (lunge, slide: ActionResolved).</summary>
+        public void MoveTo(Vector3 position, float yaw, float duration)
+        {
+            if (duration <= 0f)
+            {
+                SetPose(position, yaw);
+                return;
+            }
+            _moving = true;
+            _moveFrom = transform.position;
+            _moveTo = position;
+            _rotFrom = transform.rotation;
+            _rotTo = Quaternion.Euler(0f, yaw, 0f);
+            _moveElapsed = 0f;
+            _moveDuration = duration;
+        }
+
+        /// <summary>Starts drawing a throw (ProjectileSpawned); the position follows the path on the shared clock.</summary>
+        public void BeginFlight(in ProjectilePath path)
+        {
+            _moving = false;
+            _flying = true;
+            _flight = path;
+        }
+
+        /// <summary>The throw ended at <paramref name="point"/> (ProjectileImpact). A single-use throwable breaks (hidden until the round resets).</summary>
+        public void Land(Vector3 point, bool breaks)
+        {
+            _flying = false;
+            transform.position = point;
+            if (breaks)
+                SetBroken(true);
+        }
+
+        /// <summary>Cosmetic result of an action that does not move the object (the shelf falls over).</summary>
+        public void ShowActionResult(string actionId)
+        {
+            if (actionId == "topple")
+                transform.rotation = transform.rotation * Quaternion.Euler(90f, 0f, 0f);
+        }
+
+        private void SetBroken(bool broken)
+        {
+            _broken = broken;
+            Transform shown = visual != null ? visual : transform;
+            Renderer[] renderers = shown.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+                renderers[i].enabled = !broken;
+            if (_collider != null)
+                _collider.enabled = !broken;
+        }
+
+        private void OnRoundStarted(RoundStartedEvt e)
+        {
+            _moving = false;
+            _flying = false;
+            transform.SetPositionAndRotation(_startPosition, _startRotation);
+            if (_broken)
+                SetBroken(false);
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -83,6 +178,8 @@ namespace CinliMahzen.Possession
         private void Awake()
         {
             _collider = GetComponentInChildren<Collider>();
+            _startPosition = transform.position;
+            _startRotation = transform.rotation;
             if (visual != null)
             {
                 _visualRestPosition = visual.localPosition;
@@ -94,12 +191,14 @@ namespace CinliMahzen.Possession
         {
             s_all.Add(this);
             EventBus.Subscribe<PossessionChangedEvt>(OnPossessionChanged);
+            EventBus.Subscribe<RoundStartedEvt>(OnRoundStarted);
             PossessionSystem.Instance?.OnPossessableEnabled(this);
         }
 
         private void OnDisable()
         {
             EventBus.Unsubscribe<PossessionChangedEvt>(OnPossessionChanged);
+            EventBus.Unsubscribe<RoundStartedEvt>(OnRoundStarted);
             PossessionSystem.Instance?.OnPossessableDisabled(this);
             s_all.Remove(this);
             StopShake();
@@ -110,13 +209,30 @@ namespace CinliMahzen.Possession
             if (e.Obj != _netId || !_netId.IsValid)
                 return;
             _phase = e.State;
-            if (_phase != PossessionPhase.Entering)
+            if (_phase != PossessionPhase.Entering && _phase != PossessionPhase.Charging)
                 StopShake();
         }
 
         private void Update()
         {
-            if (_phase != PossessionPhase.Entering || visual == null || definition == null)
+            if (_flying)
+            {
+                INetBridge net = GameServices.Net;
+                if (net != null)
+                    transform.position = _flight.PositionAt(net.Time);
+            }
+            else if (_moving)
+            {
+                _moveElapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(_moveElapsed / _moveDuration);
+                transform.SetPositionAndRotation(Vector3.Lerp(_moveFrom, _moveTo, t), Quaternion.Slerp(_rotFrom, _rotTo, t));
+                if (t >= 1f)
+                    _moving = false;
+            }
+
+            // Entering and charging both telegraph with a shake (Oyun §12: every hit is announced).
+            bool telegraph = _phase == PossessionPhase.Entering || _phase == PossessionPhase.Charging;
+            if (!telegraph || visual == null || definition == null)
                 return;
 
             // Cosmetic telegraph: UnityEngine.Random is fine here (CLAUDE.md rule 4).

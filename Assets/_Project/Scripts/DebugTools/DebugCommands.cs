@@ -35,7 +35,18 @@ namespace CinliMahzen.DebugTools
         }
 
         public static void ToggleImmortalHuman() => ToggleImmortal();
-        public static void ToggleInfiniteEnergy() => Todo("F6 Infinite Energy", "1.7 Possession");
+        /// <summary>F6: every jinn spend succeeds and nothing is deducted (JinnEnergyService.Unlimited, TODO 1.8).</summary>
+        public static void ToggleInfiniteEnergy()
+        {
+            CinliMahzen.Jinn.JinnEnergyRunner runner = Object.FindFirstObjectByType<CinliMahzen.Jinn.JinnEnergyRunner>();
+            if (runner == null || runner.Service == null)
+            {
+                CMLog.Warn("Debug", "F6 Infinite Energy: no JinnEnergyRunner (bootstrap not running?)");
+                return;
+            }
+            runner.Service.Unlimited = !runner.Service.Unlimited;
+            CMLog.Info("Debug", "F6 Infinite Energy: " + (runner.Service.Unlimited ? "on" : "off"));
+        }
         public static void ToggleRevealAll() => Todo("F7 Reveal All", "3.9 Visibility");
         public static void RestartRound() => RestartMatch();
         public static void CompleteCurrentStage() => AddStageTimeBonus();

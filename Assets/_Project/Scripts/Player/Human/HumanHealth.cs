@@ -39,6 +39,7 @@ namespace CinliMahzen.Player
         private Action<NetMsg> _onDamaged;
         private Action<NetMsg> _onFainted;
         private Action<NetMsg> _onRevived;
+        private Action<NetMsg> _onCologneRevive;
         private Action<RoundStartedEvt> _onRoundStarted;
 
         /// <summary>The pawn's id: damage requests address the human by it.</summary>
@@ -88,6 +89,7 @@ namespace CinliMahzen.Player
             _onDamaged = OnDamagedMsg;
             _onFainted = OnFaintedMsg;
             _onRevived = OnRevivedMsg;
+            _onCologneRevive = OnCologneReviveTriggeredMsg;
             _onRoundStarted = OnRoundStarted;
         }
 
@@ -109,6 +111,7 @@ namespace CinliMahzen.Player
             _net.Register(MsgCode.HumanDamaged, _onDamaged);
             _net.Register(MsgCode.HumanFainted, _onFainted);
             _net.Register(MsgCode.HumanRevived, _onRevived);
+            _net.Register(MsgCode.CologneReviveTriggered, _onCologneRevive);
             EventBus.Subscribe(_onRoundStarted);
 
             GameServices.Register<IHumanStatusQuery>(this);
@@ -123,6 +126,7 @@ namespace CinliMahzen.Player
                 _net.Unregister(MsgCode.HumanDamaged, _onDamaged);
                 _net.Unregister(MsgCode.HumanFainted, _onFainted);
                 _net.Unregister(MsgCode.HumanRevived, _onRevived);
+                _net.Unregister(MsgCode.CologneReviveTriggered, _onCologneRevive);
                 _net = null;
             }
             EventBus.Unsubscribe(_onRoundStarted);
@@ -176,6 +180,18 @@ namespace CinliMahzen.Player
             net.Broadcast(HumanFaintedMsg.Encode(info, result.FaintCount));
 
             // The quest item drop on fainting is done by Objectives' ObjectiveFlowCore, which listens to the same HumanFaintedEvt (TODO 2.7).
+        }
+
+        /// <summary>
+        /// TODO 1.8: the good jinn broke the Lemon Cologne over the fainted human (Possession's revive_splash checked range and faint);
+        /// the authority wakes the human.
+        /// </summary>
+        private void OnCologneReviveTriggeredMsg(NetMsg msg)
+        {
+            if (_net == null || !_net.IsAuthority || !CologneReviveTriggeredMsg.TryDecode(msg, out PlayerId by))
+                return;
+            if (ReviveWithCologneAuthority())
+                CMLog.Info("Human", "Revived by " + by + "'s Lemon Cologne");
         }
 
         /// <summary>

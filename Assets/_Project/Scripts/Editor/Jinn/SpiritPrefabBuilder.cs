@@ -95,6 +95,8 @@ namespace CinliMahzen.Editor
             GetOrAdd<JinnPossessInput>(root);
             // TODO 2.6: hold E on a puzzle (mass sabotage) / later a lamp.
             GetOrAdd<SpiritInteractor>(root);
+            // TODO 1.8: left / right click actions and WASD hops while inside an object.
+            GetOrAdd<PossessedActionInput>(root);
 
             Transform eyes = root.transform.Find(EyesName);
             if (eyes == null)

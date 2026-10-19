@@ -6,7 +6,7 @@ namespace CinliMahzen.Jinn
 {
     /// <summary>
     /// Auto-bootstrap hook of the spirit module (TODO 1.6): attaches the <see cref="SpiritAuthority"/> to the network bridge and registers
-    /// the "spirits" Dump State section. Same shape as the Interaction hook in CM.Player.
+    /// the "spirits" Dump State section; since TODO 1.8 it also creates the persistent <see cref="JinnEnergyRunner"/>. Same shape as the Interaction hook in CM.Player.
     /// </summary>
     internal static class SpiritBootstrap
     {
@@ -33,6 +33,11 @@ namespace CinliMahzen.Jinn
 
             var authority = new SpiritAuthority(net, players, SpiritBumpSettings.FromConfig(config), SpiritController.FindPosition);
             authority.Attach();
+
+            // TODO 1.8: the real jinn energy (regen needs a frame tick, so it lives on a hidden persistent object).
+            var energy = new GameObject("JinnEnergy");
+            Object.DontDestroyOnLoad(energy);
+            energy.AddComponent<JinnEnergyRunner>();
         }
     }
 }

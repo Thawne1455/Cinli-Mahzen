@@ -13,7 +13,8 @@ namespace CinliMahzen.Possession
     /// (<c>PossessBegan</c>, <c>PossessCompleted</c>, <c>PossessEnded</c>) and publishes <see cref="PossessionChangedEvt"/> for each change
     /// (input map, camera, HUD and the object's own telegraph listen to it). <c>PossessDenied</c> only raises <see cref="Denied"/>.
     /// A new round (<see cref="RoundStartedEvt"/>) clears everything (Spent objects become usable again); every jinn still inside gets a Free event.
-    /// The action runner (TODO 1.8) moves Lurking ⇄ Charging ⇄ Recovering with <see cref="SetPhase"/>.
+    /// The action phases follow the runner's broadcasts (TODO 1.8): ActionTelegraph → Charging (+ <see cref="ActionTelegraphEvt"/>),
+    /// ActionResolved → Recovering (+ <see cref="ActionResolvedEvt"/>), ObjectStateChanged → Lurking.
     /// </summary>
     public sealed class PossessionMirror
     {
@@ -26,6 +27,9 @@ namespace CinliMahzen.Possession
         private readonly Action<NetMsg> _onCompleted;
         private readonly Action<NetMsg> _onEnded;
         private readonly Action<NetMsg> _onDenied;
+        private readonly Action<NetMsg> _onTelegraph;
+        private readonly Action<NetMsg> _onResolved;
+        private readonly Action<NetMsg> _onObjectState;
         private readonly Action<RoundStartedEvt> _onRoundStarted;
         private bool _attached;
 
@@ -43,6 +47,9 @@ namespace CinliMahzen.Possession
             _onCompleted = OnCompleted;
             _onEnded = OnEnded;
             _onDenied = OnDenied;
+            _onTelegraph = OnActionTelegraph;
+            _onResolved = OnActionResolved;
+            _onObjectState = OnObjectStateChanged;
             _onRoundStarted = OnRoundStarted;
         }
 
@@ -58,6 +65,9 @@ namespace CinliMahzen.Possession
             _net.Register(MsgCode.PossessCompleted, _onCompleted);
             _net.Register(MsgCode.PossessEnded, _onEnded);
             _net.Register(MsgCode.PossessDenied, _onDenied);
+            _net.Register(MsgCode.ActionTelegraph, _onTelegraph);
+            _net.Register(MsgCode.ActionResolved, _onResolved);
+            _net.Register(MsgCode.ObjectStateChanged, _onObjectState);
             EventBus.Subscribe(_onRoundStarted);
         }
 
@@ -70,6 +80,9 @@ namespace CinliMahzen.Possession
             _net.Unregister(MsgCode.PossessCompleted, _onCompleted);
             _net.Unregister(MsgCode.PossessEnded, _onEnded);
             _net.Unregister(MsgCode.PossessDenied, _onDenied);
+            _net.Unregister(MsgCode.ActionTelegraph, _onTelegraph);
+            _net.Unregister(MsgCode.ActionResolved, _onResolved);
+            _net.Unregister(MsgCode.ObjectStateChanged, _onObjectState);
             EventBus.Unsubscribe(_onRoundStarted);
         }
 
@@ -189,6 +202,40 @@ namespace CinliMahzen.Possession
             if (player == _net.LocalPlayer)
                 CMLog.Info("Possession", "Possess " + obj + " refused: " + reason);
             Denied?.Invoke(player, obj, reason);
+        }
+
+        // ---- action phases (TODO 1.8) ----
+
+        private void OnActionTelegraph(NetMsg msg)
+        {
+            if (!ActionTelegraphMsg.TryDecode(msg, out NetId obj, out int index, out double _))
+            {
+                CMLog.Warn("Possession", "Malformed ActionTelegraph ignored");
+                return;
+            }
+            SetPhase(obj, PossessionPhase.Charging);
+            EventBus.Publish(new ActionTelegraphEvt(obj, index));
+        }
+
+        private void OnActionResolved(NetMsg msg)
+        {
+            if (!ActionResolvedMsg.TryDecode(msg, out NetId obj, out int index, out bool hit, out bool _, out UnityEngine.Vector3 _, out float _, out double _))
+            {
+                CMLog.Warn("Possession", "Malformed ActionResolved ignored");
+                return;
+            }
+            SetPhase(obj, PossessionPhase.Recovering);
+            EventBus.Publish(new ActionResolvedEvt(obj, index, hit));
+        }
+
+        private void OnObjectStateChanged(NetMsg msg)
+        {
+            if (!ObjectStateChangedMsg.TryDecode(msg, out NetId obj, out PossessionPhase phase))
+            {
+                CMLog.Warn("Possession", "Malformed ObjectStateChanged ignored");
+                return;
+            }
+            SetPhase(obj, phase);
         }
 
         private void OnRoundStarted(RoundStartedEvt evt)
