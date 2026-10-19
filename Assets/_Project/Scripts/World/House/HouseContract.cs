@@ -45,6 +45,9 @@ namespace CinliMahzen.World
         /// <summary>ItemDefinition.Id of the oil in the tool shed.</summary>
         public const string BlessedOilItemId = "blessed_oil";
 
+        /// <summary>ItemDefinition.Id of the shovel: always a puzzle reward of the last stage (Oyun 6), needed for the cellar dig.</summary>
+        public const string ShovelItemId = "shovel";
+
         /// <summary>Loc key of a room name is this prefix plus <see cref="RoomMarker.RoomKey"/> ("room.hall").</summary>
         public const string RoomNameKeyPrefix = "room.";
     }
