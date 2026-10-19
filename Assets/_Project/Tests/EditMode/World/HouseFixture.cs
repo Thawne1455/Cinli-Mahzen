@@ -129,18 +129,22 @@ namespace CinliMahzen.Tests.EditMode.World
             return HouseIndex.MakeNetKey("Test/" + name + "_" + _serial.ToString("000"), markerType);
         }
 
-        public HousePuzzleSlotEntry AddPuzzleSlot(int stage, int roomId, PuzzleSlotSize size = PuzzleSlotSize.Wall)
+        /// <param name="allowedTypes">Null = <see cref="AnyWallTypes"/>.</param>
+        public HousePuzzleSlotEntry AddPuzzleSlot(int stage, int roomId, PuzzleSlotSize size = PuzzleSlotSize.Wall,
+            PuzzleType[] allowedTypes = null)
         {
             Vector3 position = Inside(roomId, 2f, 1.5f, 5f);
-            var slot = new HousePuzzleSlotEntry(NextPath("PuzzleSlot", "PuzzleSlot"), stage, roomId, size, AnyWallTypes, position,
-                position + Vector3.forward);
+            var slot = new HousePuzzleSlotEntry(NextPath("PuzzleSlot", "PuzzleSlot"), stage, roomId, size, allowedTypes ?? AnyWallTypes,
+                position, position + Vector3.forward);
             PuzzleSlots.Add(slot);
             return slot;
         }
 
-        public HouseReferenceSlotEntry AddReferenceSlot(int roomId, PuzzleSlotSize size = PuzzleSlotSize.Wall)
+        /// <param name="allowedTypes">Null = <see cref="AnyWallTypes"/>.</param>
+        public HouseReferenceSlotEntry AddReferenceSlot(int roomId, PuzzleSlotSize size = PuzzleSlotSize.Wall,
+            PuzzleType[] allowedTypes = null)
         {
-            var slot = new HouseReferenceSlotEntry(NextPath("ReferenceSlot", "ReferenceSlot"), roomId, size, AnyWallTypes,
+            var slot = new HouseReferenceSlotEntry(NextPath("ReferenceSlot", "ReferenceSlot"), roomId, size, allowedTypes ?? AnyWallTypes,
                 Inside(roomId, 2f, 1.5f, 8f));
             ReferenceSlots.Add(slot);
             return slot;

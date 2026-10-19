@@ -151,3 +151,15 @@ MonoBehaviour:
   - key: action.revive_splash
     tr: "Kolonya ile Ay\u0131lt"
     en: Cologne Revive
+  - key: puzzle.paintings
+    tr: Portreler
+    en: Portraits
+  - key: puzzle.statue
+    tr: "Heykelin Nazarl\u0131\u011F\u0131"
+    en: The Statue's Charm
+  - key: puzzle.wires
+    tr: "T\u0131ls\u0131ml\u0131 \u015Ealter"
+    en: Charmed Switch
+  - key: puzzle.sigil
+    tr: "M\xFCh\xFCr Ta\u015Flar\u0131"
+    en: Seal Stones

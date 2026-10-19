@@ -113,7 +113,8 @@ namespace CinliMahzen.Editor
             }
         }
 
-        private static HouseService FindService(out string source)
+        /// <summary>The HouseService of the open scene, else the one on the P_House prefab asset, else null. Also used by RoundPlanMenu.</summary>
+        internal static HouseService FindService(out string source)
         {
             HouseService inScene = Object.FindFirstObjectByType<HouseService>(FindObjectsInactive.Include);
             if (inScene != null)

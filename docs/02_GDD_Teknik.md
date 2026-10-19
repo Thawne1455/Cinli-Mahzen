@@ -499,6 +499,11 @@ Girdi: `HouseIndex` (odalar, slotlar), `PuzzleDefinition[]` havuzu, `GameBalance
 5. Eşya ödülleri — bağımlılık çözümü: gerekli eşyalar (`RequiredItemId`) + Kürek -> ihtiyaç duyulduğu bulmacadan ÖNCEKİ aşamadaki veya AYNI aşamadaki diğer bulmacanın ödülüne atanır.
 6. Ev anahtarının saklandığı yer (`KeyHideSpot`), Limon Kolonyasının yeri (`CologneSpawnSpot`), gerçek kazı noktası (`DigSpot`).
 
+- **Dosyalar (CM.World, `Scripts/World/Planning/`):** `RoundSetupPlanner` (`Plan` / `TryPlan(house, pool, PlannerSettings, seed, out plan, out error)`), `RoundPlan` + `PlannedPuzzle` (değişmez; slot/referans/spot'lar `NetId`, `DigSpotId` mahzen yokken `NetId.Invalid`; `ComputeHash()` = seed ve `DefinitionIndex` hariç 64-bit FNV-1a), `PlannerSettings.FromConfig` (`StagesActive`, `PuzzlesPerStage`, kürek id'si), `RoundPlanRules` (planlayıcı + doğrulayıcı ortak kurallar: Sigil dönüşü, Wires 2 tuzak, uygun spot'lar), `RoundPlanValidator`, `RoundPlanBatchReport`, `RoundPlanFormatter`; MVP tanım verisi `MvpPuzzleCatalog` (Paintings Wall, Statue Floor, Wires Wall + `fuse_key`, Sigil **Table** + `paint`; graybox Table slotları böylece kullanılır).
+- **Determinizm:** tek `GameRandom(seed)` sabit sırada tüketilir; ev listeleri NetId, havuz tip sırasıyla gezilir (havuzun veriliş sırası planı değiştirmez). Kolonya yalnız aktif aşama odalarına, anahtar bahçe odalarına düşer.
+- **Bağımlılık çözümü:** adım 1-3 tek sınırlı derinlik-öncelikli arama (`MaxSearchSteps`): adaylar rastgele sırada, aynı aşamanın bulmacaları farklı odada ve referanslar farklı katta olanlar önce denenir; eşya kuralını bozan seçimde (ör. ilk aşamada yalnız Wires + Sigil = döngü) geri izlenir. Her eşya tek bulmacaya, bir bulmacaya en fazla bir eşya; kendine, sonraki aşamadan veya döngüyle verilmez; Kürek son aşamada. Çözüm yoksa `TryPlan` açıklayıcı hata döner, sonsuz döngü yok.
+- **Menüler:** `CinliMahzen/Setup/Create Puzzle Definitions` (katalogdan `ScriptableObjects/Puzzles/PZ_*.asset`, idempotent, prefab referanslarına dokunmaz), `CinliMahzen/House/Print Round Plan (Seed=12345)`, `CinliMahzen/House/Plan Batch Report (500 seeds)` (son satır `Plan Batch Report: 500/500 valid`).
+
 ---
 
 ## 8. Ev Kontratı (Marker'lar) ⭐
