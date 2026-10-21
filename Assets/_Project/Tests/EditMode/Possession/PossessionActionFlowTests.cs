@@ -205,7 +205,9 @@ namespace CinliMahzen.Tests.EditMode.Possession
 
         private void Tick(double dt)
         {
-            _now += dt;
+            // + 1e-6: the durations are floats (1.2f, 0.3f … are a hair over their decimal value as doubles), so an exact tick
+            // would stop just short of a phase end.
+            _now += dt + 1e-6;
             _authority.TickAuthority(_now);
             _runner.TickAuthority(_now);
         }

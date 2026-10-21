@@ -6,6 +6,7 @@ using CinliMahzen.Core.Net;
 using CinliMahzen.Objectives;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace CinliMahzen.Tests.EditMode.Objectives
 {
@@ -152,6 +153,9 @@ namespace CinliMahzen.Tests.EditMode.Objectives
         public void Bind_RefusesAWrongPartCount_OrAnUnknownSlot()
         {
             PuzzleView two = NewView(2, out _, out _);
+            LogAssert.Expect(LogType.Error, "[Puzzle] View: 2 PuzzleParts but the state has 3 parts");
+            LogAssert.Expect(LogType.Error, "[Puzzle] View: cannot bind - slot 99 is not registered");
+            LogAssert.Expect(LogType.Error, "[Puzzle] View: ordinal " + PuzzleNetIds.MaxPuzzles + " is out of range");
             Assert.IsFalse(two.Bind(Puzzles, Slot, 0));
             Assert.IsFalse(two.IsBound);
 
@@ -370,6 +374,7 @@ namespace CinliMahzen.Tests.EditMode.Objectives
         {
             UseLocal(GoodJinnId);
             PuzzleReference reference = NewReference(out _, out _, out _);
+            LogAssert.Expect(LogType.Error, "[Puzzle] Reference: answer has 2 values, the reference 3 parts");
             Assert.IsFalse(reference.Bind(new[] { 1, 2 }, 0, null));
         }
 

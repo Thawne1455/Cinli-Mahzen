@@ -73,6 +73,7 @@ namespace CinliMahzen.Tests.EditMode.Objectives
             Now = 100d;
             LocalPlayer = HumanId;
             Bridge = new OfflineNetBridge(() => Now, () => LocalPlayer);
+            GameServices.Register<INetBridge>(Bridge);
 
             Players = new OfflinePlayerRegistry();
             Players.SetRoles(new[] { Role.Human, Role.GoodJinn, Role.EvilJinn, Role.EvilJinn });
