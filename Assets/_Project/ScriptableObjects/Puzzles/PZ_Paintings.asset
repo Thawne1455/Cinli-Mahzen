@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de4de786c72bd304a821782bf9d9485a, type: 3}
+  m_Name: PZ_Paintings
+  m_EditorClassIdentifier: CM.Core::CinliMahzen.Core.PuzzleDefinition
+  type: 0
+  nameKey: puzzle.paintings
+  valueCounts: 040000000400000004000000
+  opKind: 1
+  requiredItemId: 
+  interactivePrefab: {fileID: 8724223396785962073, guid: 2dc8d290492420c42bd7afb0feaf0cea, type: 3}
+  referencePrefab: {fileID: 2085770137083224001, guid: d95d90ab0f3dced4593d8dc84a5b2801, type: 3}
+  size: 0

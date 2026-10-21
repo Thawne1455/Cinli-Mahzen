@@ -11,6 +11,11 @@ GameObject:
   - component: {fileID: 1463419749000539370}
   - component: {fileID: 9106985865260379432}
   - component: {fileID: 648419433892718026}
+  - component: {fileID: 7354847186861757026}
+  - component: {fileID: 2841763616814677279}
+  - component: {fileID: 7525710840710304588}
+  - component: {fileID: 2785753703425772340}
+  - component: {fileID: 4170423661986870330}
   m_Layer: 10
   m_Name: P_Spirit
   m_TagString: Untagged
@@ -70,6 +75,69 @@ MonoBehaviour:
   lookSensitivity: 0.1
   pitchLimit: 85
   debugTeleportDistance: 1
+--- !u!114 &7354847186861757026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823931048353402277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3ced34378344aa182e8c78625b44c9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CM.Jinn::CinliMahzen.Jinn.PossessionCameraBinder
+--- !u!114 &2841763616814677279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823931048353402277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f19f54103a24f76b32abfdeee1b9859, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CM.Jinn::CinliMahzen.Jinn.JinnPossessInput
+  lookAngle: 20
+--- !u!114 &7525710840710304588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823931048353402277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cbd187d4f7e4a70aee59796c71d52bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CM.Jinn::CinliMahzen.Jinn.SpiritInteractor
+--- !u!114 &2785753703425772340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823931048353402277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a51567a67d7486eaf8c87e5d7a1af85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CM.Jinn::CinliMahzen.Jinn.PossessedActionInput
+--- !u!114 &4170423661986870330
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1823931048353402277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c8c0a6d137b4a449969e4bd82f62e99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CM.Jinn::CinliMahzen.Jinn.GoodJinnAbilityInput
+  pingRayLength: 30
+  exorciseAngle: 25
 --- !u!1 &3251197117622467448
 GameObject:
   m_ObjectHideFlags: 0

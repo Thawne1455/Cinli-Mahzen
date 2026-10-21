@@ -212,6 +212,7 @@ Ana event'ler (v2.1):
 | `SpiritBumpedEvt{evilJinn, goodJinn}` | Jinn | CameraRig (bulanıklık), UI, Audio |
 | `SpiritBlockedEvt{goodJinn, projectileId}` | Possession | Jinn, UI, Audio, Stats |
 | `DigProgressEvt{progress, checkpoint}` / `TreasureDugEvt{digger}` | Objectives | Match, Jinn (Öfke), UI |
+| `ColognePlacedEvt{position, yaw}` (her makinede, plandan; ağ mesajı yok) | Objectives | Possession (sahnedeki `PD_Cologne` raund başı pozu) |
 | `LocalRoleChangedEvt{role}` | Core | Kamera, UI, Visibility, Input |
 | `RoundEndedEvt{result, reason}` | Match | UI, Stats |
 

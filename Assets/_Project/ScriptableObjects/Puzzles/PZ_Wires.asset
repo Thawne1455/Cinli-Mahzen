@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de4de786c72bd304a821782bf9d9485a, type: 3}
+  m_Name: PZ_Wires
+  m_EditorClassIdentifier: CM.Core::CinliMahzen.Core.PuzzleDefinition
+  type: 2
+  nameKey: puzzle.wires
+  valueCounts: 06000000060000000600000006000000
+  opKind: 1
+  requiredItemId: fuse_key
+  interactivePrefab: {fileID: 2034086010559508935, guid: fcf6f1a2bdb31d541a97f9fd8fe08107, type: 3}
+  referencePrefab: {fileID: 3800850594904777146, guid: d64232d651f3ffb459bf5e13bccfe607, type: 3}
+  size: 0

@@ -57,3 +57,7 @@ Desktop.ini
 # Photon — AppId repo'ya girmez (her geliştirici yerel ayarlar)
 /[Aa]ssets/Photon/PhotonUnityNetworking/Resources/PhotonServerSettings.asset
 /[Aa]ssets/Photon/PhotonUnityNetworking/Resources/PhotonServerSettings.asset.meta
+
+# MCP screenshots
+/Assets/Screenshots/
+/Assets/Screenshots.meta

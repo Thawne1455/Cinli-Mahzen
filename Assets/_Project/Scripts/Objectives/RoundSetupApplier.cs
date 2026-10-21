@@ -128,6 +128,7 @@ namespace CinliMahzen.Objectives
 
             _flow.BeginRound(_infos, settings.StagesActive);
             SetUpGarden();
+            PlaceCologne(entities);
             CMLog.Info(Category, "Round set up from seed " + seed + ": " + _plan.Puzzles.Count + " puzzles, hash " + _plan.ComputeHash().ToString("X16"));
             return true;
         }
@@ -219,6 +220,22 @@ namespace CinliMahzen.Objectives
             }
         }
 
+        /// <summary>The Lemon Cologne goes to the planned CologneSpawnSpot (the scene's cologne possessable listens to <see cref="ColognePlacedEvt"/>).</summary>
+        private void PlaceCologne(IEntityRegistry entities)
+        {
+            IReadOnlyList<HouseSpotEntry> spots = _house.HouseIndex.CologneSpots;
+            for (int i = 0; i < spots.Count; i++)
+            {
+                if (spots[i].NetId != _plan.CologneSpotId)
+                    continue;
+                Transform marker = MarkerTransform<CologneSpawnSpot>(entities, spots[i].NetId);
+                float yaw = marker != null ? marker.eulerAngles.y : 0f;
+                EventBus.Publish(new ColognePlacedEvt(spots[i].Position, yaw));
+                return;
+            }
+            CMLog.Warn(Category, "Planned cologne spot " + _plan.CologneSpotId + " is not in the house index - no cologne this round");
+        }
+
         private GameObject Placeholder(string name, Vector3 position, float size, int layer)
         {
             GameObject go = GameObject.CreatePrimitive(layer >= 0 ? PrimitiveType.Sphere : PrimitiveType.Cube);
@@ -288,8 +305,12 @@ namespace CinliMahzen.Objectives
         {
             for (int i = 0; i < _roundObjects.Count; i++)
             {
-                if (_roundObjects[i] != null)
-                    Destroy(_roundObjects[i]);
+                if (_roundObjects[i] == null)
+                    continue;
+                // Destroy waits for the end of the frame, but the new round registers the same deterministic NetIds right away.
+                if (_roundObjects[i].TryGetComponent(out PuzzleView view))
+                    view.Unbind();
+                Destroy(_roundObjects[i]);
             }
             _roundObjects.Clear();
             _gardenVisuals.Clear();

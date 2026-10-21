@@ -56,6 +56,9 @@ namespace CinliMahzen.Possession
 
         public PossessableDefinition Definition => definition;
 
+        /// <summary>The Lemon Cologne: placed on the round plan's CologneSpawnSpot (<see cref="ColognePlacedEvt"/>).</summary>
+        private bool IsCologne => definition != null && definition.Size == PossessableSize.Cologne;
+
         public NetId NetId => _netId;
 
         /// <summary>True for objects spawned at runtime (their id came from the authority, not from the hierarchy order).</summary>
@@ -223,6 +226,19 @@ namespace CinliMahzen.Possession
 
         private void OnRoundStarted(RoundStartedEvt e)
         {
+            ResetToStartPose();
+        }
+
+        /// <summary>The round plan put the Lemon Cologne on a spawn spot: that becomes this cologne's round-start pose.</summary>
+        private void OnColognePlaced(ColognePlacedEvt e)
+        {
+            _startPosition = e.Position;
+            _startRotation = Quaternion.Euler(0f, e.Yaw, 0f);
+            ResetToStartPose();
+        }
+
+        private void ResetToStartPose()
+        {
             _moving = false;
             _flying = false;
             transform.SetPositionAndRotation(_startPosition, _startRotation);
@@ -283,6 +299,8 @@ namespace CinliMahzen.Possession
             s_all.Add(this);
             EventBus.Subscribe<PossessionChangedEvt>(OnPossessionChanged);
             EventBus.Subscribe<RoundStartedEvt>(OnRoundStarted);
+            if (IsCologne)
+                EventBus.Subscribe<ColognePlacedEvt>(OnColognePlaced);
             PossessionSystem.Instance?.OnPossessableEnabled(this);
         }
 
@@ -290,6 +308,8 @@ namespace CinliMahzen.Possession
         {
             EventBus.Unsubscribe<PossessionChangedEvt>(OnPossessionChanged);
             EventBus.Unsubscribe<RoundStartedEvt>(OnRoundStarted);
+            if (IsCologne)
+                EventBus.Unsubscribe<ColognePlacedEvt>(OnColognePlaced);
             PossessionSystem.Instance?.OnPossessableDisabled(this);
             s_all.Remove(this);
             StopShake();
