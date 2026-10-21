@@ -101,12 +101,32 @@ namespace CinliMahzen.Jinn
                 CMLog.Info(LogCategory, "ReqFocusReference from " + who + " rejected: only the good jinn can focus");
                 return false;
             }
+            // TODO 3.5: focusing costs FocusReferenceCost per second; an empty tank cannot start it.
+            if (focusing && GameServices.Get<IJinnEnergyService>().Get(who) <= 0f)
+            {
+                CMLog.Info(LogCategory, "ReqFocusReference from " + who + " rejected: no energy");
+                return false;
+            }
             if (!_focus.TrySet(who, focusing))
                 return false;
 
             _net.Broadcast(ReferenceFocusChangedMsg.Encode(who, focusing));
             CMLog.Info(LogCategory, who + " focus " + (focusing ? "on" : "off"));
+            FocusChanged?.Invoke(who, focusing);
             return true;
+        }
+
+        /// <summary>Authority: a focus flag changed (the energy drain follows it, TODO 3.5).</summary>
+        public event Action<PlayerId, bool> FocusChanged;
+
+        /// <summary>Authority only. Ends <paramref name="goodJinn"/>'s focus (its energy ran out). No-op when it was not focusing.</summary>
+        public void StopFocusAuthority(PlayerId goodJinn)
+        {
+            if (!_net.IsAuthority || !_focus.TrySet(goodJinn, false))
+                return;
+            _net.Broadcast(ReferenceFocusChangedMsg.Encode(goodJinn, false));
+            CMLog.Info(LogCategory, goodJinn + " focus off (out of energy)");
+            FocusChanged?.Invoke(goodJinn, false);
         }
 
         /// <summary>
@@ -131,6 +151,7 @@ namespace CinliMahzen.Jinn
             _bumpCooldownUntil[evilJinn.Value] = now + _settings.Cooldown;
             _focus.TrySet(goodJinn, false);
             _net.Broadcast(ReferenceFocusChangedMsg.Encode(goodJinn, false));
+            FocusChanged?.Invoke(goodJinn, false);
             _net.Broadcast(SpiritBumpedMsg.Encode(evilJinn, goodJinn));
             CMLog.Info(LogCategory, "SpiritBump " + evilJinn + " -> " + goodJinn + " accepted: focus cut, next bump of " + evilJinn + " after t=" + (now + _settings.Cooldown).ToString("0.00", CultureInfo.InvariantCulture));
             return SpiritBumpDenyReason.None;
@@ -200,7 +221,10 @@ namespace CinliMahzen.Jinn
             if (!_net.IsAuthority)
                 return;
             for (int i = 0; i < _cleared.Count; i++)
+            {
                 _net.Broadcast(ReferenceFocusChangedMsg.Encode(_cleared[i], false));
+                FocusChanged?.Invoke(_cleared[i], false);
+            }
         }
     }
 }

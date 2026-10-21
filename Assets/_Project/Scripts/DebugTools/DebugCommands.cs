@@ -35,11 +35,65 @@ namespace CinliMahzen.DebugTools
         }
 
         public static void ToggleImmortalHuman() => ToggleImmortal();
-        public static void ToggleInfiniteEnergy() => Todo("F6 Infinite Energy", "1.7 Possession");
+        /// <summary>F6: every jinn spend succeeds and nothing is deducted (JinnEnergyService.Unlimited, TODO 1.8).</summary>
+        public static void ToggleInfiniteEnergy()
+        {
+            CinliMahzen.Jinn.JinnEnergyRunner runner = Object.FindFirstObjectByType<CinliMahzen.Jinn.JinnEnergyRunner>();
+            if (runner == null || runner.Service == null)
+            {
+                CMLog.Warn("Debug", "F6 Infinite Energy: no JinnEnergyRunner (bootstrap not running?)");
+                return;
+            }
+            runner.Service.Unlimited = !runner.Service.Unlimited;
+            CMLog.Info("Debug", "F6 Infinite Energy: " + (runner.Service.Unlimited ? "on" : "off"));
+        }
         public static void ToggleRevealAll() => Todo("F7 Reveal All", "3.9 Visibility");
         public static void RestartRound() => RestartMatch();
         public static void CompleteCurrentStage() => AddStageTimeBonus();
-        public static void ToggleDummyHuman() => Todo("F12 Toggle Dummy Human", "3.12 Dummy bot");
+        /// <summary>
+        /// F12 / "Toggle Dummy Human" (TODO 3.12): the human pawn wanders the house on its own (<see cref="DummyHumanBot"/>), so a jinn can be
+        /// tested alone. The choice survives new rounds: the pawn is re-created per round, so the bot is put back on every RoundStartedEvt.
+        /// </summary>
+        public static void ToggleDummyHuman()
+        {
+            s_dummyHuman = !s_dummyHuman;
+            if (s_onRoundForBot == null)
+            {
+                s_onRoundForBot = _ => ApplyDummyHuman();
+                Core.EventBus.Subscribe(s_onRoundForBot);
+            }
+            ApplyDummyHuman();
+            CMLog.Info("Debug", "F12 Dummy Human: " + (s_dummyHuman ? "on" : "off"));
+        }
+
+        private static bool s_dummyHuman;
+        private static System.Action<Core.Events.RoundStartedEvt> s_onRoundForBot;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetDummyHuman()
+        {
+            s_dummyHuman = false;
+            s_onRoundForBot = null;
+        }
+
+        private static void ApplyDummyHuman()
+        {
+            HumanController human = Object.FindFirstObjectByType<HumanController>();
+            if (human == null)
+            {
+                if (s_dummyHuman)
+                    CMLog.Warn("Debug", "F12 Dummy Human: no human pawn in the scene (yet)");
+                return;
+            }
+            DummyHumanBot bot = human.GetComponent<DummyHumanBot>();
+            if (bot == null)
+            {
+                if (!s_dummyHuman)
+                    return;
+                bot = human.gameObject.AddComponent<DummyHumanBot>();
+            }
+            bot.enabled = s_dummyHuman;
+        }
 
         public static void ToggleOverlay()
         {
@@ -198,14 +252,23 @@ namespace CinliMahzen.DebugTools
         }
 
         /// <summary>
-        /// F11 / "Complete Current Stage": for now only the time half of a stage - the authority adds StageTimeBonus to the Sunrise
-        /// counter (RoundTimeAdded). Opening the gate and solving the stage's puzzles arrive with the stage gates (TODO 2.7).
+        /// F11 / "Complete Current Stage" (TODO 2.7): the authority opens the gate of the current stage through
+        /// <see cref="IObjectiveDebugCommands"/> (GateOpened → door, StageCompletedEvt → MatchController adds StageTimeBonus). Without the
+        /// objectives in the scene only the time half happens: StageTimeBonus is added to the Sunrise counter directly.
         /// </summary>
         private static void AddStageTimeBonus()
         {
             MatchController match = FindMatchController("Complete Current Stage");
             if (match == null)
                 return;
+            if (GameServices.TryGet(out IObjectiveDebugCommands objectives))
+            {
+                if (objectives.CompleteCurrentStageAuthority())
+                    CMLog.Info("Debug", "Complete Current Stage: gate opened (+StageTimeBonus)");
+                else
+                    CMLog.Warn("Debug", "Complete Current Stage: the current stage's gate is already open");
+                return;
+            }
             if (match.AddStageTimeBonusAuthority())
                 CMLog.Info("Debug", "Complete Current Stage: +StageTimeBonus (stage gates 2.7)");
             else

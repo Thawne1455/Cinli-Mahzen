@@ -35,9 +35,11 @@ namespace CinliMahzen.Objectives
 
         public ObjectivePhase Phase => _core != null ? _core.Phase : ObjectivePhase.Garden;
 
-        public float DigProgress => 0f;
+        public float DigProgress => _core != null ? _core.DigProgress : 0f;
 
-        public int DigCheckpoint => 0;
+        public int DigCheckpoint => _core != null ? _core.DigCheckpoint : 0;
+
+        public int PuzzleCount => _core != null ? _core.PuzzleCount : 0;
 
         public bool IsPuzzleDone(int slot)
         {

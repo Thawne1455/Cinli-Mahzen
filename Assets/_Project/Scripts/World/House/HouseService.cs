@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using CinliMahzen.Core;
+using CinliMahzen.Core.Events;
+using CinliMahzen.Core.Net;
 using UnityEngine;
 
 namespace CinliMahzen.World
@@ -25,6 +27,11 @@ namespace CinliMahzen.World
         public const string DebugStateKey = "house";
 
         private const string LogCategory = "House";
+        private const string InteractableLayerName = "Interactable";
+        private static readonly Vector3 SwitchColliderSize = new Vector3(0.3f, 0.3f, 0.2f);
+        private static readonly Vector3 LampColliderSize = new Vector3(0.5f, 0.5f, 0.5f);
+        private static readonly Vector3 SearchColliderSize = new Vector3(0.8f, 0.8f, 0.8f);
+        private static readonly Vector3 GateColliderSize = new Vector3(1.6f, 2.2f, 0.6f);
         private const char PathSeparator = '/';
 
         [Tooltip("Metres added to every side of the union of the room boxes for IHouseInfo.Bounds (spirits are clamped inside).")]
@@ -36,6 +43,11 @@ namespace CinliMahzen.World
         private HouseInfo _info;
         private IEntityRegistry _registry;
         private bool _published;
+        private INetBridge _net;
+        private System.Action<NetMsg> _onRadio;
+        private LightService _lights;
+        private readonly Dictionary<NetId, LampLightView> _lampViews = new Dictionary<NetId, LampLightView>();
+        private System.Action<NetId, LampState> _onLampChanged;
 
         /// <summary>True after a successful <see cref="Index"/> (until <see cref="Release"/>).</summary>
         public bool IsIndexed
@@ -47,6 +59,12 @@ namespace CinliMahzen.World
         public HouseIndex HouseIndex
         {
             get { return _houseIndex; }
+        }
+
+        /// <summary>The house lights (TODO 3.4); null before <see cref="Index"/> or without a network bridge.</summary>
+        public LightService Lights
+        {
+            get { return _lights; }
         }
 
         /// <summary>Concrete room state for the light and radio systems of this assembly (they set it, others read <see cref="IRoomService"/>); null before <see cref="Index"/>.</summary>
@@ -119,8 +137,104 @@ namespace CinliMahzen.World
             DebugState.Register(DebugStateKey, BuildDebugJson);
             _published = true;
 
+            // TODO 1.8: the Old Radio's play_tune mutes its room on every machine.
+            _net = GameServices.Net;
+            if (_net != null)
+            {
+                _onRadio = _onRadio ?? OnRadioStateChanged;
+                _net.Register(MsgCode.RadioStateChanged, _onRadio);
+                SetUpLights(index);
+            }
+
             CMLog.Info(LogCategory, "Indexed " + Summary(index));
             return true;
+        }
+
+        /// <summary>The real light service (TODO 3.4): lamp lights under every LampMarker, wall switches as interactables.</summary>
+        private void SetUpLights(HouseIndex index)
+        {
+            _lights = new LightService(_net, index, _roomState, EntityPosition);
+            _lights.Attach();
+            GameServices.Register<ILightService>(_lights);
+
+            GameBalanceConfig config = GameServices.Config;
+            float range = config != null ? config.LampLightRange : LampLightView.DefaultRange;
+            int interactable = LayerMask.NameToLayer(InteractableLayerName);
+            for (int i = 0; i < _netMarkers.Count; i++)
+            {
+                if (_netMarkers[i] is LampMarker lamp)
+                {
+                    if (!_lampViews.ContainsKey(lamp.NetId))
+                        _lampViews.Add(lamp.NetId, LampLightView.Create(lamp.transform, range));
+                    // TODO 3.5: the good jinn aims at the lamp (SpiritInteractor raycasts the Interactable layer).
+                    lamp.BindLights(_lights);
+                    if (lamp.GetComponent<Collider>() == null)
+                    {
+                        var box = lamp.gameObject.AddComponent<BoxCollider>();
+                        box.size = LampColliderSize;
+                        box.isTrigger = true;
+                    }
+                    if (interactable >= 0)
+                        lamp.gameObject.layer = interactable;
+                }
+                else if (_netMarkers[i] is LightSwitch light)
+                {
+                    light.BindLights(_lights);
+                    MakeInteractable(light.gameObject, SwitchColliderSize, false, interactable);
+                }
+                // TODO 3.6: the garden's interactive markers (search, locked gates, the tool shed item).
+                else if (_netMarkers[i] is KeyHideSpot hide)
+                {
+                    MakeInteractable(hide.gameObject, SearchColliderSize, true, interactable);
+                }
+                else if (_netMarkers[i] is DigSpot dig)
+                {
+                    MakeInteractable(dig.gameObject, SearchColliderSize, true, interactable);
+                }
+                else if (_netMarkers[i] is ToolShedItemPoint shed)
+                {
+                    MakeInteractable(shed.gameObject, SearchColliderSize, true, interactable);
+                }
+                else if (_netMarkers[i] is StageGate gate && gate.GetComponent<GateLock>() != null)
+                {
+                    MakeInteractable(gate.gameObject, GateColliderSize, true, interactable, GateColliderSize.y * 0.5f);
+                }
+            }
+            _onLampChanged = _onLampChanged ?? OnLampChanged;
+            _lights.LampChanged += _onLampChanged;
+        }
+
+        private static void MakeInteractable(GameObject go, Vector3 size, bool trigger, int layer, float centerHeight = 0f)
+        {
+            if (go.GetComponent<Collider>() == null)
+            {
+                var box = go.AddComponent<BoxCollider>();
+                box.size = size;
+                box.center = new Vector3(0f, centerHeight, 0f);
+                box.isTrigger = trigger;
+            }
+            if (layer >= 0)
+                go.layer = layer;
+        }
+
+        private void OnLampChanged(NetId lamp, LampState state)
+        {
+            if (_lampViews.TryGetValue(lamp, out LampLightView view) && view != null)
+                view.Show(state);
+        }
+
+        private static Vector3? EntityPosition(NetId id)
+        {
+            IEntityRegistry entities = GameServices.Entities;
+            return entities != null && entities.TryGet(id, out Component c) && c != null ? c.transform.position : (Vector3?)null;
+        }
+
+        private void OnRadioStateChanged(NetMsg msg)
+        {
+            if (_roomState == null || !RadioStateChangedMsg.TryDecode(msg, out int room, out double until))
+                return;
+            if (_roomState.SuppressNoiseUntil(room, until))
+                EventBus.Publish(new RadioStateChangedEvt(room, true));
         }
 
         /// <summary>
@@ -146,6 +260,20 @@ namespace CinliMahzen.World
                 _registry = null;
             }
             _netMarkers.Clear();
+
+            if (_net != null)
+            {
+                _net.Unregister(MsgCode.RadioStateChanged, _onRadio);
+                _net = null;
+            }
+            if (_lights != null)
+            {
+                _lights.LampChanged -= _onLampChanged;
+                _lights.Detach();
+                GameServices.Unregister<ILightService>(_lights);
+                _lights = null;
+            }
+            _lampViews.Clear();
 
             if (_published)
             {

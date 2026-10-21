@@ -90,6 +90,10 @@ namespace CinliMahzen.Editor
             var human = GetOrAdd<HumanController>(root);
             GetOrAdd<Interactor>(root);
             GetOrAdd<HumanHealth>(root);
+            // TODO 2.7: inventory slot selection (1-3) and drop (G).
+            GetOrAdd<HumanItemDropper>(root);
+            // TODO 3.8: the fixed lantern (weak → strong with the Blessed Oil), right click pulse, F kick.
+            GetOrAdd<HumanLantern>(root);
 
             Transform visual = root.transform.Find("Visual");
             if (visual == null)

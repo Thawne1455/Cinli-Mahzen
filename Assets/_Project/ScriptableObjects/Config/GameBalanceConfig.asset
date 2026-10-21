@@ -46,6 +46,9 @@ MonoBehaviour:
   lanternPulseRange: 8
   lanternPulseDuration: 3
   lanternPulseCooldown: 12
+  lanternPulseAngle: 30
+  lanternWeakRange: 4
+  lanternStrongRange: 12
   itemSlotCount: 3
   evilJinnSpeed: 6.5
   goodJinnSpeed: 7

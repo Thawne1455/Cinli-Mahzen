@@ -9,6 +9,7 @@ namespace CinliMahzen.Core
         public float DigProgress { get; set; }
         public int DigCheckpoint { get; set; }
         public ObjectivePhase Phase { get; set; } = ObjectivePhase.Garden;
+        public int PuzzleCount { get; set; }
 
         public bool IsPuzzleDone(int slot) => false;
 

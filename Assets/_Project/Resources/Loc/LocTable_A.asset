@@ -67,6 +67,39 @@ MonoBehaviour:
   - key: interact.cancelled
     tr: "\u0130ptal edildi"
     en: Cancelled
+  - key: interact.puzzle_turn
+    tr: "\xC7evir"
+    en: Turn
+  - key: interact.puzzle_confirm
+    tr: "Kolu \xE7ek"
+    en: Pull the lever
+  - key: interact.push
+    tr: "[Bas\u0131l\u0131 tut] \u0130t"
+    en: '[Hold] Push'
+  - key: interact.dig
+    tr: "[Bas\u0131l\u0131 tut] Kaz"
+    en: '[Hold] Dig'
+  - key: interact.search
+    tr: "[Bas\u0131l\u0131 tut] Ara"
+    en: '[Hold] Search'
+  - key: interact.light_switch
+    tr: "I\u015F\u0131\u011F\u0131 a\xE7 / kapat"
+    en: Lights on / off
+  - key: interact.exorcise
+    tr: "[R bas\u0131l\u0131 tut] Kov"
+    en: '[Hold R] Exorcise'
+  - key: interact.lamp_light
+    tr: "Lambay\u0131 yak"
+    en: Light the lamp
+  - key: interact.lamp_repair
+    tr: "[Bas\u0131l\u0131 tut] Lambay\u0131 onar"
+    en: '[Hold] Repair the lamp'
+  - key: interact.puzzle_paint
+    tr: Boya / sil
+    en: Paint / wipe
+  - key: interact.puzzle_scramble
+    tr: "[Bas\u0131l\u0131 tut] Bulmacay\u0131 kar\u0131\u015Ft\u0131r"
+    en: '[Hold] Scramble the puzzle'
   - key: menu.title
     tr: Cinli Mahzen
     en: Cinli Mahzen
@@ -163,3 +196,195 @@ MonoBehaviour:
   - key: puzzle.sigil
     tr: "M\xFCh\xFCr Ta\u015Flar\u0131"
     en: Seal Stones
+  - key: role.none
+    tr: "Rol yok"
+    en: "No role"
+  - key: hud.sunrise
+    tr: "G\u00FCn do\u011Fumu {0}"
+    en: "Sunrise {0}"
+  - key: hud.time_bonus
+    tr: "+{0} sn"
+    en: "+{0} s"
+  - key: hud.stage
+    tr: "{0} \u00B7 A\u015Fama {1}/{2} \u00B7 Bulmaca {3}/{4}"
+    en: "{0} \u00B7 Stage {1}/{2} \u00B7 Puzzles {3}/{4}"
+  - key: hud.phase_garden
+    tr: "Bah\u00E7e"
+    en: "Garden"
+  - key: hud.phase_house
+    tr: "Ev"
+    en: "House"
+  - key: hud.phase_cellar
+    tr: "Mahzen"
+    en: "Cellar"
+  - key: hud.phase_done
+    tr: "Bitti"
+    en: "Done"
+  - key: hud.hp
+    tr: "Can"
+    en: "HP"
+  - key: hud.faints
+    tr: "Bay\u0131lma \u2620 {0}/{1}"
+    en: "Faints \u2620 {0}/{1}"
+  - key: hud.stamina
+    tr: "Stamina"
+    en: "Stamina"
+  - key: hud.lantern_weak
+    tr: "Fener: Zay\u0131f"
+    en: "Lantern: Weak"
+  - key: hud.lantern_blessed
+    tr: "Fener: Kutsanm\u0131\u015F Ya\u011Fl\u0131"
+    en: "Lantern: Blessed Oil"
+  - key: hud.items
+    tr: "E\u015Fyalar"
+    en: "Items"
+  - key: hud.empty_slot
+    tr: "\u2014"
+    en: "\u2014"
+  - key: hud.dig
+    tr: "Kaz\u0131 {0}/{1}"
+    en: "Dig {0}/{1}"
+  - key: hud.cold_breath
+    tr: "Nefesin bu\u011Fulan\u0131yor..."
+    en: "Your breath fogs..."
+  - key: hud.energy
+    tr: "Enerji {0}/{1}"
+    en: "Energy {0}/{1}"
+  - key: hud.focus
+    tr: "Ruh Perdesi: odakta"
+    en: "Spirit Veil: focusing"
+  - key: hud.human_status
+    tr: "\u0130nsan {0} \u00B7 Bay\u0131lma {1}/{2}"
+    en: "Human {0} \u00B7 Faints {1}/{2}"
+  - key: hud.human_fainted
+    tr: "\u0130nsan BAYGIN \u00B7 Bay\u0131lma {0}/{1}"
+    en: "Human FAINTED \u00B7 Faints {0}/{1}"
+  - key: hud.human_dir
+    tr: "\u0130nsan {0} m {1}"
+    en: "Human {0} m {1}"
+  - key: hud.inside_entering
+    tr: "E\u015Fyaya giriyorsun..."
+    en: "Entering the object..."
+  - key: hud.inside_lurk
+    tr: "E\u015Fyada bekliyorsun"
+    en: "Lurking in the object"
+  - key: hud.inside_charge
+    tr: "Aksiyon \u015Farj ediliyor"
+    en: "Charging an action"
+  - key: hud.inside_recover
+    tr: "Toparlan\u0131yorsun"
+    en: "Recovering"
+  - key: hud.teammate
+    tr: "Tak\u0131m arkada\u015F\u0131 {0}: {1}"
+    en: "Teammate {0}: {1}"
+  - key: hud.teammate_free
+    tr: "ruh formunda"
+    en: "in spirit form"
+  - key: hud.teammate_inside
+    tr: "e\u015Fyada"
+    en: "inside an object"
+  - key: hud.scramble_cd
+    tr: "Sabotaj bekleme {0} sn"
+    en: "Sabotage cooldown {0} s"
+  - key: hud.scramble_ready
+    tr: "Sabotaj haz\u0131r"
+    en: "Sabotage ready"
+  - key: hud.lantern_guard
+    tr: "Fener Korumas\u0131 aktif"
+    en: "Lantern Guard active"
+  - key: hud.rage
+    tr: "\u00D6FKE!"
+    en: "RAGE!"
+  - key: hud.role_reveal
+    tr: "Rol\u00FCn: {0}"
+    en: "Your role: {0}"
+  - key: hud.round_end
+    tr: "Raund {0} bitti"
+    en: "Round {0} over"
+  - key: hud.result_seekers
+    tr: "Aray\u0131c\u0131lar kazand\u0131"
+    en: "Seekers win"
+  - key: hud.result_jinns
+    tr: "Cinler kazand\u0131"
+    en: "Jinns win"
+  - key: hud.result_none
+    tr: "\u2014"
+    en: "\u2014"
+  - key: hud.reason_faint
+    tr: "\u0130nsan 3 kez bay\u0131ld\u0131"
+    en: "The human fainted 3 times"
+  - key: hud.reason_treasure
+    tr: "Hazine kaz\u0131ld\u0131"
+    en: "The treasure was dug up"
+  - key: hud.reason_timeout
+    tr: "G\u00FCn do\u011Fdu"
+    en: "The sun rose"
+  - key: hud.score_row_delta
+    tr: "{0} ({1}): {2} (+{3})"
+    en: "{0} ({1}): {2} (+{3})"
+  - key: hud.score_row
+    tr: "{0}: {1}"
+    en: "{0}: {1}"
+  - key: hud.match_end
+    tr: "Ma\u00E7 Bitti"
+    en: "Match Over"
+  - key: hud.winner
+    tr: "Kazanan: {0} \u2014 {1} puan"
+    en: "Winner: {0} \u2014 {1} points"
+  - key: hud.tie
+    tr: "Berabere \u2014 {0} puan"
+    en: "Tie \u2014 {0} points"
+  - key: hud.restart_hint
+    tr: "F8: yeni ma\u00E7"
+    en: "F8: new match"
+  - key: title.electrician
+    tr: "Elektrik\u00E7i"
+    en: "Electrician"
+  - key: title.saboteur
+    tr: "Bozguncu"
+    en: "Saboteur"
+  - key: title.bulb_killer
+    tr: "Ampul Katili"
+    en: "Bulb Killer"
+  - key: title.navigator
+    tr: "Navigasyon"
+    en: "Navigator"
+  - key: title.kicker
+    tr: "Tekmeci Day\u0131"
+    en: "Kicking Uncle"
+  - key: title.slipper_sniper
+    tr: "Terlik Ni\u015Fanc\u0131s\u0131"
+    en: "Slipper Sniper"
+  - key: title.cologne
+    tr: "Kolonyac\u0131"
+    en: "Cologne Keeper"
+  - key: stat.wrong_confirm
+    tr: "Yanl\u0131\u015F onay"
+    en: "Wrong confirms"
+  - key: stat.scramble
+    tr: "Sabotaj"
+    en: "Sabotages"
+  - key: stat.lamp_burst
+    tr: "Lamba patlatma"
+    en: "Lamps burst"
+  - key: stat.ping
+    tr: "\u0130\u015Faret"
+    en: "Pings"
+  - key: stat.missed_kick
+    tr: "Bo\u015Fa tekme"
+    en: "Missed kicks"
+  - key: stat.slipper_hit
+    tr: "Terlik isabeti"
+    en: "Slipper hits"
+  - key: stat.rescue
+    tr: "Ay\u0131ltma/Siper"
+    en: "Revives/Blocks"
+  - key: hud.round_stats
+    tr: "Raund istatistikleri"
+    en: "Round stats"
+  - key: hud.titles
+    tr: "Unvanlar"
+    en: "Titles"
+  - key: hud.title_row
+    tr: "{0}: {1} ({2})"
+    en: "{0}: {1} ({2})"

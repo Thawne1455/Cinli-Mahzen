@@ -109,6 +109,20 @@ namespace CinliMahzen.Possession
             _reenter.Reset();
         }
 
+        /// <summary>
+        /// New round: every object back to Free (Spent ones included), nobody inside anything, every re-enter cooldown cleared.
+        /// The registered objects and their traits stay. Nothing is broadcast; every machine resets its mirror on the same round event.
+        /// </summary>
+        public void ResetRound()
+        {
+            for (int i = 0; i < _machines.Count; i++)
+            {
+                _machines[i].Reset();
+            }
+            _objectByPlayer.Clear();
+            _reenter.Reset();
+        }
+
         public bool TryGetMachine(NetId obj, out PossessableStateMachine machine)
         {
             if (_indexById.TryGetValue(obj, out int i))

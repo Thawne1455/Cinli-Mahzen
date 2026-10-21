@@ -396,6 +396,8 @@ Dil: Türkçe öncelikli, tüm metinler `Loc` anahtarlı.
 | `KickRange` / `KickCooldown` / `KickStun` | 2 / 6 / 2.5 | |
 | `LanternSafeZoneRadius` | 2.5 | m (Kutsanmış Yağ sonrası güçlü fenerin, ruh formunda sabotajı engellediği yarıçap) |
 | `LanternPulseRange` / `LanternPulseDuration` / `LanternPulseCooldown` | 8 / 3 / 12 | |
+| `LanternPulseAngle` | 30 | ° (Parlat konisinin yarım açısı) |
+| `LanternWeakRange` / `LanternStrongRange` | 4 / 12 | m (fener ışığının menzili: yağdan önce / sonra) |
 | `ItemSlotCount` | 3 | (Sabit fener hariç görev eşyası slotu) |
 | `EvilJinnSpeed` / `GoodJinnSpeed` / `SpiritBoostMult` | 6.5 / 7 / 1.5 | |
 | `EnergyMax` / `EnergyStart` / `EnergyRegen` | 100 / 50 / 5 | kötü cin |

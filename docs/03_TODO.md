@@ -89,8 +89,8 @@
 | [x] | 1.4 | Interactor (raycast, basılı tutma, ipucu event'i) | 1.1 | S |
 | [x] | 1.5 | HumanHealth + bayılma + Kolonya ile anında ayılma + kaybetme (otoriter) | 1.1 | M |
 | [x] | 1.6 | SpiritController (uçuş, noclip, sınır) + Ruh Çarpışması (`SpiritBump`) | 1.2 | M |
-| [ ] | 1.7 | Possession akışı (MonoBehaviour) + mesajlar + orbit kamera | P.4, 1.6 | L |
-| [ ] | 1.8 | Aksiyonlar: Throw, HomingSlipper, Hop, Lunge, Slide, Topple, PlayTune, ReviveSplash | 1.7, 1.5 | L |
+| [~] | 1.7 | Possession akışı (MonoBehaviour) + mesajlar + orbit kamera | P.4, 1.6 | L |
+| [~] | 1.8 | Aksiyonlar: Throw, HomingSlipper, Hop, Lunge, Slide, Topple, PlayTune, ReviveSplash | 1.7, 1.5 | L |
 | [x] | 1.9 | Graybox ev v0 (zemin kat + 1. kat + bahçe, primitive/KayKit, marker'sız) | P.2 | M |
 | [x] | 1.10 | MatchStateMachine minimal (dinamik sayaç 360s + 90s bonus, Faint/Timeout bitişi) | 1.3, 1.5 | M |
 
@@ -160,9 +160,9 @@
 | [x] | 2.2 | Ev marker'ları (§8: `CologneSpawnSpot` dahil) + `HouseService.Index` + `HouseValidator` + `IRoomService` | 1.9 | M |
 | [~] | 2.3 | `RoundSetupPlanner` + `RoundPlanValidator` + testler (500 seed) | 2.1, 2.2 | L |
 | [~] | 2.4 | `PuzzleSystem` + mesajlar (Op / Toplu Sabotaj / Confirm / Completed) + round-trip testleri | 2.1, 1.4 | M |
-| [ ] | 2.5 | Bulmaca P1 **Portreler**: `PuzzleView`, `PuzzlePart`, `ConfirmLever`, `PuzzleReference` (Ruh Perdesi) | 2.4 | M |
-| [ ] | 2.6 | Kötü cin **Toplu Sabotaj** (`PuzzleScrambleTarget`, 1.5s basılı, 15s cd, fener koruması) | 2.5, 1.7 | M |
-| [ ] | 2.7 | `RoundSetupApplier` + `StageGate` (+90 sn bonus) + `ItemReward` + Inventory | 2.3, 2.5 | M |
+| [~] | 2.5 | Bulmaca P1 **Portreler**: `PuzzleView`, `PuzzlePart`, `ConfirmLever`, `PuzzleReference` (Ruh Perdesi) | 2.4 | M |
+| [~] | 2.6 | Kötü cin **Toplu Sabotaj** (`PuzzleScrambleTarget`, 1.5s basılı, 15s cd, fener koruması) | 2.5, 1.7 | M |
+| [~] | 2.7 | `RoundSetupApplier` + `StageGate` (+90 sn bonus) + `ItemReward` + Inventory | 2.3, 2.5 | M |
 
 ### 2.1 — PuzzleState
 - §7.1. **Testler:** Cycle/Set/Swap, `TryScrambleAll` (her zaman çözülmmemiş bir dizilim üretir), `ScrambleCooldownUntil`, kilitliyken op/sabotaj reddi, `ResetToSolution`, `IsSolved`.
@@ -204,18 +204,18 @@ F8 ile 3 farklı seed: F3 1.5 sn basılı tutarak bulmacayı toplu sabote eder, 
 
 | ✔ | ID | Görev | Bağımlılık | Boyut |
 |---|---|---|---|---|
-| [ ] | 3.1 | P2 **Heykelin Nazarlığı** (6 çevre objesi yönü + 3 asa eğimi) | 2.7 | M |
-| [ ] | 3.2 | P3 **Tılsımlı Şalter** (4 soket × 6 köy motifi + referansta 2 Çarpı `X` tuzağı, Şalter Anahtarı) | 2.7 | M |
-| [ ] | 3.3 | P4 **Mühür Taşları** (3×3 ızgara + 4 köşe sembolü + dönük referans, Boya gereksinimi) | 2.7 | M |
-| [ ] | 3.4 | Işık & Radyo sistemi: lambalar, düğmeler, `LightService`, aydınlanınca atılma, Patlat, Radyo ses bastırma | 2.2, 1.8 | M |
-| [ ] | 3.5 | İyi cin yetenekleri: Ruh Perdesi Odakla, Lamba Yak/Onar, İşaret, Kov, Eşyaya Gir (hasarsız + Kolonya) | 3.4, 1.7 | L |
-| [ ] | 3.6 | Bahçe aşaması: `KeyHideSpot`, ön kapı `GateLock` (+90 sn), alet kulübesi **Kutsanmış Yağ** | 2.7 | S |
-| [ ] | 3.7 | Mahzen: kapak, `DigSpot`, kürek, **3 katmanlı kazı (3×6 sn)**, Öfke, **Ruh Siperi (`SpiritBlock`)**, `TreasureDug` | 2.7 | M |
-| [ ] | 3.8 | Sabit Fener (Zayıf → Kutsanmış Yağ ile Güçlü Mod: 2.5 m sabotaj koruması + Sağ Tık Parlat) + Tekme + itme | 1.8, 2.7 | M |
-| [ ] | 3.9 | Görünürlük servisi (GDD §12 tablosu + odaklanan iyi cin parıltısı) + soğuk nefes | 1.7 | M |
-| [ ] | 3.10 | Maç tam: 4 raund rotasyon, **Kademeli Puanlama (`ScoreService`)**, `MatchEnd` | 1.10, 3.7 | M |
-| [ ] | 3.11 | HUD'lar: İnsan, İyi Cin, Kötü Cin (GDD v2.1 §13 ve Teknik §10) | 3.5, 3.10 | L |
-| [ ] | 3.12 | Dummy İnsan botu (NavMesh gezinme) | 2.2 | S |
+| [~] | 3.1 | P2 **Heykelin Nazarlığı** (6 çevre objesi yönü + 3 asa eğimi) | 2.7 | M |
+| [~] | 3.2 | P3 **Tılsımlı Şalter** (4 soket × 6 köy motifi + referansta 2 Çarpı `X` tuzağı, Şalter Anahtarı) | 2.7 | M |
+| [~] | 3.3 | P4 **Mühür Taşları** (3×3 ızgara + 4 köşe sembolü + dönük referans, Boya gereksinimi) | 2.7 | M |
+| [~] | 3.4 | Işık & Radyo sistemi: lambalar, düğmeler, `LightService`, aydınlanınca atılma, Patlat, Radyo ses bastırma | 2.2, 1.8 | M |
+| [~] | 3.5 | İyi cin yetenekleri: Ruh Perdesi Odakla, Lamba Yak/Onar, İşaret, Kov, Eşyaya Gir (hasarsız + Kolonya) | 3.4, 1.7 | L |
+| [~] | 3.6 | Bahçe aşaması: `KeyHideSpot`, ön kapı `GateLock` (+90 sn), alet kulübesi **Kutsanmış Yağ** | 2.7 | S |
+| [~] | 3.7 | Mahzen: kapak, `DigSpot`, kürek, **3 katmanlı kazı (3×6 sn)**, Öfke, **Ruh Siperi (`SpiritBlock`)**, `TreasureDug` | 2.7 | M |
+| [~] | 3.8 | Sabit Fener (Zayıf → Kutsanmış Yağ ile Güçlü Mod: 2.5 m sabotaj koruması + Sağ Tık Parlat) + Tekme + itme | 1.8, 2.7 | M |
+| [~] | 3.9 | Görünürlük servisi (GDD §12 tablosu + odaklanan iyi cin parıltısı) + soğuk nefes | 1.7 | M |
+| [~] | 3.10 | Maç tam: 4 raund rotasyon, **Kademeli Puanlama (`ScoreService`)**, `MatchEnd` | 1.10, 3.7 | M |
+| [~] | 3.11 | HUD'lar: İnsan, İyi Cin, Kötü Cin (GDD v2.1 §13 ve Teknik §10) | 3.5, 3.10 | L |
+| [~] | 3.12 | Dummy İnsan botu (NavMesh gezinme) | 2.2 | S |
 
 Her bulmaca görevi için kabul: tip planner'a eklendi, 500 seed raporu geçerli, MCP ile çözülme + toplu sabotaj + Ruh Perdesi referans screenshot'ı.
 
@@ -230,7 +230,7 @@ Bahçede Kutsanmış Yağ ve anahtar → ön kapı (+90 sn) → zemin kat 2 bulm
 |---|---|---|---|
 | [ ] | 4.1 | Ev v1: KayKit ile 3 kat + çatı katı + mahzen + bahçe (Claude Code iskelet, 🖐 elle detay) | L |
 | [ ] | 4.2 | Ana menü, ayarlar, duraklat, rol açıklama | M |
-| [ ] | 4.3 | Raund raporu + maç sonu unvanları (`StatsService`, `TitleCalculator`: "Bozguncu", "Terlik Nişancısı", "Kolonyacı" dahil) | M |
+| [~] | 4.3 | Raund raporu + maç sonu unvanları (`StatsService`, `TitleCalculator`: "Bozguncu", "Terlik Nişancısı", "Kolonyacı" dahil) | M |
 | [ ] | 4.4 | Ses: telgraf, toplu sabotaj gıcırtısı, Anne Terliği "ŞRAK!", Eski Radyo oyun havası (ses bastırma), ortam, müzik | M |
 | [ ] | 4.5 | VFX: cin görselleri, Ruh Perdesi odak parıltısı, Ruh Siperi çarpışma efekti, lamba patlaması | M |
 | [ ] | 4.6 | Atmosfer: ay ışığı, sis, lamba ışıkları, performans (≥ 90 FPS) | M |

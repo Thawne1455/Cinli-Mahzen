@@ -25,6 +25,7 @@ namespace CinliMahzen.Player
     [RequireComponent(typeof(HumanController))]
     public sealed class HumanHealth : MonoBehaviour, IDamageable, IHumanStatusQuery
     {
+        private HumanLantern _lantern;
         private const string DebugStateKey = "health";
 
         private static HumanHealth s_debugOwner;
@@ -39,6 +40,7 @@ namespace CinliMahzen.Player
         private Action<NetMsg> _onDamaged;
         private Action<NetMsg> _onFainted;
         private Action<NetMsg> _onRevived;
+        private Action<NetMsg> _onCologneRevive;
         private Action<RoundStartedEvt> _onRoundStarted;
 
         /// <summary>The pawn's id: damage requests address the human by it.</summary>
@@ -62,11 +64,21 @@ namespace CinliMahzen.Player
 
         public Vector3 Position => transform.position;
 
+        /// <summary>TODO 3.11: the pawn's sprint stamina (HumanController's StaminaModel, local simulation), 0..1.</summary>
+        public float Stamina01
+        {
+            get
+            {
+                StaminaModel stamina = _human != null ? _human.Stamina : null;
+                return stamina != null && stamina.Max > 0f ? stamina.Value / stamina.Max : 1f;
+            }
+        }
+
         /// <summary>Mirrored: true from the HumanFainted message until the HumanRevived message.</summary>
         public bool IsFainted => _mirror != null && _mirror.IsFainted;
 
-        /// <summary>Always false until the fixed lantern arrives (TODO 3.8 HumanLantern): it will report the Blessed Oil strong mode here.</summary>
-        public bool IsBlessedLanternActive => false;
+        /// <summary>The fixed lantern is in strong mode (Blessed Oil, TODO 3.8 <see cref="HumanLantern"/> on the same pawn).</summary>
+        public bool IsBlessedLanternActive => _lantern != null && _lantern.IsStrong;
 
         public bool IsInLanternSafeZone(Vector3 worldPos)
         {
@@ -84,10 +96,12 @@ namespace CinliMahzen.Player
 
         private void Awake()
         {
+            _lantern = GetComponent<HumanLantern>();
             _human = GetComponent<HumanController>();
             _onDamaged = OnDamagedMsg;
             _onFainted = OnFaintedMsg;
             _onRevived = OnRevivedMsg;
+            _onCologneRevive = OnCologneReviveTriggeredMsg;
             _onRoundStarted = OnRoundStarted;
         }
 
@@ -109,6 +123,7 @@ namespace CinliMahzen.Player
             _net.Register(MsgCode.HumanDamaged, _onDamaged);
             _net.Register(MsgCode.HumanFainted, _onFainted);
             _net.Register(MsgCode.HumanRevived, _onRevived);
+            _net.Register(MsgCode.CologneReviveTriggered, _onCologneRevive);
             EventBus.Subscribe(_onRoundStarted);
 
             GameServices.Register<IHumanStatusQuery>(this);
@@ -123,6 +138,7 @@ namespace CinliMahzen.Player
                 _net.Unregister(MsgCode.HumanDamaged, _onDamaged);
                 _net.Unregister(MsgCode.HumanFainted, _onFainted);
                 _net.Unregister(MsgCode.HumanRevived, _onRevived);
+                _net.Unregister(MsgCode.CologneReviveTriggered, _onCologneRevive);
                 _net = null;
             }
             EventBus.Unsubscribe(_onRoundStarted);
@@ -175,8 +191,19 @@ namespace CinliMahzen.Player
             // The MatchController ends the round from HumanFaintedEvt.FaintCount >= FaintsToLose (the Lost faint included), in the same frame.
             net.Broadcast(HumanFaintedMsg.Encode(info, result.FaintCount));
 
-            // TODO 2.7 (Inventory): drop the selected quest item (ItemDropped broadcast) when the human faints - before the HumanFainted
-            // broadcast above if the drop must happen even on the Lost faint, because Match ends the round from HumanFaintedEvt.
+            // The quest item drop on fainting is done by Objectives' ObjectiveFlowCore, which listens to the same HumanFaintedEvt (TODO 2.7).
+        }
+
+        /// <summary>
+        /// TODO 1.8: the good jinn broke the Lemon Cologne over the fainted human (Possession's revive_splash checked range and faint);
+        /// the authority wakes the human.
+        /// </summary>
+        private void OnCologneReviveTriggeredMsg(NetMsg msg)
+        {
+            if (_net == null || !_net.IsAuthority || !CologneReviveTriggeredMsg.TryDecode(msg, out PlayerId by))
+                return;
+            if (ReviveWithCologneAuthority())
+                CMLog.Info("Human", "Revived by " + by + "'s Lemon Cologne");
         }
 
         /// <summary>

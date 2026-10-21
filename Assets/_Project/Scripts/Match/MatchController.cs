@@ -18,7 +18,7 @@ namespace CinliMahzen.Match
     /// <c>MatchStateChanged</c> broadcast; entering RoundSetup also broadcasts <c>RoundSetup{seed, roles}</c> (roles from
     /// <see cref="RoleRotation"/>) and — offline — completes the setup in the same frame; entering RoundEnd also broadcasts
     /// <c>RoundEnded</c>. The round's inputs reach the authority as local events: <see cref="HumanFaintedEvt"/> (3 faints end it),
-    /// <see cref="TreasureDugEvt"/>, and <see cref="AddStageTimeBonusAuthority"/> (stage gates, TODO 2.7 → <c>RoundTimeAdded</c>).</para>
+    /// <see cref="TreasureDugEvt"/>, and <see cref="StageCompletedEvt"/> (a stage gate opened, TODO 2.7 → <see cref="AddStageTimeBonusAuthority"/> → <c>RoundTimeAdded</c>).</para>
     ///
     /// <para><b>Every machine</b> (the authority included) applies the broadcasts: a <see cref="MatchMirror"/> backs
     /// <see cref="IMatchInfo"/>; <c>RoundSetup</c> hands the roles to the registry (whose <c>RolesChanged</c> makes the scene's
@@ -47,6 +47,9 @@ namespace CinliMahzen.Match
         private MatchSettings _settings;
         private MatchMirror _mirror;
         private MatchStateMachine _machine;
+        private ScoreService _score;
+        private StatsService _stats;
+        private double _secondsLeftAtEnd;
         private int _matchSeed;
         private bool _startPending;
         private bool _registered;
@@ -60,6 +63,9 @@ namespace CinliMahzen.Match
         private Action<NetMsg> _onRoundEnded;
         private Action<HumanFaintedEvt> _onHumanFainted;
         private Action<TreasureDugEvt> _onTreasureDug;
+        private Action<StageCompletedEvt> _onStageCompleted;
+        private Func<IObjectiveInfo> _objectives;
+        private Func<MatchState> _mirrorState;
 
         // ---- IMatchInfo (the mirror: what every machine has been told) ----
 
@@ -84,6 +90,12 @@ namespace CinliMahzen.Match
         /// <summary>Why the most recent round ended.</summary>
         public RoundEndReason LastReason => _mirror != null ? _mirror.LastReason : RoundEndReason.None;
 
+        /// <summary>TODO 3.10: the tiered scoring (null when the controller is inert or there is no player registry).</summary>
+        public ScoreService Score => _score;
+
+        /// <summary>TODO 4.3: match statistics and titles (also registered as <see cref="IMatchStats"/>).</summary>
+        public StatsService Stats => _stats;
+
         private void Awake()
         {
             _net = GameServices.Net;
@@ -107,6 +119,22 @@ namespace CinliMahzen.Match
             _onRoundEnded = OnRoundEndedMsg;
             _onHumanFainted = OnHumanFaintedEvt;
             _onTreasureDug = OnTreasureDugEvt;
+            _onStageCompleted = OnStageCompletedEvt;
+
+            IPlayerRegistry players = GameServices.Players;
+            if (players != null)
+            {
+                _objectives = GameServices.Get<IObjectiveInfo>;
+                _mirrorState = ReadMirrorState;
+                _score = new ScoreService(_net, players, ScoreRules.FromConfig(config), _objectives, _mirrorState);
+                DebugState.Register("score", BuildScoreJson);
+                _stats = new StatsService(_net, players);
+                GameServices.Register<IMatchStats>(_stats);
+            }
+            else
+            {
+                CMLog.Warn(Category, name + ": no IPlayerRegistry - scoring off");
+            }
 
             GameServices.Register<IMatchInfo>(this);
             _registered = true;
@@ -125,6 +153,9 @@ namespace CinliMahzen.Match
             _net.Register(MsgCode.RoundEnded, _onRoundEnded);
             EventBus.Subscribe(_onHumanFainted);
             EventBus.Subscribe(_onTreasureDug);
+            EventBus.Subscribe(_onStageCompleted);
+            _score?.Attach();
+            _stats?.Attach();
 
             _startPending = autoStart && _machine.State == MatchState.Lobby;
         }
@@ -142,10 +173,18 @@ namespace CinliMahzen.Match
             _net.Unregister(MsgCode.RoundEnded, _onRoundEnded);
             EventBus.Unsubscribe(_onHumanFainted);
             EventBus.Unsubscribe(_onTreasureDug);
+            EventBus.Unsubscribe(_onStageCompleted);
+            _score?.Detach();
+            _stats?.Detach();
         }
 
         private void OnDestroy()
         {
+            if (_stats != null)
+            {
+                GameServices.Unregister<IMatchStats>(_stats);
+            }
+
             if (_registered)
             {
                 GameServices.Unregister<IMatchInfo>(this);
@@ -263,6 +302,12 @@ namespace CinliMahzen.Match
         private bool BeginMatch(int matchSeed)
         {
             _matchSeed = matchSeed;
+            if (_machine.State != MatchState.Lobby)
+            {
+                return false;
+            }
+
+            _score?.ResetMatchAuthority();
             if (!_machine.StartMatch(out MatchTransition transition))
             {
                 return false;
@@ -297,6 +342,9 @@ namespace CinliMahzen.Match
 
                 case MatchState.RoundEnd:
                     _net.Broadcast(RoundEndedMsg.Encode(_machine.LastResult, _machine.LastReason, transition.RoundIndex));
+                    // TODO 3.10: seconds left count only for the treasure (set by OnTreasureDugEvt); timeout / faint leave none.
+                    _score?.AwardRoundEndAuthority(_machine.LastResult, _secondsLeftAtEnd);
+                    _secondsLeftAtEnd = 0d;
                     break;
             }
         }
@@ -329,10 +377,23 @@ namespace CinliMahzen.Match
             // Tick first, then deliver the event: if the counter already ran out, the sun wins the tie.
             double now = _net.Time;
             Pump(now);
+            // TODO 3.10: score the faint before the machine may end the round with it (the third faint still counts).
+            if (_machine.State == MatchState.Playing && now < _machine.StateEndTime)
+            {
+                _score?.AwardFaintAuthority();
+            }
+
             if (_machine.OnHumanFainted(evt.FaintCount, now, out MatchTransition transition))
             {
                 Publish(transition);
             }
+        }
+
+        /// <summary>TODO 2.7: a stage gate opened (Objectives' GateOpened → StageCompletedEvt on every machine); the authority adds StageTimeBonus.</summary>
+        private void OnStageCompletedEvt(StageCompletedEvt evt)
+        {
+            if (_net.IsAuthority)
+                AddStageTimeBonusAuthority();
         }
 
         private void OnTreasureDugEvt(TreasureDugEvt evt)
@@ -344,8 +405,10 @@ namespace CinliMahzen.Match
 
             double now = _net.Time;
             Pump(now);
+            double sunrise = _machine.StateEndTime;
             if (_machine.OnTreasureDug(now, out MatchTransition transition))
             {
+                _secondsLeftAtEnd = sunrise - now;
                 Publish(transition);
             }
         }
@@ -365,6 +428,14 @@ namespace CinliMahzen.Match
             if (state != previous)
             {
                 CMLog.Info(Category, previous + " -> " + state + " (round " + roundIndex + ", ends " + FormatTime(endTime) + ")");
+                if (state == MatchState.MatchEnd && _score != null)
+                {
+                    // TODO 3.10: every machine announces the result from the scores it was told (the round-end awards came with RoundEnd).
+                    _stats?.ComputeTitles();
+                    PlayerId winner = _score.Leader(out int topScore);
+                    CMLog.Info(Category, "Match end: winner " + winner + " with " + topScore);
+                    EventBus.Publish(new MatchEndedEvt(winner, topScore));
+                }
             }
         }
 
@@ -436,6 +507,34 @@ namespace CinliMahzen.Match
         private double ReadNetTime()
         {
             return _net.Time;
+        }
+
+        private MatchState ReadMirrorState()
+        {
+            return _mirror.State;
+        }
+
+        private string BuildScoreJson()
+        {
+            IPlayerRegistry players = GameServices.Players;
+            var sb = new StringBuilder(64);
+            sb.Append('{');
+            if (players != null)
+            {
+                for (int i = 0; i < players.Players.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        sb.Append(',');
+                    }
+
+                    PlayerId id = players.Players[i].Id;
+                    sb.Append("\"").Append(id).Append("\":").Append(_score.ScoreOf(id));
+                }
+            }
+
+            sb.Append(",\"solvedThisRound\":").Append(_score.PuzzlesSolvedThisRound).Append('}');
+            return sb.ToString();
         }
 
         private int SeedForRound(int roundIndex)

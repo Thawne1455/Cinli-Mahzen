@@ -13,6 +13,13 @@ namespace CinliMahzen.Player
             {
                 var authority = new InteractionAuthority(GameServices.Net, GameServices.Entities, GameServices.Config);
                 authority.Attach();
+
+                // TODO 3.8: lantern pulse and kick.
+                if (GameServices.Net != null && GameServices.Players != null && GameServices.Config != null)
+                {
+                    var abilities = new HumanAbilityAuthority(GameServices.Net, GameServices.Players, GameServices.Entities, GameServices.Config);
+                    abilities.Attach();
+                }
             });
         }
     }
