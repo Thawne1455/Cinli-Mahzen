@@ -12,9 +12,9 @@ namespace CinliMahzen.World.Graybox
     /// the editor builder (CinliMahzen/House/Build Graybox) turns <see cref="Specs"/> into marker components and
     /// <see cref="GrayboxHouseIndexFactory"/> turns them into a <see cref="HouseIndex"/> for tests.
     ///
-    /// Derived from the layout (so they follow it when walls move): the room boxes, the stage zones, the two gates (front door
-    /// = stage 0 with the house key lock, stair gate = stage 1) and the key hiding places (every well, woodpile and pot).
-    /// Authored in <c>Author</c> below: the rest. The cellar (DigSpots, the stage 2 gate) arrives with TODO 3.7.
+    /// Derived from the layout (so they follow it when walls move): the room boxes, the stage zones (the cellar has none), the gates
+    /// (front door = stage 0 with the house key lock, stair gates = stages 1 and 2, the cellar hatch with the cellar key lock) and the
+    /// key hiding places (every well, woodpile and pot). Authored in <c>AddAuthored</c> below: the rest (DigSpots included, TODO 4.1).
     ///
     /// Coordinates are house-local metres: cell (cx, cz) spans X 4cx..4cx+4, Z 4cz..4cz+4 (see <see cref="GrayboxLayout"/>);
     /// walls are 1 m thick centred on the grid lines, so a marker on a wall face sits 0.6 m from the grid line. Heights are
@@ -39,8 +39,11 @@ namespace CinliMahzen.World.Graybox
 
         public const float RewardHeight = 1.0f;
 
-        /// <summary>Room boxes of the garden reach this high so a flying spirit above the garden is still "in the garden".</summary>
-        public const float OutdoorBoxHeight = GrayboxLayout.FloorHeight * (GrayboxLayout.FloorCount + 1);
+        /// <summary>Room boxes of the garden reach one floor above the attic, so a flying spirit above the garden is still "in the garden".</summary>
+        public const float OutdoorBoxHeight = GrayboxLayout.FloorHeight * (GrayboxLayout.MaxFloor + 2);
+
+        /// <summary>DigSpots lie on the cellar floor.</summary>
+        public const float DigSpotHeight = 0f;
 
         /// <summary>
         /// Stable room ids: the id of a room is its index in this table (RoomMarker.roomId, IRoomService, RoundPlan). Append new
@@ -50,7 +53,8 @@ namespace CinliMahzen.World.Graybox
         {
             "garden", "shed",
             "hall", "kitchen", "living", "pantry", "stairwell",
-            "landing", "bedroom1", "bedroom2", "corridor", "bathroom", "study"
+            "landing", "bedroom1", "bedroom2", "corridor", "bathroom", "study",
+            "atticstairs", "attic", "ritual", "cellar"
         };
 
         private static readonly PuzzleType[] WallTypes = { PuzzleType.Paintings, PuzzleType.Wires, PuzzleType.Sigil };
@@ -172,6 +176,7 @@ namespace CinliMahzen.World.Graybox
                 case GrayboxMarkerKind.HumanSpawn: return "HumanSpawn";
                 case GrayboxMarkerKind.JinnSpawn: return "JinnSpawn";
                 case GrayboxMarkerKind.ToolShedItem: return "ToolShedItem";
+                case GrayboxMarkerKind.DigSpot: return "DigSpot";
                 default: return kind.ToString();
             }
         }
@@ -211,10 +216,11 @@ namespace CinliMahzen.World.Graybox
 
             public void AddStageZones()
             {
+                // The cellar belongs to no stage: it opens through the hatch after the last active puzzle stage.
                 var stages = new List<int>();
                 for (int i = 0; i < _layout.Rooms.Count; i++)
                 {
-                    if (!stages.Contains(_layout.Rooms[i].Stage))
+                    if (_layout.Rooms[i].Floor != GrayboxLayout.CellarFloor && !stages.Contains(_layout.Rooms[i].Stage))
                     {
                         stages.Add(_layout.Rooms[i].Stage);
                     }
@@ -226,7 +232,7 @@ namespace CinliMahzen.World.Graybox
                     var keys = new List<string>();
                     for (int i = 0; i < _layout.Rooms.Count; i++)
                     {
-                        if (_layout.Rooms[i].Stage == stages[s])
+                        if (_layout.Rooms[i].Floor != GrayboxLayout.CellarFloor && _layout.Rooms[i].Stage == stages[s])
                         {
                             keys.Add(_layout.Rooms[i].Id);
                         }
@@ -241,13 +247,19 @@ namespace CinliMahzen.World.Graybox
 
             /// <summary>
             /// The front door completes stage 0 (needs the house key), a stage gate door completes the stage of the room it
-            /// leads out of (the lower stage of its two rooms). The marker lives in the room on the A side of the door.
+            /// leads out of (the lower stage of its two rooms), the cellar hatch completes the stage after the last active one
+            /// (needs the cellar key). The marker lives in the room on the A side of the door (the room side for the hatch).
             /// </summary>
             public void AddGates()
             {
                 for (int i = 0; i < _layout.Doors.Count; i++)
                 {
                     GrayboxDoor door = _layout.Doors[i];
+                    if (door.Kind == GrayboxDoorKind.CellarHatch)
+                    {
+                        AddCellarHatch(door);
+                        continue;
+                    }
                     if (door.Kind != GrayboxDoorKind.StageGate && door.Kind != GrayboxDoorKind.FrontDoor)
                     {
                         continue;
@@ -268,6 +280,20 @@ namespace CinliMahzen.World.Graybox
 
                     AddToRoom(GrayboxMarkerSpec.StageGate(home.Id, stage, edge, lockItem, position), home);
                 }
+            }
+
+            /// <summary>TODO 4.1: the hatch over the cellar stairs. Its stage is resolved at runtime (HouseContract.GateStage).</summary>
+            private void AddCellarHatch(GrayboxDoor door)
+            {
+                GrayboxRoom home = _layout.RoomAt(door.Floor, door.CellA) ?? _layout.RoomAt(door.Floor, door.CellB);
+                if (home == null)
+                {
+                    throw new InvalidOperationException("GrayboxMarkers: the " + door + " joins no room.");
+                }
+                GrayboxEdge edge = door.Edge;
+                var position = new Vector3(edge.CenterCellX * GrayboxLayout.CellSize, door.Floor * GrayboxLayout.FloorHeight,
+                    edge.CenterCellZ * GrayboxLayout.CellSize);
+                AddToRoom(GrayboxMarkerSpec.StageGate(home.Id, home.Stage, edge, HouseContract.CellarKeyItemId, position, true), home);
             }
 
             /// <summary>Every well, woodpile and pot of the garden is a place the key may hide in.</summary>
@@ -303,9 +329,11 @@ namespace CinliMahzen.World.Graybox
             /// The hand-placed markers. x/z are house-local metres, h is the height above the floor surface and
             /// <c>facing</c> the direction the marker looks into the room (away from its wall). Room extents are in
             /// <see cref="GrayboxLayout"/>: hall X4..16 Z0..4, kitchen X0..8 Z4..16 (+X0..4 Z0..4), living X12..20 Z4..16
-            /// (+X16..20 Z0..4), pantry X8..12 Z8..16, stairwell X8..12 Z4..8, shed X24..28 Z16..20; first floor: landing X8..12
-            /// Z8..16, bedroom1 X0..8 Z8..16, bedroom2 X12..20 Z8..16, corridor X4..16 Z0..4 (+ X4..8 / X12..16 Z4..8),
-            /// bathroom X0..4 Z0..8, study X16..20 Z0..8. GrayboxMarkersTests checks that every marker is inside its room.
+            /// (+X16..20 Z0..4), pantry X8..12 Z12..16 (the cellar hatch hole X8..12 Z8..12 below it), stairwell X8..12 Z4..8, shed
+            /// X24..28 Z16..20; first floor: landing X8..12 Z8..16, bedroom1 X0..8 Z8..16, bedroom2 X12..20 Z8..16, corridor X4..16
+            /// Z0..4 (+ X12..16 Z4..8), attic stairs X4..8 Z4..8, bathroom X0..4 Z0..8, study X16..20 Z0..8; attic: loft X0..12 Z0..16
+            /// around the shaft X4..8 Z4..8, ritual X12..20 Z0..16; cellar X0..20 Z0..12. GrayboxMarkersTests checks that every marker
+            /// is inside its room.
             /// </summary>
             public void AddAuthored()
             {
@@ -335,6 +363,7 @@ namespace CinliMahzen.World.Graybox
                 Switch("kitchen", 7.4f, 12.2f, W);
                 PuzzleSlot("kitchen", Wall, 0.6f, 9f, E);
                 ReferenceSlot("kitchen", Wall, 2f, 15.4f, S);
+                ReferenceSlot("kitchen", Floor, 6f, 6f, N);
                 Cologne("kitchen", 6.5f, 0.95f, 15f);
                 JinnSpawn("kitchen", 3f, 8f);
 
@@ -346,13 +375,15 @@ namespace CinliMahzen.World.Graybox
                 Cologne("living", 19f, 0.8f, 5f);
                 JinnSpawn("living", 14f, 8f);
 
-                Lamp("pantry", 10f, 12f);
-                Switch("pantry", 8.6f, 12.3f, E);
-                PuzzleSlot("pantry", Table, 10f, 15f, S);
-                ReferenceSlot("pantry", Floor, 10f, 10f, N);
+                // The pantry is one cell now: doors west and east, the cellar hatch in its south wall.
+                Lamp("pantry", 10f, 14f);
+                Switch("pantry", 8.6f, 12.6f, E);
+                PuzzleSlot("pantry", Table, 9.2f, 14.8f, S);
+                ReferenceSlot("pantry", Wall, 11.2f, 15.4f, S);
 
-                // The lamp hangs near the stairs entrance; the stairs themselves climb to 4 m at the far end.
-                Lamp("stairwell", 10f, 5f, 3.4f);
+                // The lamp hangs on the west wall near the stairs entrance, out of the way of whoever climbs them (a lamp over the
+                // middle of the steps would hit the climber's head: possessable lamps have a collider).
+                Lamp("stairwell", 8.6f, 5f, 3.4f);
                 Switch("stairwell", 8.6f, 4.7f, E);
 
                 // Stage 2 - first floor.
@@ -386,6 +417,39 @@ namespace CinliMahzen.World.Graybox
                 Switch("study", 16.6f, 3.6f, E);
                 PuzzleSlot("study", Table, 19f, 3f, W);
                 ReferenceSlot("study", Wall, 19.4f, 6f, W);
+
+                // The attic stairs (behind the stage 2 gate); the lamp hangs on the west wall like the stairwell's.
+                Lamp("atticstairs", 4.6f, 5f, 3.4f);
+                Switch("atticstairs", 4.6f, 4.7f, E);
+
+                // Stage 3 - attic (TODO 4.7). The loft wraps the attic stair shaft X4..8 Z4..8; the ritual room is X12..20.
+                Lamp("attic", 6f, 12f);
+                Switch("attic", 11.4f, 4f, W);
+                PuzzleSlot("attic", Wall, 0.6f, 4f, E);
+                PuzzleSlot("attic", Floor, 10f, 11f, N);
+                ReferenceSlot("attic", Wall, 6f, 15.4f, S);
+                ReferenceSlot("attic", Floor, 2f, 14f, S);
+
+                Lamp("ritual", 16f, 8f);
+                Switch("ritual", 12.6f, 4f, E);
+                PuzzleSlot("ritual", Table, 16f, 9f, S);
+                PuzzleSlot("ritual", Wall, 19.4f, 8f, W);
+                ReferenceSlot("ritual", Wall, 16f, 15.4f, S);
+
+                // The cellar (floor -1) under the front of the house: the stairs come down at X8..12 Z8..12 (bottom at Z8). It has no
+                // door, so its switch hangs on the north wall beside the stairs.
+                Lamp("cellar", 6f, 6f);
+                Lamp("cellar", 16f, 6f);
+                Switch("cellar", 7.2f, 11.4f, S);
+                DigSpot("cellar", 3f, 3f);
+                DigSpot("cellar", 3f, 9f);
+                DigSpot("cellar", 16f, 3f);
+                DigSpot("cellar", 17f, 9f);
+            }
+
+            private void DigSpot(string roomKey, float x, float z)
+            {
+                AddAt(GrayboxMarkerKind.DigSpot, roomKey, x, DigSpotHeight, z, GrayboxDirection.North);
             }
 
             private void HumanSpawn(string roomKey, float x, float z, GrayboxDirection facing)
@@ -474,8 +538,8 @@ namespace CinliMahzen.World.Graybox
             }
 
             /// <summary>
-            /// One box per rectangle of the room. Indoor boxes are one floor high; the garden's are tall; a ground-floor rectangle
-            /// that holds stairs is two floors high because the stair shaft stays open above it.
+            /// One box per rectangle of the room. Indoor boxes are one floor high; the garden's are tall; a rectangle that holds the
+            /// cells of stairs starting on its floor is two floors high because the stair shaft stays open above it.
             /// </summary>
             private List<Bounds> RoomBoxes(GrayboxRoom room)
             {
@@ -504,16 +568,17 @@ namespace CinliMahzen.World.Graybox
                 {
                     return OutdoorBoxHeight;
                 }
-                if (room.Floor == GrayboxLayout.GroundFloor)
+                for (int s = 0; s < _layout.Stairs.Count; s++)
                 {
-                    for (int s = 0; s < _layout.Stairs.Count; s++)
+                    if (_layout.Stairs[s].BaseFloor != room.Floor)
                     {
-                        for (int c = 0; c < _layout.Stairs[s].Cells.Count; c++)
+                        continue;
+                    }
+                    for (int c = 0; c < _layout.Stairs[s].Cells.Count; c++)
+                    {
+                        if (rect.Contains(_layout.Stairs[s].Cells[c]))
                         {
-                            if (rect.Contains(_layout.Stairs[s].Cells[c]))
-                            {
-                                return GrayboxLayout.FloorHeight * GrayboxLayout.FloorCount;
-                            }
+                            return GrayboxLayout.FloorHeight * 2f;
                         }
                     }
                 }

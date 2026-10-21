@@ -30,7 +30,7 @@ namespace CinliMahzen.World
         /// <summary>CologneSpawnSpot markers inside the house (at least).</summary>
         public const int MinCologneSpawnSpots = 3;
 
-        /// <summary>DigSpot markers in the cellar (at least). The cellar arrives with TODO 3.7, so fewer is only a warning.</summary>
+        /// <summary>DigSpot markers in the cellar (at least). A house without a cellar is only a warning.</summary>
         public const int MinDigSpots = 3;
 
         public const int HumanSpawnCount = 1;
@@ -41,6 +41,18 @@ namespace CinliMahzen.World
 
         /// <summary>ItemDefinition.Id the stage 0 gate (front door) requires.</summary>
         public const string FrontDoorItemId = "house_key";
+
+        /// <summary>ItemDefinition.Id the cellar hatch requires (the last puzzle stage drops it).</summary>
+        public const string CellarKeyItemId = "cellar_key";
+
+        /// <summary>
+        /// The stage a gate completes: its own stage, or for the cellar hatch the stage after the last active puzzle stage
+        /// (FirstPuzzleStage + stagesActive), so the house works with or without the attic stage.
+        /// </summary>
+        public static int GateStage(int stageIndex, bool isCellarHatch, int stagesActive)
+        {
+            return isCellarHatch ? FirstPuzzleStage + stagesActive : stageIndex;
+        }
 
         /// <summary>ItemDefinition.Id of the oil in the tool shed.</summary>
         public const string BlessedOilItemId = "blessed_oil";

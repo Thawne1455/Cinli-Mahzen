@@ -68,7 +68,8 @@ namespace CinliMahzen.World.Graybox
                     break;
 
                 case GrayboxMarkerKind.StageGate:
-                    builder.Add(new HouseGateEntry(KeyOf(spec, typeof(StageGate)), spec.Stage, spec.ItemId, spec.Position));
+                    builder.Add(new HouseGateEntry(KeyOf(spec, typeof(StageGate)), spec.Stage, spec.ItemId, spec.Position, default,
+                        spec.IsCellarHatch));
                     break;
 
                 case GrayboxMarkerKind.Lamp:
@@ -90,6 +91,11 @@ namespace CinliMahzen.World.Graybox
 
                 case GrayboxMarkerKind.ToolShedItem:
                     builder.Add(new HouseSpotEntry(KeyOf(spec, typeof(ToolShedItemPoint)), HouseSpotKind.ToolShedItem, HouseIndex.NoRoom, spec.ItemId, spec.Position));
+                    break;
+
+                case GrayboxMarkerKind.DigSpot:
+                    // DigSpot has no room field either.
+                    builder.Add(new HouseSpotEntry(KeyOf(spec, typeof(DigSpot)), HouseSpotKind.Dig, HouseIndex.NoRoom, string.Empty, spec.Position));
                     break;
 
                 case GrayboxMarkerKind.HumanSpawn:

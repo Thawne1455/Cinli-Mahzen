@@ -270,7 +270,7 @@ Kontroller eşyanın içindeyken: **Sol tık = Aksiyon 1**, **Sağ tık = Aksiyo
 | **Zemin kat** | Giriş holü, mutfak, oturma odası (şömine, eski radyo), kiler, merdiven |
 | **1. kat** | Yatak odaları, banyo (kolonya aday noktası), koridor, çalışma odası |
 | **Çatı katı** | Tavan arası, büyü odası |
-| **Mahzen** | Hazine kazı alanı (bodrum kapağıyla girilir) |
+| **Mahzen** | Hazine kazı alanı (kilerdeki bodrum kapağıyla girilir; kapak son aktif aşamadan düşen Bodrum Anahtarı ile açılır) |
 
 - **Ev elle tasarlanır** (oda konumları, kapılar, merdivenler sabit). Claude Code mümkün olduğunca kurar, ince işler elle.
 - **Her raund rastgele (seed) olanlar:**

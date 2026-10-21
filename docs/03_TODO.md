@@ -211,7 +211,7 @@ F8 ile 3 farklı seed: F3 1.5 sn basılı tutarak bulmacayı toplu sabote eder, 
 | [x] | 3.4 | Işık & Radyo sistemi: lambalar, düğmeler, `LightService`, aydınlanınca atılma, Patlat, Radyo ses bastırma | 2.2, 1.8 | M |
 | [x] | 3.5 | İyi cin yetenekleri: Ruh Perdesi Odakla, Lamba Yak/Onar, İşaret, Kov, Eşyaya Gir (hasarsız + Kolonya) | 3.4, 1.7 | L |
 | [x] | 3.6 | Bahçe aşaması: `KeyHideSpot`, ön kapı `GateLock` (+90 sn), alet kulübesi **Kutsanmış Yağ** | 2.7 | S |
-| [~] | 3.7 | Mahzen: kapak, `DigSpot`, kürek, **3 katmanlı kazı (3×6 sn)**, Öfke, **Ruh Siperi (`SpiritBlock`)**, `TreasureDug` | 2.7 | M |
+| [x] | 3.7 | Mahzen: kapak, `DigSpot`, kürek, **3 katmanlı kazı (3×6 sn)**, Öfke, **Ruh Siperi (`SpiritBlock`)**, `TreasureDug` | 2.7 | M |
 | [x] | 3.8 | Sabit Fener (Zayıf → Kutsanmış Yağ ile Güçlü Mod: 2.5 m sabotaj koruması + Sağ Tık Parlat) + Tekme + itme | 1.8, 2.7 | M |
 | [x] | 3.9 | Görünürlük servisi (GDD §12 tablosu + odaklanan iyi cin parıltısı) + soğuk nefes | 1.7 | M |
 | [x] | 3.10 | Maç tam: 4 raund rotasyon, **Kademeli Puanlama (`ScoreService`)**, `MatchEnd` | 1.10, 3.7 | M |
@@ -220,7 +220,7 @@ F8 ile 3 farklı seed: F3 1.5 sn basılı tutarak bulmacayı toplu sabote eder, 
 
 Her bulmaca görevi için kabul: tip planner'a eklendi, 500 seed raporu geçerli, MCP ile çözülme + toplu sabotaj + Ruh Perdesi referans screenshot'ı.
 
-> **Durum (2026-10-22):** M3 çıkış testi MCP ile oynandı (anahtar → ön kapı → 4 bulmaca → kürek → 3 katman kazı → SeekersWin; 3 bayılma → JinnsWin; süre → JinnsWin; 4 raund rotasyon + MatchEnd). 3.7'de yalnızca **mahzen kapağı / `cellar_key`** play'de denenmedi: evde kapak geçidi yok — 4.1'deki gerçek mahzenle doğrulanacak. Test mahzeni: `CinliMahzen/Setup/Add Test Dig Spots To House In Open Scene` (bahçenin altında, kat −1).
+> **Durum (2026-10-22):** M3 çıkış testi MCP ile oynandı (anahtar → ön kapı → 4 bulmaca → kürek → 3 katman kazı → SeekersWin; 3 bayılma → JinnsWin; süre → JinnsWin; 4 raund rotasyon + MatchEnd). 3.7'nin kapak kısmı 4.1'deki gerçek mahzenle doğrulandı (son aşama → `cellar_key` → kilerdeki kapak → mahzen, +90 sn, BasementOpened).
 
 ### ✅ M3 Çıkış Testi (tam raund, hotseat)
 Bahçede Kutsanmış Yağ ve anahtar → ön kapı (+90 sn) → zemin kat 2 bulmaca (+90 sn) → 1. kat 2 bulmaca (+90 sn) → mahzen 3 katmanlı kazı (İyi Cin Ruh Siperi ile uçan eşyayı bloklar) → SeekersWin; ayrı raundda 3 bayılma → JinnsWin; süre bitimi → JinnsWin. 4 raund → Kademeli puanlar (`ScorePerPuzzle`, `ScorePerUnfinishedPuzzle` vb.) doğru hesaplanır.
@@ -231,7 +231,7 @@ Bahçede Kutsanmış Yağ ve anahtar → ön kapı (+90 sn) → zemin kat 2 bulm
 
 | ✔ | ID | Görev | Boyut |
 |---|---|---|---|
-| [ ] | 4.1 | Ev v1: KayKit ile 3 kat + çatı katı + mahzen + bahçe (Claude Code iskelet, 🖐 elle detay) | L |
+| [~] | 4.1 | Ev v1: KayKit ile 3 kat + çatı katı + mahzen + bahçe (Claude Code iskelet, 🖐 elle detay) | L |
 | [ ] | 4.2 | Ana menü, ayarlar, duraklat, rol açıklama | M |
 | [~] | 4.3 | Raund raporu + maç sonu unvanları (`StatsService`, `TitleCalculator`: "Bozguncu", "Terlik Nişancısı", "Kolonyacı" dahil) | M |
 | [ ] | 4.4 | Ses: telgraf, toplu sabotaj gıcırtısı, Anne Terliği "ŞRAK!", Eski Radyo oyun havası (ses bastırma), ortam, müzik | M |
@@ -239,6 +239,11 @@ Bahçede Kutsanmış Yağ ve anahtar → ön kapı (+90 sn) → zemin kat 2 bulm
 | [ ] | 4.6 | Atmosfer: ay ışığı, sis, lamba ışıkları, performans (≥ 90 FPS) | M |
 | [ ] | 4.7 | Çatı katı aşaması (`StagesActive = 3`) | S |
 | [ ] | 4.8 | Denge araçları: overlay'de runtime config ayarı | S |
+
+### 4.1 — Ev v1
+- ✅ Claude Code iskeleti (`CinliMahzen/House/Build Graybox`, veri `GrayboxLayout` / `GrayboxMarkers`): mahzen (-1) + zemin + 1. kat + çatı katı (tavan arası, büyü odası) + bahçe; 3 merdiven; kilerde mahzen kapağı (`cellar_key`); düz çatı + tavan plakaları; kapalı geçitler bloklar. `House/Validate` 0/0, 500 seed geçerli, yürüme testi (bahçe → ana merdiven, koridor → çatı katı, kiler ↔ mahzen) ve kapaklı tam raund MCP ile geçti.
+- 🖐 elle (kullanıcı): oda oranları ve kapı yerleri (gerekirse `GrayboxLayout.CreateDefault`'ta), eğimli çatı, gerçek mobilya (`TestPossessables` yerine kat başına ~10-15 eşya + 1 Anne Terliği), bahçe süsleri, kapak için yatay bir kapak modeli. Elle yapılan sahne değişiklikleri `Build Graybox` ile ezilir: prefab yerine sahnede/ayrı prefab'da yapın.
+- Kabul: kullanıcı elle detayları onaylayınca `[x]`.
 
 ## M5 — Online (PUN 2)
 

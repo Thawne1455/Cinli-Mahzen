@@ -75,7 +75,7 @@ namespace CinliMahzen.Tests.EditMode.World
             AssertNoErrors(issues);
             Assert.AreEqual(2, HouseValidator.CountWarnings(issues), Dump(issues));
             AssertWarning(issues, "DigSpots");
-            AssertWarning(issues, "StageGate (the cellar hatch");
+            AssertWarning(issues, "no cellar hatch");
         }
 
         [Test]
@@ -366,7 +366,7 @@ namespace CinliMahzen.Tests.EditMode.World
         // ------------------------------------------------------------------------------------------------
 
         [Test]
-        public void MissingGateOfAMiddleStage_IsAnError_OfTheLastStageOnlyAWarning()
+        public void MissingGateOfAMiddleStage_IsAnError_TheLastStageNeedsNone()
         {
             HouseFixture f = HouseFixture.Valid();
             f.Gates.RemoveAt(1); // stage 1
@@ -374,7 +374,61 @@ namespace CinliMahzen.Tests.EditMode.World
             List<HouseIssue> issues = Run(f);
 
             AssertError(issues, "stage 1 has no StageGate");
-            AssertWarning(issues, "stage 2 has no StageGate (the cellar hatch");
+            for (int i = 0; i < issues.Count; i++)
+            {
+                StringAssert.DoesNotContain("stage 2 has no StageGate", issues[i].Message, "the cellar follows the last stage");
+            }
+        }
+
+        // ---------- cellar hatch (TODO 4.1) ----------
+
+        private static HouseGateEntry Hatch(HouseFixture f, string item)
+        {
+            return new HouseGateEntry(f.NextPath("StageGate", "StageGate"), 1, item, Vector3.zero, default, true);
+        }
+
+        [Test]
+        public void CellarHatch_WithTheCellarKey_RemovesTheNoHatchWarning()
+        {
+            HouseFixture f = HouseFixture.Valid();
+            f.Gates.Add(Hatch(f, HouseContract.CellarKeyItemId));
+
+            List<HouseIssue> issues = Run(f);
+
+            AssertNoErrors(issues);
+            for (int i = 0; i < issues.Count; i++)
+            {
+                StringAssert.DoesNotContain("no cellar hatch", issues[i].Message);
+            }
+        }
+
+        [Test]
+        public void CellarHatch_NeedsTheCellarKey_AndThereIsOnlyOne()
+        {
+            HouseFixture f = HouseFixture.Valid();
+            f.Gates.Add(Hatch(f, "house_key"));
+            f.Gates.Add(Hatch(f, HouseContract.CellarKeyItemId));
+
+            List<HouseIssue> issues = Run(f);
+
+            AssertError(issues, "must require 'cellar_key'");
+            AssertError(issues, "more than one cellar hatch");
+        }
+
+        [Test]
+        public void CellarRoom_NeedsNoStageZone_OtherRoomsDo()
+        {
+            HouseFixture f = HouseFixture.Valid();
+            f.Rooms.Add(new HouseRoomEntry(9, "cellar", HouseContract.CellarFloor, false, new[] { HouseFixture.Box(0f, -4f, 0f, 20f, 0f, 10f) }));
+            f.Rooms.Add(new HouseRoomEntry(10, "loft", 2, false, new[] { HouseFixture.Box(0f, 8f, 0f, 20f, 12f, 10f) }));
+
+            List<HouseIssue> issues = Run(f);
+
+            AssertError(issues, "loft");
+            for (int i = 0; i < issues.Count; i++)
+            {
+                Assert.IsFalse(issues[i].Message.Contains("cellar") && issues[i].Message.Contains("StageZone"), issues[i].Message);
+            }
         }
 
         [Test]

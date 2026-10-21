@@ -14,7 +14,7 @@ namespace CinliMahzen.Editor
     /// (CLAUDE.md section 5): all positions come from the hand-authored data; this class only places prefabs.
     /// Walls come from <see cref="GrayboxWallPlanner"/>, so a shared wall is built once.
     ///
-    /// Door leaves of stage gates and the front door are drawn but non-blocking in v0 (see DoorLeafNameSuffix).
+    /// Door leaves of stage gates, the front door and the cellar hatch block until the gate opens (see DoorLeafNameSuffix).
     ///
     /// Idempotent: Build Graybox overwrites <c>P_House.prefab</c> (the asset keeps its GUID, so scene instances stay
     /// linked).
@@ -24,9 +24,12 @@ namespace CinliMahzen.Editor
     /// RoomMarker (trigger boxes, layer Ignore Raycast) and a "Markers" child with its point markers; the stage zones live
     /// in P_House / Markers. Runtime code never looks the house up by these names, only through the markers.
     ///
-    /// Hierarchy: P_House / Garden / Room_X / {Floor, Walls, Markers}, Garden/Posts, Garden/Ground;
-    /// P_House / Floor0 | Floor1 / Room_X / {Floor, Walls, Markers}, Floor0 | Floor1 / Posts; P_House / Stairs; P_House / Props;
-    /// P_House / Markers / Stage_N. The HouseService sits on P_House.
+    /// TODO 4.1 (v1): four levels - cellar (-1, reached through the cellar hatch in the pantry), ground floor, first floor and attic -
+    /// three staircases, a flat roof lid over the attic and the ground slab with the cellar cut out. Fine dressing is hand work.
+    ///
+    /// Hierarchy: P_House / Garden / Room_X / {Floor, Walls, Markers}, Garden/Posts, Garden/Ground_*;
+    /// P_House / Floor-1 | Floor0 | Floor1 | Floor2 / Room_X / {Floor, Walls, Markers}, Floor*/Posts; P_House / Stairs; P_House / Roof;
+    /// P_House / Props; P_House / Markers / Stage_N. The HouseService sits on P_House.
     /// </summary>
     public static class HouseGrayboxBuilder
     {
@@ -47,9 +50,15 @@ namespace CinliMahzen.Editor
 
         private const string HouseRootName = "P_House";
         private const string GardenGroupName = GrayboxNaming.GardenGroupName;
-        private const string FloorGroupPrefix = GrayboxNaming.FloorGroupPrefix;
         private const string StairsGroupName = "Stairs";
         private const string PropsGroupName = "Props";
+        private const string RoofGroupName = "Roof";
+        private const string CeilingsGroupName = "Ceilings";
+
+        /// <summary>The KayKit floor tiles have no underside: a thin plate this far below each level's tiles closes the ceiling below.</summary>
+        private const float CeilingDrop = 0.12f;
+        private const float CeilingThickness = 0.04f;
+        private static readonly Color CeilingColor = new Color(0.4f, 0.38f, 0.36f);
         private const string RoomPrefix = GrayboxNaming.RoomPrefix;
         private const string RoomFloorGroupName = "Floor";
         private const string RoomWallsGroupName = "Walls";
@@ -78,13 +87,10 @@ namespace CinliMahzen.Editor
         /// <summary>A wall that runs along world Z is the X-running prefab turned by this yaw.</summary>
         private const float WallYawAlongZ = 90f;
 
-        /// <summary>Only the garden stage (stage 0) is grouped under "Garden"; the other rooms go under their floor.</summary>
-        private const int GardenStage = GrayboxNaming.GardenStage;
-
         /// <summary>
-        /// In Env_WallDoorwayDoor the door leaf is the child mesh "wall_doorway_door" and it comes with its own closed
-        /// MeshCollider. Graybox v0 has no way to open doors yet (locks arrive with TODO 2.7), so the leaf is drawn but
-        /// its collider is switched off; otherwise nobody could enter the house or reach the stairs.
+        /// In Env_WallDoorwayDoor the door leaf is the child mesh "wall_doorway_door" with its own closed MeshCollider. Since TODO 4.1
+        /// the leaf blocks while the gate is closed (the front door, the stair gates, the cellar hatch); opening a gate switches the
+        /// whole door piece off (RoundSetupApplier.SetDoorOpen). In v0 the collider was off because nothing could open a gate yet.
         /// </summary>
         private const string DoorLeafNameSuffix = "_door";
 
@@ -172,6 +178,7 @@ namespace CinliMahzen.Editor
                 case GrayboxWallKind.Door:
                     // Open and plain doors are just the frame; gates and the front door get the door leaf.
                     return segment.Door.Kind == GrayboxDoorKind.StageGate || segment.Door.Kind == GrayboxDoorKind.FrontDoor
+                        || segment.Door.Kind == GrayboxDoorKind.CellarHatch
                         ? DoorwayWithDoorSpec
                         : DoorwaySpec;
                 default:
@@ -297,7 +304,7 @@ namespace CinliMahzen.Editor
         public static void PrintGrayboxAsciiMap()
         {
             GrayboxLayout layout = GrayboxLayout.Default;
-            for (int floor = 0; floor < GrayboxLayout.FloorCount; floor++)
+            for (int floor = GrayboxLayout.MaxFloor; floor >= GrayboxLayout.MinFloor; floor--)
             {
                 Debug.Log("[House] Graybox floor " + floor + " (north up)\n" + GrayboxAsciiMap.Render(layout, floor));
             }
@@ -312,10 +319,10 @@ namespace CinliMahzen.Editor
         {
             Transform root = Group(ctx, null, HouseRootName);
             Transform garden = Group(ctx, root, GardenGroupName);
-            var floorGroups = new Transform[GrayboxLayout.FloorCount];
-            for (int floor = 0; floor < floorGroups.Length; floor++)
+            var floorGroups = new Dictionary<int, Transform>();
+            for (int floor = GrayboxLayout.MinFloor; floor <= GrayboxLayout.MaxFloor; floor++)
             {
-                floorGroups[floor] = Group(ctx, root, FloorGroupPrefix + floor);
+                floorGroups.Add(floor, Group(ctx, root, GrayboxNaming.FloorGroupName(floor)));
             }
             Transform stairsGroup = Group(ctx, root, StairsGroupName);
             Transform propsGroup = Group(ctx, root, PropsGroupName);
@@ -328,7 +335,7 @@ namespace CinliMahzen.Editor
             for (int r = 0; r < layout.Rooms.Count; r++)
             {
                 GrayboxRoom room = layout.Rooms[r];
-                Transform parent = room.Stage == GardenStage ? garden : floorGroups[room.Floor];
+                Transform parent = GrayboxNaming.IsGardenRoom(room) ? garden : floorGroups[room.Floor];
                 Transform roomGroup = Group(ctx, parent, RoomPrefix + room.Name);
                 roomGroups.Add(room.Id, roomGroup);
                 Transform floorGroup = Group(ctx, roomGroup, RoomFloorGroupName);
@@ -364,17 +371,17 @@ namespace CinliMahzen.Editor
                     ctx.Pieces[(int)segment.Kind]++;
                     if (spec.HasDoorLeaf)
                     {
-                        DisableDoorLeafColliders(piece);
+                        CheckDoorLeafCollider(piece);
                         gateDoors[edge] = piece.transform;
                     }
                 }
             }
 
             // Corner posts. Fence posts on the ground level belong to the garden, everything else to its floor.
-            var postGroups = new Transform[GrayboxLayout.FloorCount];
-            for (int floor = 0; floor < postGroups.Length; floor++)
+            var postGroups = new Dictionary<int, Transform>();
+            for (int floor = GrayboxLayout.MinFloor; floor <= GrayboxLayout.MaxFloor; floor++)
             {
-                postGroups[floor] = Group(ctx, floorGroups[floor], PostsGroupName);
+                postGroups.Add(floor, Group(ctx, floorGroups[floor], PostsGroupName));
             }
             Transform gardenPosts = Group(ctx, garden, PostsGroupName);
             List<GrayboxPost> posts = GrayboxWallPlanner.PlanPosts(segments);
@@ -397,7 +404,9 @@ namespace CinliMahzen.Editor
                 PlaceStairs(ctx, layout.Stairs[i], stairsGroup);
             }
 
-            // Props and the ground slab.
+            // The roof over the attic (a flat lid; the pitched roof is hand work) and the ground slab with the cellar cut out.
+            BuildRoof(ctx, layout, Group(ctx, root, RoofGroupName));
+            BuildCeilings(ctx, layout, Group(ctx, root, CeilingsGroupName));
             BuildGround(ctx, layout, garden);
             for (int i = 0; i < layout.Props.Count; i++)
             {
@@ -411,23 +420,19 @@ namespace CinliMahzen.Editor
             return root.gameObject;
         }
 
-        private static void DisableDoorLeafColliders(GameObject piece)
+        /// <summary>A closed gate must block the human: warn when the door piece has no leaf collider.</summary>
+        private static void CheckDoorLeafCollider(GameObject piece)
         {
-            int disabled = 0;
             Collider[] colliders = piece.GetComponentsInChildren<Collider>();
             for (int i = 0; i < colliders.Length; i++)
             {
-                if (colliders[i].gameObject.name.EndsWith(DoorLeafNameSuffix, System.StringComparison.Ordinal))
+                if (colliders[i].enabled && colliders[i].gameObject.name.EndsWith(DoorLeafNameSuffix, System.StringComparison.Ordinal))
                 {
-                    colliders[i].enabled = false;
-                    disabled++;
+                    return;
                 }
             }
-            if (disabled == 0)
-            {
-                Debug.LogWarning("[House] No door leaf collider (child named '*" + DoorLeafNameSuffix + "') found on " + piece.name
-                    + "; this gate may block the doorway.");
-            }
+            Debug.LogWarning("[House] No door leaf collider (child named '*" + DoorLeafNameSuffix + "') found on " + piece.name
+                + "; this gate will not block the doorway while it is closed.");
         }
 
         private static string PieceName(GrayboxWallSegment segment)
@@ -440,8 +445,8 @@ namespace CinliMahzen.Editor
         private static void PlaceStairs(BuildContext ctx, GrayboxStairs stairs, Transform parent)
         {
             GrayboxEdge top = stairs.ArrivalEdge;
-            Vector3 position = new Vector3(top.CenterCellX * CellSize, FloorTopOffset, top.CenterCellZ * CellSize);
-            GameObject instance = Place(ctx, StairsSpec, "Stairs_" + stairs.Start.X + "_" + stairs.Start.Z + "_" + stairs.Direction,
+            Vector3 position = new Vector3(top.CenterCellX * CellSize, stairs.BaseFloor * FloorHeight + FloorTopOffset, top.CenterCellZ * CellSize);
+            GameObject instance = Place(ctx, StairsSpec, "Stairs_F" + stairs.BaseFloor + "_" + stairs.Start.X + "_" + stairs.Start.Z + "_" + stairs.Direction,
                 parent, position, stairs.ModelYawDegrees);
             if (instance == null)
             {
@@ -574,7 +579,7 @@ namespace CinliMahzen.Editor
                         ctx.Failed = true;
                         door = go.transform;
                     }
-                    go.AddComponent<StageGate>().Configure(spec.Stage, door);
+                    go.AddComponent<StageGate>().Configure(spec.Stage, door, spec.IsCellarHatch);
                     if (!string.IsNullOrEmpty(spec.ItemId))
                     {
                         go.AddComponent<GateLock>().Configure(spec.ItemId);
@@ -608,6 +613,10 @@ namespace CinliMahzen.Editor
 
                 case GrayboxMarkerKind.ToolShedItem:
                     go.AddComponent<ToolShedItemPoint>().Configure(spec.ItemId);
+                    break;
+
+                case GrayboxMarkerKind.DigSpot:
+                    go.AddComponent<DigSpot>();
                     break;
 
                 default:
@@ -645,6 +654,10 @@ namespace CinliMahzen.Editor
         // ground and props
         // ------------------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// The earth slab under the garden and the tree line. The cells above the cellar are left out (their floor tiles close them
+        /// from above), so the slab never plugs the hatch hole of the cellar stairs: up to four slabs around that rectangle.
+        /// </summary>
         private static void BuildGround(BuildContext ctx, GrayboxLayout layout, Transform garden)
         {
             int minX, minZ, maxX, maxZ;
@@ -662,11 +675,140 @@ namespace CinliMahzen.Editor
             maxX += GroundMarginCells;
             maxZ += GroundMarginCells;
 
+            Material material = ctx.LitMaterial("M_Graybox_Ground", GroundColor);
+            int holeMinX, holeMinZ, holeMaxX, holeMaxZ;
+            if (!CellarCellBounds(layout, out holeMinX, out holeMinZ, out holeMaxX, out holeMaxZ))
+            {
+                GroundSlab(ctx, garden, GroundName, minX, minZ, maxX, maxZ, material);
+                return;
+            }
+            GroundSlab(ctx, garden, GroundName + "_South", minX, minZ, maxX, holeMinZ - 1, material);
+            GroundSlab(ctx, garden, GroundName + "_North", minX, holeMaxZ + 1, maxX, maxZ, material);
+            GroundSlab(ctx, garden, GroundName + "_West", minX, holeMinZ, holeMinX - 1, holeMaxZ, material);
+            GroundSlab(ctx, garden, GroundName + "_East", holeMaxX + 1, holeMinZ, maxX, holeMaxZ, material);
+        }
+
+        /// <summary>One slab over the inclusive cell rectangle; nothing when it is empty.</summary>
+        private static void GroundSlab(BuildContext ctx, Transform parent, string name, int minX, int minZ, int maxX, int maxZ, Material material)
+        {
+            if (maxX < minX || maxZ < minZ)
+            {
+                return;
+            }
             float sizeX = (maxX - minX + 1) * CellSize;
             float sizeZ = (maxZ - minZ + 1) * CellSize;
             Vector3 center = new Vector3((minX + maxX + 1) * 0.5f * CellSize, -GroundThickness * 0.5f, (minZ + maxZ + 1) * 0.5f * CellSize);
-            Primitive(ctx, PrimitiveType.Cube, GroundName, garden, center, new Vector3(sizeX, GroundThickness, sizeZ),
-                ctx.LitMaterial("M_Graybox_Ground", GroundColor), ColliderMode.Primitive);
+            Primitive(ctx, PrimitiveType.Cube, name, parent, center, new Vector3(sizeX, GroundThickness, sizeZ), material, ColliderMode.Primitive);
+        }
+
+        /// <summary>Inclusive cell bounds of every cellar room; false when the layout has no cellar.</summary>
+        private static bool CellarCellBounds(GrayboxLayout layout, out int minX, out int minZ, out int maxX, out int maxZ)
+        {
+            minX = minZ = int.MaxValue;
+            maxX = maxZ = int.MinValue;
+            var cells = new List<GrayboxCell>();
+            for (int i = 0; i < layout.Rooms.Count; i++)
+            {
+                if (layout.Rooms[i].Floor == GrayboxLayout.CellarFloor)
+                {
+                    layout.Rooms[i].AppendCellsTo(cells);
+                }
+            }
+            for (int i = 0; i < cells.Count; i++)
+            {
+                minX = Mathf.Min(minX, cells[i].X);
+                minZ = Mathf.Min(minZ, cells[i].Z);
+                maxX = Mathf.Max(maxX, cells[i].X);
+                maxZ = Mathf.Max(maxZ, cells[i].Z);
+            }
+            return cells.Count > 0;
+        }
+
+        /// <summary>
+        /// Ceiling plates (no collider) under every tile that has an indoor level below it: the floor tiles of the first floor and the
+        /// attic, the ground-floor tiles over the cellar and the roof lid. Stair holes stay open because they have no tile.
+        /// </summary>
+        private static void BuildCeilings(BuildContext ctx, GrayboxLayout layout, Transform parent)
+        {
+            Material material = ctx.LitMaterial("M_Graybox_Ceiling", CeilingColor);
+            var size = new Vector3(CellSize, CeilingThickness, CellSize);
+            int plates = 0;
+            for (int level = GrayboxLayout.MinFloor + 1; level <= GrayboxLayout.MaxFloor + 1; level++)
+            {
+                int minX, minZ, maxX, maxZ;
+                layout.GetCellBounds(out minX, out minZ, out maxX, out maxZ);
+                for (int z = minZ; z <= maxZ; z++)
+                {
+                    for (int x = minX; x <= maxX; x++)
+                    {
+                        var cell = new GrayboxCell(x, z);
+                        if (!HasTile(layout, level, cell) || !HasIndoorSpaceBelow(layout, level - 1, cell))
+                        {
+                            continue;
+                        }
+                        Vector3 position = new Vector3((x + 0.5f) * CellSize, level * FloorHeight - CeilingDrop, (z + 0.5f) * CellSize);
+                        Primitive(ctx, PrimitiveType.Cube, "Ceiling_" + level + "_" + x + "_" + z, parent, position, size, material, ColliderMode.None);
+                        plates++;
+                    }
+                }
+            }
+            ctx.Ceilings = plates;
+        }
+
+        /// <summary>A floor tile lies there: a room cell of that level, or the roof lid one floor above the attic.</summary>
+        private static bool HasTile(GrayboxLayout layout, int level, GrayboxCell cell)
+        {
+            if (level > GrayboxLayout.MaxFloor)
+            {
+                return HasIndoorSpaceBelow(layout, GrayboxLayout.MaxFloor, cell);
+            }
+            GrayboxRoom room = layout.RoomAt(level, cell);
+            return room != null && !room.IsOutdoor;
+        }
+
+        /// <summary>An indoor room or a stair shaft (which shows the ceiling of its top floor) occupies the cell on that floor.</summary>
+        private static bool HasIndoorSpaceBelow(GrayboxLayout layout, int floor, GrayboxCell cell)
+        {
+            GrayboxRoom room = layout.RoomAt(floor, cell);
+            return (room != null && !room.IsOutdoor) || layout.IsStairVoid(floor, cell);
+        }
+
+        /// <summary>A flat lid of stone tiles one floor above every cell of the top floor (the attic), so the house is closed from above.</summary>
+        private static void BuildRoof(BuildContext ctx, GrayboxLayout layout, Transform parent)
+        {
+            for (int r = 0; r < layout.Rooms.Count; r++)
+            {
+                GrayboxRoom room = layout.Rooms[r];
+                if (room.Floor != GrayboxLayout.MaxFloor)
+                {
+                    continue;
+                }
+                ctx.Cells.Clear();
+                room.AppendCellsTo(ctx.Cells);
+                for (int c = 0; c < ctx.Cells.Count; c++)
+                {
+                    GrayboxCell cell = ctx.Cells[c];
+                    Vector3 position = new Vector3((cell.X + 0.5f) * CellSize, (GrayboxLayout.MaxFloor + 1) * FloorHeight, (cell.Z + 0.5f) * CellSize);
+                    if (Place(ctx, FloorStoneSpec, "Roof_" + cell.X + "_" + cell.Z, parent, position, 0f) != null)
+                    {
+                        ctx.FloorTiles++;
+                    }
+                }
+            }
+            // The attic stair shaft has no room on the attic floor, but it still needs a lid.
+            for (int s = 0; s < layout.Stairs.Count; s++)
+            {
+                if (layout.Stairs[s].TopFloor != GrayboxLayout.MaxFloor)
+                {
+                    continue;
+                }
+                for (int c = 0; c < layout.Stairs[s].Cells.Count; c++)
+                {
+                    GrayboxCell cell = layout.Stairs[s].Cells[c];
+                    Vector3 position = new Vector3((cell.X + 0.5f) * CellSize, (GrayboxLayout.MaxFloor + 1) * FloorHeight, (cell.Z + 0.5f) * CellSize);
+                    Place(ctx, FloorStoneSpec, "Roof_" + cell.X + "_" + cell.Z, parent, position, 0f);
+                }
+            }
         }
 
         private static void BuildProp(BuildContext ctx, GrayboxProp prop, int index, Transform parent)
@@ -833,6 +975,7 @@ namespace CinliMahzen.Editor
             public int Stairs;
             public int Props;
             public int Markers;
+            public int Ceilings;
             public readonly int[] Pieces = new int[4]; // indexed by GrayboxWallKind
 
             private readonly Dictionary<string, GameObject> _prefabs = new Dictionary<string, GameObject>();
@@ -903,7 +1046,7 @@ namespace CinliMahzen.Editor
                 return "[House] Graybox built -> " + path + ": " + Rooms + " rooms, " + FloorTiles + " floor tiles, "
                     + (doors + walls + fences + railings) + " wall pieces (" + walls + " walls, " + doors + " doors, "
                     + fences + " fences, " + railings + " railings), " + Posts + " posts, " + Stairs + " stairs, " + Props + " props, "
-                    + Markers + " markers. Run CinliMahzen/House/Validate.";
+                    + Markers + " markers, " + Ceilings + " ceiling plates. Run CinliMahzen/House/Validate.";
             }
         }
     }

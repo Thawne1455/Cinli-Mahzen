@@ -180,11 +180,14 @@ namespace CinliMahzen.Objectives
         private void SetUpGarden()
         {
             HouseIndex index = _house.HouseIndex;
+            GameBalanceConfig config = GameServices.Config;
+            int stagesActive = config.StagesActive;
             _lockedGates.Clear();
             for (int i = 0; i < index.Gates.Count; i++)
             {
                 if (index.Gates[i].HasLock)
-                    _lockedGates.Add(new ObjectiveFlowCore.LockedGate(index.Gates[i].NetId, index.Gates[i].StageIndex, index.Gates[i].RequiredItemId));
+                    _lockedGates.Add(new ObjectiveFlowCore.LockedGate(index.Gates[i].NetId, index.Gates[i].StageFor(stagesActive),
+                        index.Gates[i].RequiredItemId));
             }
             _shedItems.Clear();
             for (int i = 0; i < index.ToolShedItems.Count; i++)
@@ -196,11 +199,9 @@ namespace CinliMahzen.Objectives
             _flow.SetGarden(_plan.HouseKeySpotId, _lockedGates, _shedItems);
 
             // TODO 3.7: the cellar — the real dig site (the jinns see it) and whether a locked hatch guards it.
-            GameBalanceConfig config = GameServices.Config;
-            int stagesActive = config.StagesActive;
             bool hatch = false;
             for (int i = 0; i < index.Gates.Count; i++)
-                hatch |= index.Gates[i].StageIndex == stagesActive + 1 && index.Gates[i].HasLock;
+                hatch |= index.Gates[i].StageFor(stagesActive) == stagesActive + 1 && index.Gates[i].HasLock;
             int checkpoints = Mathf.Max(1, config.DigCheckpoints);
             _flow.SetCellar(_plan.DigSpotId, checkpoints, config.DigTotalTime / checkpoints, hatch);
             for (int i = 0; i < index.DigSpots.Count; i++)
@@ -366,9 +367,10 @@ namespace CinliMahzen.Objectives
         public void OpenGate(int stage)
         {
             bool any = false;
+            int stagesActive = GameServices.Config.StagesActive;
             for (int i = 0; i < _gates.Count; i++)
             {
-                if (_gates[i] != null && _gates[i].StageIndex == stage)
+                if (_gates[i] != null && _gates[i].StageFor(stagesActive) == stage)
                 {
                     SetDoorOpen(_gates[i], true);
                     any = true;

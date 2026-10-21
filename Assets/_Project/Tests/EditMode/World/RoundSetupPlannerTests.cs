@@ -339,6 +339,10 @@ namespace CinliMahzen.Tests.EditMode.World
             }
             foreach (HousePuzzleSlotEntry slot in _house.PuzzleSlots)
             {
+                if (!_settings.IsActiveStage(slot.StageIndex))
+                {
+                    continue; // the attic slots wait for StagesActive = 3 (TODO 4.7)
+                }
                 Assert.IsTrue(usedSlots.Contains(slot.NetId.Value), "PuzzleSlot " + slot.Path + " is never used");
             }
         }
@@ -492,7 +496,7 @@ namespace CinliMahzen.Tests.EditMode.World
         public void Cologne_SpawnsInAnActiveStageRoom_AndEveryCandidateIsUsed()
         {
             List<HouseSpotEntry> candidates = RoundPlanRules.CologneCandidates(_house, _settings);
-            Assert.AreEqual(_house.CologneSpots.Count, candidates.Count, "every graybox cologne spot is on floor 0 or 1");
+            Assert.AreEqual(_house.CologneSpots.Count, candidates.Count, "every graybox cologne spot is in a stage of the MVP (no attic spot)");
             var used = new HashSet<int>();
             foreach (RoundPlan plan in _plans)
             {
@@ -506,14 +510,19 @@ namespace CinliMahzen.Tests.EditMode.World
         }
 
         [Test]
-        public void DigSpot_IsNone_WhileTheGrayboxHasNoCellar()
+        public void DigSpot_IsAlwaysInTheCellar_AndEveryOneIsUsed()
         {
-            Assert.AreEqual(0, _house.DigSpots.Count);
+            Assert.GreaterOrEqual(_house.DigSpots.Count, HouseContract.MinDigSpots);
+            var used = new HashSet<int>();
             foreach (RoundPlan plan in _plans)
             {
-                Assert.IsFalse(plan.HasDigSpot);
-                Assert.AreEqual(NetId.Invalid, plan.DigSpotId);
+                Assert.IsTrue(plan.HasDigSpot, Describe(plan));
+                HouseSpotEntry spot = FindSpot(_house.DigSpots, plan.DigSpotId);
+                Assert.IsNotNull(spot, Describe(plan));
+                Assert.AreEqual(HouseContract.CellarFloor, _house.FindRoom(_house.ResolveRoom(spot)).Floor);
+                used.Add(spot.NetId.Value);
             }
+            Assert.AreEqual(_house.DigSpots.Count, used.Count, "not every dig spot was picked in " + SeedCount + " seeds");
         }
 
         private static HouseSpotEntry FindSpot(IReadOnlyList<HouseSpotEntry> spots, NetId id)

@@ -1,6 +1,6 @@
 namespace CinliMahzen.World.Graybox
 {
-    /// <summary>Which marker component a <see cref="GrayboxMarkerSpec"/> becomes. Int values are stable; append new kinds at the end (DigSpot comes with the cellar, TODO 3.7).</summary>
+    /// <summary>Which marker component a <see cref="GrayboxMarkerSpec"/> becomes. Int values are stable; append new kinds at the end.</summary>
     public enum GrayboxMarkerKind
     {
         /// <summary>RoomMarker on the room group (one trigger box per room rectangle).</summary>
@@ -21,6 +21,9 @@ namespace CinliMahzen.World.Graybox
         CologneSpawnSpot = 8,
         HumanSpawn = 9,
         JinnSpawn = 10,
-        ToolShedItem = 11
+        ToolShedItem = 11,
+
+        /// <summary>TODO 4.1: DigSpot in the cellar.</summary>
+        DigSpot = 12
     }
 }

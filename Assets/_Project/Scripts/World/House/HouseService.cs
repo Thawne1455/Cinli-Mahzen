@@ -347,7 +347,7 @@ namespace CinliMahzen.World
                 StageGate gate = gates[i];
                 GateLock gateLock = gate.GetComponent<GateLock>();
                 string requiredItem = gateLock != null ? gateLock.RequiredItemId : string.Empty;
-                var entry = new HouseGateEntry(KeyOf(gate), gate.StageIndex, requiredItem, gate.Door.position);
+                var entry = new HouseGateEntry(KeyOf(gate), gate.StageIndex, requiredItem, gate.Door.position, default, gate.IsCellarHatch);
                 builder.Add(entry);
                 Track(netMarkers, netEntries, gate, entry);
             }

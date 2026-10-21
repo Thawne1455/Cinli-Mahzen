@@ -3,12 +3,13 @@ using System.Collections.Generic;
 namespace CinliMahzen.World.Graybox
 {
     /// <summary>
-    /// The hand-authored graybox house (TODO 1.9): rooms, doors, stairs, railings and garden props as plain data.
+    /// The hand-authored graybox house (TODO 1.9, v1 TODO 4.1): rooms, doors, stairs, railings and garden props as plain data.
     /// There is no generator here (CLAUDE.md section 5): the layout is fixed, the code only turns it into prefabs.
     /// Edit <see cref="CreateDefault"/> to move walls and doors, then run CinliMahzen/House/Build Graybox.
     ///
     /// Grid: cell (0,0) is the south-west corner of the house, X grows east, Z grows north, the front door faces south (-Z).
-    /// The house is 5 x 4 cells (20 x 16 m); the garden is 9 x 8 cells (36 x 32 m) around it.
+    /// The house is 5 x 4 cells (20 x 16 m) on four levels: cellar (-1), ground floor (0), first floor (1) and attic (2); the garden is
+    /// 9 x 8 cells (36 x 32 m) around it.
     /// </summary>
     public sealed class GrayboxLayout
     {
@@ -18,9 +19,15 @@ namespace CinliMahzen.World.Graybox
         /// <summary>Floor to floor height in metres; also the wall height.</summary>
         public const float FloorHeight = 4f;
 
+        public const int CellarFloor = -1;
         public const int GroundFloor = 0;
         public const int UpperFloor = 1;
-        public const int FloorCount = 2;
+        public const int AtticFloor = 2;
+
+        /// <summary>Lowest and highest floor of the layout (HouseContract.MinFloor / MaxFloor).</summary>
+        public const int MinFloor = CellarFloor;
+        public const int MaxFloor = AtticFloor;
+        public const int FloorCount = MaxFloor - MinFloor + 1;
 
         private static GrayboxLayout _default;
 
@@ -102,16 +109,12 @@ namespace CinliMahzen.World.Graybox
             return null;
         }
 
-        /// <summary>True when the cell is part of the open stair shaft on the upper floor.</summary>
+        /// <summary>True when the cell is part of an open stair shaft on that floor (the floor the stairs arrive on).</summary>
         public bool IsStairVoid(int floor, GrayboxCell cell)
         {
-            if (floor != UpperFloor)
-            {
-                return false;
-            }
             for (int i = 0; i < Stairs.Count; i++)
             {
-                if (Stairs[i].Contains(cell))
+                if (Stairs[i].TopFloor == floor && Stairs[i].Contains(cell))
                 {
                     return true;
                 }
@@ -152,8 +155,10 @@ namespace CinliMahzen.World.Graybox
         // ------------------------------------------------------------------------------------------------
         private static GrayboxLayout CreateDefault()
         {
+            const int C = CellarFloor;
             const int G = GroundFloor;
             const int U = UpperFloor;
+            const int A = AtticFloor;
             const GrayboxFloorStyle Wood = GrayboxFloorStyle.Wood;
             const GrayboxFloorStyle Stone = GrayboxFloorStyle.Stone;
 
@@ -166,26 +171,39 @@ namespace CinliMahzen.World.Graybox
                 new GrayboxRoom("shed", "Shed", 'A', G, 0, false, Wood, new GrayboxRect(6, 4, 1, 1)),
 
                 // Stage 1: ground floor. Hall in front, kitchen west, living room east, the stairs (one cell, 4 m run =
-                // one floor) straight ahead of the hall behind the stage gate, pantry behind the stairs linking kitchen
-                // and living room (this is the floor's loop).
+                // one floor) straight ahead of the hall behind the stage gate, pantry at the back linking kitchen and living
+                // room (this is the floor's loop). The cell between stairwell and pantry is the hole of the cellar stairs:
+                // the cellar hatch opens from the pantry.
                 new GrayboxRoom("hall", "Hall", 'H', G, 1, false, Wood, new GrayboxRect(1, 0, 3, 1)),
                 new GrayboxRoom("kitchen", "Kitchen", 'M', G, 1, false, Wood,
                     new GrayboxRect(0, 0, 1, 4), new GrayboxRect(1, 1, 1, 3)),
                 new GrayboxRoom("living", "Living", 'O', G, 1, false, Wood,
                     new GrayboxRect(4, 0, 1, 4), new GrayboxRect(3, 1, 1, 3)),
-                new GrayboxRoom("pantry", "Pantry", 'K', G, 1, false, Stone, new GrayboxRect(2, 2, 1, 2)),
+                new GrayboxRoom("pantry", "Pantry", 'K', G, 1, false, Stone, new GrayboxRect(2, 3, 1, 1)),
                 new GrayboxRoom("stairwell", "Stairwell", 'S', G, 1, false, Wood, new GrayboxRect(2, 1, 1, 1)),
 
-                // Stage 2: first floor. The stair shaft (2,1) is open; the corridor wraps it on three sides behind
-                // railings, the landing (2,2)-(2,3) sits at the top of the stairs. Loop: landing - bedroom1 - corridor -
-                // bedroom2 - landing.
+                // Stage 2: first floor. The stair shaft (2,1) is open; the corridor and the attic stairs look into it over
+                // railings, the landing (2,2)-(2,3) sits at the top of the stairs. The attic stairs (1,1) are entered from the
+                // corridor through the stage 2 gate. Loop: landing - bedroom1 - bathroom - corridor - bedroom2 - landing.
                 new GrayboxRoom("landing", "Landing", 'L', U, 2, false, Wood, new GrayboxRect(2, 2, 1, 2)),
                 new GrayboxRoom("bedroom1", "Bedroom1", '1', U, 2, false, Wood, new GrayboxRect(0, 2, 2, 2)),
                 new GrayboxRoom("bedroom2", "Bedroom2", '2', U, 2, false, Wood, new GrayboxRect(3, 2, 2, 2)),
                 new GrayboxRoom("corridor", "Corridor", 'C', U, 2, false, Wood,
-                    new GrayboxRect(1, 0, 3, 1), new GrayboxRect(1, 1, 1, 1), new GrayboxRect(3, 1, 1, 1)),
+                    new GrayboxRect(1, 0, 3, 1), new GrayboxRect(3, 1, 1, 1)),
                 new GrayboxRoom("bathroom", "Bathroom", 'B', U, 2, false, Stone, new GrayboxRect(0, 0, 1, 2)),
-                new GrayboxRoom("study", "Study", 'W', U, 2, false, Wood, new GrayboxRect(4, 0, 1, 2))
+                new GrayboxRoom("study", "Study", 'W', U, 2, false, Wood, new GrayboxRect(4, 0, 1, 2)),
+                new GrayboxRoom("atticstairs", "AtticStairs", 'T', U, 2, false, Wood, new GrayboxRect(1, 1, 1, 1)),
+
+                // Stage 3: attic (TODO 4.7 turns it on with StagesActive = 3). The loft wraps the attic stair shaft (1,1)
+                // behind railings; the ritual room fills the east side, two doors make the loop.
+                new GrayboxRoom("attic", "Attic", 'P', A, 3, false, Wood,
+                    new GrayboxRect(0, 0, 1, 4), new GrayboxRect(1, 0, 1, 1), new GrayboxRect(1, 2, 1, 2), new GrayboxRect(2, 0, 1, 4)),
+                new GrayboxRoom("ritual", "Ritual", 'R', A, 3, false, Wood, new GrayboxRect(3, 0, 2, 4)),
+
+                // The cellar under the front part of the house. It has no stage zone: it opens after the last active stage,
+                // through the hatch. The stair cell (2,2) is its own rectangle so its room box reaches up through the hatch hole.
+                new GrayboxRoom("cellar", "Cellar", 'Z', C, 0, false, Stone,
+                    new GrayboxRect(0, 0, 2, 3), new GrayboxRect(2, 0, 1, 2), new GrayboxRect(2, 2, 1, 1), new GrayboxRect(3, 0, 2, 3))
             };
 
             var doors = new List<GrayboxDoor>
@@ -198,29 +216,41 @@ namespace CinliMahzen.World.Graybox
                 Door(G, 2, 0, 2, 1, GrayboxDoorKind.StageGate),     // hall <-> stairwell (stage 1 gate)
                 Door(G, 1, 3, 2, 3, GrayboxDoorKind.Door),          // kitchen <-> pantry
                 Door(G, 3, 3, 2, 3, GrayboxDoorKind.Door),          // living <-> pantry
+                Door(G, 2, 3, 2, 2, GrayboxDoorKind.CellarHatch),   // pantry <-> cellar stairs (the cellar hatch)
 
                 // First floor.
                 Door(U, 1, 3, 2, 3, GrayboxDoorKind.Door),          // bedroom1 <-> landing
                 Door(U, 3, 3, 2, 3, GrayboxDoorKind.Door),          // bedroom2 <-> landing
-                Door(U, 1, 2, 1, 1, GrayboxDoorKind.Door),          // bedroom1 <-> corridor
                 Door(U, 3, 2, 3, 1, GrayboxDoorKind.Door),          // bedroom2 <-> corridor
                 Door(U, 0, 0, 1, 0, GrayboxDoorKind.Door),          // bathroom <-> corridor
                 Door(U, 0, 1, 0, 2, GrayboxDoorKind.Door),          // bathroom <-> bedroom1
                 Door(U, 4, 0, 3, 0, GrayboxDoorKind.Door),          // study <-> corridor
-                Door(U, 4, 1, 4, 2, GrayboxDoorKind.Door)           // study <-> bedroom2
+                Door(U, 4, 1, 4, 2, GrayboxDoorKind.Door),          // study <-> bedroom2
+                Door(U, 1, 0, 1, 1, GrayboxDoorKind.StageGate),     // corridor <-> attic stairs (stage 2 gate)
+
+                // Attic.
+                Door(A, 2, 0, 3, 0, GrayboxDoorKind.Door),          // attic <-> ritual (south)
+                Door(A, 2, 3, 3, 3, GrayboxDoorKind.Door)           // attic <-> ritual (north)
             };
 
             var railings = new List<GrayboxRailing>
             {
-                // The corridor looks down into the shaft; the bedrooms keep full walls towards it.
+                // First floor: the corridor and the attic stairs look down into the main shaft; the bedrooms keep full walls.
                 new GrayboxRailing(U, new GrayboxCell(1, 1), new GrayboxCell(2, 1)),
                 new GrayboxRailing(U, new GrayboxCell(3, 1), new GrayboxCell(2, 1)),
-                new GrayboxRailing(U, new GrayboxCell(2, 0), new GrayboxCell(2, 1))
+                new GrayboxRailing(U, new GrayboxCell(2, 0), new GrayboxCell(2, 1)),
+
+                // Attic: the loft wraps the attic stair shaft.
+                new GrayboxRailing(A, new GrayboxCell(0, 1), new GrayboxCell(1, 1)),
+                new GrayboxRailing(A, new GrayboxCell(2, 1), new GrayboxCell(1, 1)),
+                new GrayboxRailing(A, new GrayboxCell(1, 0), new GrayboxCell(1, 1))
             };
 
             var stairs = new List<GrayboxStairs>
             {
-                new GrayboxStairs(new GrayboxCell(2, 1), GrayboxDirection.North)
+                new GrayboxStairs(new GrayboxCell(2, 1), GrayboxDirection.North),
+                new GrayboxStairs(new GrayboxCell(1, 1), GrayboxDirection.North, U),
+                new GrayboxStairs(new GrayboxCell(2, 2), GrayboxDirection.North, C)
             };
 
             var props = new List<GrayboxProp>();

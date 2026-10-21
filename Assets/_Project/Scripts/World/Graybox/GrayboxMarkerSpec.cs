@@ -27,7 +27,7 @@ namespace CinliMahzen.World.Graybox
         public Vector3 Position { get; private set; }
         public float YawDegrees { get; private set; }
 
-        /// <summary>Room: floor (0 ground, 1 first).</summary>
+        /// <summary>Room: floor (-1 cellar, 0 ground, 1 first, 2 attic).</summary>
         public int Floor { get; private set; }
 
         public bool IsOutdoor { get; private set; }
@@ -49,6 +49,9 @@ namespace CinliMahzen.World.Graybox
 
         /// <summary>StageGate: the layout door whose door piece the gate controls.</summary>
         public GrayboxEdge Edge { get; private set; }
+
+        /// <summary>StageGate: the cellar hatch (its stage follows StagesActive, see HouseContract.GateStage).</summary>
+        public bool IsCellarHatch { get; private set; }
 
         /// <summary>StageGate: the lock item id (empty = no GateLock). ToolShedItem: the item placed there.</summary>
         public string ItemId { get; private set; } = string.Empty;
@@ -110,14 +113,16 @@ namespace CinliMahzen.World.Graybox
             };
         }
 
-        internal static GrayboxMarkerSpec StageGate(string roomKey, int stage, GrayboxEdge edge, string lockItemId, Vector3 position)
+        internal static GrayboxMarkerSpec StageGate(string roomKey, int stage, GrayboxEdge edge, string lockItemId, Vector3 position,
+            bool isCellarHatch = false)
         {
             return new GrayboxMarkerSpec(GrayboxMarkerKind.StageGate, roomKey)
             {
                 Stage = stage,
                 Edge = edge,
                 ItemId = lockItemId ?? string.Empty,
-                Position = position
+                Position = position,
+                IsCellarHatch = isCellarHatch
             };
         }
 
@@ -131,7 +136,7 @@ namespace CinliMahzen.World.Graybox
             };
         }
 
-        /// <summary>Lamp, LightSwitch, KeyHideSpot, CologneSpawnSpot, HumanSpawn and JinnSpawn: just a place and a facing.</summary>
+        /// <summary>Lamp, LightSwitch, KeyHideSpot, CologneSpawnSpot, HumanSpawn, JinnSpawn and DigSpot: just a place and a facing.</summary>
         internal static GrayboxMarkerSpec Point(GrayboxMarkerKind kind, string roomKey, Vector3 position, float yawDegrees)
         {
             return new GrayboxMarkerSpec(kind, roomKey)

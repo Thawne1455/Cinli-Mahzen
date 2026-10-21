@@ -68,18 +68,12 @@ namespace CinliMahzen.Tests.EditMode.World
         }
 
         [Test]
-        public void DefaultHouse_OnlyWarnsAboutTheCellar()
+        public void DefaultHouse_HasNoWarnings_NowThatTheCellarIsBuilt()
         {
             List<HouseIssue> issues = HouseValidator.Validate(Index(), AllItemIds);
 
-            Assert.AreEqual(2, HouseValidator.CountWarnings(issues), Dump(issues));
-            var texts = new List<string>();
-            for (int i = 0; i < issues.Count; i++)
-            {
-                texts.Add(issues[i].Message);
-            }
-            Assert.IsTrue(texts.Exists(t => t.Contains("DigSpots")), Dump(issues));
-            Assert.IsTrue(texts.Exists(t => t.Contains("stage 2 has no StageGate")), Dump(issues));
+            Assert.AreEqual(0, HouseValidator.CountErrors(issues), Dump(issues));
+            Assert.AreEqual(0, HouseValidator.CountWarnings(issues), Dump(issues));
         }
 
         [Test]
@@ -88,14 +82,15 @@ namespace CinliMahzen.Tests.EditMode.World
             HouseIndex index = Index();
 
             Assert.AreEqual(Layout.Rooms.Count, index.Rooms.Count, "one RoomMarker per room");
-            Assert.AreEqual(3, index.Stages.Count);
+            Assert.AreEqual(4, index.Stages.Count, "garden, ground floor, first floor, attic");
             Assert.GreaterOrEqual(CountOfStage(index, 1), HouseContract.MinPuzzleSlotsPerStage);
             Assert.GreaterOrEqual(CountOfStage(index, 2), HouseContract.MinPuzzleSlotsPerStage);
+            Assert.GreaterOrEqual(CountOfStage(index, 3), HouseContract.MinPuzzleSlotsPerStage);
             Assert.GreaterOrEqual(index.ReferenceSlots.Count, HouseContract.MinReferenceSlots);
-            Assert.AreEqual(2, index.Gates.Count);
+            Assert.AreEqual(4, index.Gates.Count, "front door, two stair gates, cellar hatch");
             Assert.GreaterOrEqual(index.KeyHideSpots.Count, HouseContract.MinKeyHideSpots);
             Assert.GreaterOrEqual(index.CologneSpots.Count, HouseContract.MinCologneSpawnSpots);
-            Assert.AreEqual(0, index.DigSpots.Count, "the cellar arrives with TODO 3.7");
+            Assert.GreaterOrEqual(index.DigSpots.Count, HouseContract.MinDigSpots);
             Assert.AreEqual(HouseContract.HumanSpawnCount, index.HumanSpawns.Count);
             Assert.AreEqual(HouseContract.JinnSpawnCount, index.JinnSpawns.Count);
             Assert.AreEqual(1, index.ToolShedItems.Count);
@@ -205,7 +200,9 @@ namespace CinliMahzen.Tests.EditMode.World
             HouseIndex index = Index();
 
             Assert.AreEqual(-1, index.RoomOf(new Vector3(-200f, 1f, 0f)));
-            Assert.AreEqual(-1, index.RoomOf(new Vector3(10f, -2f, 8f)), "below the ground");
+            Assert.AreEqual(-1, index.RoomOf(new Vector3(10f, -2f, 14f)), "below the ground, beside the cellar");
+            Assert.AreEqual(GrayboxMarkers.RoomIdOf("cellar"), index.RoomOf(new Vector3(10f, -2f, 8f)), "in the cellar");
+            Assert.AreEqual(GrayboxMarkers.RoomIdOf("cellar"), index.RoomOf(new Vector3(10f, 2f, 10f)), "in the hatch hole above the cellar stairs");
             Assert.AreEqual(-1, index.RoomOf(new Vector3(10f, 30f, 8f)), "far above the roof");
         }
 
@@ -217,7 +214,8 @@ namespace CinliMahzen.Tests.EditMode.World
             for (int i = 0; i < Layout.Rooms.Count; i++)
             {
                 GrayboxRoom room = Layout.Rooms[i];
-                Assert.AreEqual(room.Stage, index.StageOfRoom(GrayboxMarkers.RoomIdOf(room.Id)), room.Id);
+                int expected = room.Floor == GrayboxLayout.CellarFloor ? -1 : room.Stage;
+                Assert.AreEqual(expected, index.StageOfRoom(GrayboxMarkers.RoomIdOf(room.Id)), room.Id + " (the cellar is in no stage)");
             }
             Assert.AreEqual(2, index.FindStage(0).RoomIds.Count, "garden + shed");
         }
@@ -337,6 +335,35 @@ namespace CinliMahzen.Tests.EditMode.World
         }
 
         [Test]
+        public void Lamps_HangClearOfTheStairsWalkway()
+        {
+            // A lamp over the steps hits the climber's head (possessable lamps carry a collider): keep 1.2 m sideways from the
+            // centre line of every flight, on the floor the flight starts from.
+            const float minSideways = 1.2f;
+            foreach (GrayboxMarkerSpec lamp in SpecsOf(GrayboxMarkerKind.Lamp))
+            {
+                foreach (GrayboxStairs stairs in Layout.Stairs)
+                {
+                    GrayboxCell cell = stairs.Start;
+                    float minX = cell.X * GrayboxLayout.CellSize;
+                    float minZ = cell.Z * GrayboxLayout.CellSize;
+                    float baseY = stairs.BaseFloor * GrayboxLayout.FloorHeight;
+                    bool overFlight = lamp.Position.x > minX && lamp.Position.x < minX + GrayboxLayout.CellSize
+                        && lamp.Position.z > minZ && lamp.Position.z < minZ + GrayboxLayout.CellSize
+                        && lamp.Position.y > baseY && lamp.Position.y < baseY + GrayboxLayout.FloorHeight;
+                    if (!overFlight)
+                    {
+                        continue;
+                    }
+                    bool northSouth = stairs.Direction == GrayboxDirection.North || stairs.Direction == GrayboxDirection.South;
+                    float center = northSouth ? minX + GrayboxLayout.CellSize * 0.5f : minZ + GrayboxLayout.CellSize * 0.5f;
+                    float sideways = Math.Abs((northSouth ? lamp.Position.x : lamp.Position.z) - center);
+                    Assert.GreaterOrEqual(sideways, minSideways, lamp.Path + " hangs over " + stairs);
+                }
+            }
+        }
+
+        [Test]
         public void LightSwitches_SitNextToADoorOfTheirRoom()
         {
             // "Next to the door": within 2.5 m of the centre of one of the room's doors (same floor).
@@ -359,6 +386,10 @@ namespace CinliMahzen.Tests.EditMode.World
                     var center = new Vector3(door.Edge.CenterCellX * GrayboxLayout.CellSize, 0f, door.Edge.CenterCellZ * GrayboxLayout.CellSize);
                     var flat = new Vector3(spec.Position.x, 0f, spec.Position.z);
                     nearest = Math.Min(nearest, Vector3.Distance(center, flat));
+                }
+                if (nearest == float.MaxValue)
+                {
+                    continue; // a room without doors (the cellar, reached by its stairs)
                 }
                 Assert.LessOrEqual(nearest, maxDistance, spec.Path + " is " + nearest + " m from the nearest door of " + spec.RoomKey);
             }
@@ -447,16 +478,28 @@ namespace CinliMahzen.Tests.EditMode.World
             HouseIndex index = Index();
             HouseGateEntry front = null;
             HouseGateEntry stairs = null;
+            HouseGateEntry attic = null;
+            HouseGateEntry hatch = null;
             for (int i = 0; i < index.Gates.Count; i++)
             {
-                if (index.Gates[i].StageIndex == 0) front = index.Gates[i];
-                if (index.Gates[i].StageIndex == 1) stairs = index.Gates[i];
+                HouseGateEntry gate = index.Gates[i];
+                if (gate.IsCellarHatch) hatch = gate;
+                else if (gate.StageIndex == 0) front = gate;
+                else if (gate.StageIndex == 1) stairs = gate;
+                else if (gate.StageIndex == 2) attic = gate;
             }
 
             Assert.IsNotNull(front);
             Assert.IsNotNull(stairs);
+            Assert.IsNotNull(attic, "the attic stairs gate");
+            Assert.IsNotNull(hatch, "the cellar hatch");
             Assert.AreEqual("house_key", front.RequiredItemId);
             Assert.IsFalse(stairs.HasLock);
+            Assert.IsFalse(attic.HasLock);
+            Assert.AreEqual(HouseContract.CellarKeyItemId, hatch.RequiredItemId);
+            Assert.AreEqual(3, hatch.StageFor(2), "with 2 puzzle stages the hatch completes stage 3");
+            Assert.AreEqual(4, hatch.StageFor(3), "with the attic stage on it completes stage 4");
+            Assert.AreEqual(2, attic.StageFor(3));
 
             GrayboxDoor frontDoor = FindDoor(GrayboxDoorKind.FrontDoor);
             GrayboxDoor stairDoor = FindDoor(GrayboxDoorKind.StageGate);
@@ -483,12 +526,14 @@ namespace CinliMahzen.Tests.EditMode.World
         {
             List<GrayboxMarkerSpec> gates = SpecsOf(GrayboxMarkerKind.StageGate);
 
-            Assert.AreEqual(2, gates.Count);
+            Assert.AreEqual(4, gates.Count);
             for (int i = 0; i < gates.Count; i++)
             {
                 GrayboxDoor door = Layout.FindDoor(gates[i].Edge);
                 Assert.IsNotNull(door, gates[i].Path);
-                Assert.IsTrue(door.Kind == GrayboxDoorKind.FrontDoor || door.Kind == GrayboxDoorKind.StageGate, gates[i].Path);
+                Assert.IsTrue(door.Kind == GrayboxDoorKind.FrontDoor || door.Kind == GrayboxDoorKind.StageGate
+                    || door.Kind == GrayboxDoorKind.CellarHatch, gates[i].Path);
+                Assert.AreEqual(door.Kind == GrayboxDoorKind.CellarHatch, gates[i].IsCellarHatch, gates[i].Path);
             }
         }
 

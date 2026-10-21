@@ -13,6 +13,12 @@ namespace CinliMahzen.World.Graybox
         StageGate = 2,
 
         /// <summary>The single front door between the garden and the house (needs the house key). Graybox: leaf drawn, collider off.</summary>
-        FrontDoor = 3
+        FrontDoor = 3,
+
+        /// <summary>
+        /// TODO 4.1: the cellar hatch on the arrival border of the cellar stairs (one side is the stair shaft). A StageGate locked with the
+        /// cellar key; its stage is the one after the last active puzzle stage (StageGate.IsCellarHatch). Graybox: leaf drawn, collider off.
+        /// </summary>
+        CellarHatch = 4
     }
 }

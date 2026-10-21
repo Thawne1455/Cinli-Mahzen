@@ -273,8 +273,20 @@ namespace CinliMahzen.Tests.EditMode.World
                 gates += layout.Doors[i].Kind == GrayboxDoorKind.StageGate ? 1 : 0;
             }
 
+            int hatches = 0;
+            int upStairs = 0;
+            for (int i = 0; i < layout.Doors.Count; i++)
+            {
+                hatches += layout.Doors[i].Kind == GrayboxDoorKind.CellarHatch ? 1 : 0;
+            }
+            for (int i = 0; i < layout.Stairs.Count; i++)
+            {
+                upStairs += layout.Stairs[i].IsCellarStairs ? 0 : 1;
+            }
+
             Assert.AreEqual(1, front);
-            Assert.AreEqual(layout.Stairs.Count, gates);
+            Assert.AreEqual(upStairs, gates, "one stage gate per staircase going up");
+            Assert.AreEqual(1, hatches, "the cellar stairs end at the one cellar hatch");
         }
 
         [Test]
@@ -282,14 +294,62 @@ namespace CinliMahzen.Tests.EditMode.World
         {
             GrayboxLayout layout = GrayboxLayout.Default;
 
-            Assert.AreEqual(1, layout.Stairs.Count);
+            Assert.AreEqual(3, layout.Stairs.Count, "main stairs, attic stairs, cellar stairs");
             GrayboxStairs stairs = layout.Stairs[0];
+            Assert.AreEqual(G, stairs.BaseFloor);
             Assert.AreEqual("stairwell", layout.RoomAt(G, stairs.Start).Id);
             Assert.AreEqual("hall", layout.RoomAt(G, stairs.Entrance).Id);
             Assert.AreEqual("landing", layout.RoomAt(U, stairs.Arrival).Id);
             Assert.IsTrue(layout.IsStairVoid(U, stairs.Start), "the shaft must stay open on the upper floor");
             Assert.IsFalse(layout.IsStairVoid(G, stairs.Start));
             Assert.AreEqual(GrayboxDoorKind.StageGate, layout.FindDoor(stairs.EntranceEdge).Kind);
+        }
+
+        [Test]
+        public void Default_AtticStairsRiseFromTheCorridor_BehindTheStage2Gate()
+        {
+            GrayboxLayout layout = GrayboxLayout.Default;
+
+            GrayboxStairs stairs = layout.Stairs[1];
+            Assert.AreEqual(U, stairs.BaseFloor);
+            Assert.AreEqual("atticstairs", layout.RoomAt(U, stairs.Start).Id);
+            Assert.AreEqual("corridor", layout.RoomAt(U, stairs.Entrance).Id);
+            Assert.AreEqual("attic", layout.RoomAt(GrayboxLayout.AtticFloor, stairs.Arrival).Id);
+            Assert.IsTrue(layout.IsStairVoid(GrayboxLayout.AtticFloor, stairs.Start), "the attic floor stays open above the stairs");
+            GrayboxDoor gate = layout.FindDoor(stairs.EntranceEdge);
+            Assert.AreEqual(GrayboxDoorKind.StageGate, gate.Kind);
+            Assert.AreEqual(2, layout.RoomAt(U, stairs.Start).Stage);
+        }
+
+        [Test]
+        public void Default_CellarStairsClimbToTheHatchInThePantry()
+        {
+            GrayboxLayout layout = GrayboxLayout.Default;
+
+            GrayboxStairs stairs = layout.Stairs[2];
+            Assert.IsTrue(stairs.IsCellarStairs);
+            Assert.AreEqual("cellar", layout.RoomAt(GrayboxLayout.CellarFloor, stairs.Start).Id);
+            Assert.AreEqual("cellar", layout.RoomAt(GrayboxLayout.CellarFloor, stairs.Entrance).Id, "the bottom opens into the cellar");
+            Assert.AreEqual("pantry", layout.RoomAt(G, stairs.Arrival).Id);
+            Assert.IsTrue(layout.IsStairVoid(G, stairs.Start), "the hatch hole in the ground floor");
+            Assert.IsNull(layout.RoomAt(G, stairs.Start));
+            Assert.AreEqual(GrayboxDoorKind.CellarHatch, layout.FindDoor(stairs.ArrivalEdge).Kind);
+        }
+
+        [Test]
+        public void Default_HasAllFourLevels()
+        {
+            GrayboxLayout layout = GrayboxLayout.Default;
+            var floors = new HashSet<int>();
+            for (int i = 0; i < layout.Rooms.Count; i++)
+            {
+                floors.Add(layout.Rooms[i].Floor);
+            }
+
+            CollectionAssert.AreEquivalent(new[] { GrayboxLayout.CellarFloor, G, U, GrayboxLayout.AtticFloor }, floors);
+            Assert.AreEqual(3, layout.FindRoom("attic").Stage);
+            Assert.AreEqual(3, layout.FindRoom("ritual").Stage);
+            Assert.IsFalse(layout.FindRoom("cellar").IsOutdoor);
         }
 
         [Test]
@@ -381,9 +441,9 @@ namespace CinliMahzen.Tests.EditMode.World
         public void Rejects_RoomOnAFloorThatDoesNotExist()
         {
             Parts p = Parts.Mini();
-            p.Rooms.Add(Room("attic", 2, 0, 0));
+            p.Rooms.Add(Room("tower", 3, 0, 0));
 
-            AssertRejected(p.Build(), "room 'attic' has floor 2");
+            AssertRejected(p.Build(), "room 'tower' has floor 3");
         }
 
         [Test]
@@ -524,7 +584,7 @@ namespace CinliMahzen.Tests.EditMode.World
             Parts p = Parts.Mini();
             p.Stairs.Clear();
 
-            AssertRejected(p.Build(), "upper-floor rooms but no staircase");
+            AssertRejected(p.Build(), "rooms on floor 1 but no staircase");
         }
 
         [Test]
@@ -533,7 +593,7 @@ namespace CinliMahzen.Tests.EditMode.World
             Parts p = Parts.Mini();
             p.Stairs[0] = new GrayboxStairs(C(7, 7), GrayboxDirection.North);
 
-            AssertRejected(p.Build(), "is not inside a ground-floor room");
+            AssertRejected(p.Build(), "is not inside a room of floor 0");
         }
 
         [Test]
@@ -551,7 +611,7 @@ namespace CinliMahzen.Tests.EditMode.World
             Parts p = Parts.Mini();
             p.Rooms.Add(Room("cover", U, 0, 1)); // right above the stairwell
 
-            AssertRejected(p.Build(), "is covered by upper-floor room 'cover'");
+            AssertRejected(p.Build(), "is covered by floor 1 room 'cover'");
         }
 
         [Test]
@@ -560,7 +620,7 @@ namespace CinliMahzen.Tests.EditMode.World
             Parts p = Parts.Mini();
             p.Stairs[0] = new GrayboxStairs(C(1, 1), GrayboxDirection.East); // arrival (2,1) is empty upstairs
 
-            AssertRejected(p.Build(), "arrival cell (2,1) is not inside an upper-floor room");
+            AssertRejected(p.Build(), "arrival cell (2,1) is not inside a room of floor 1");
         }
 
         [Test]
@@ -569,7 +629,77 @@ namespace CinliMahzen.Tests.EditMode.World
             Parts p = Parts.Mini();
             p.Stairs[0] = new GrayboxStairs(C(0, 1), GrayboxDirection.South); // entrance (0,2) has no ground room
 
-            AssertRejected(p.Build(), "entrance cell (0,2) is not inside a ground-floor room");
+            AssertRejected(p.Build(), "entrance cell (0,2) is not inside a room of floor 0");
+        }
+
+        // ---- cellar (TODO 4.1) ----
+
+        /// <summary>
+        /// Mini plus a one-room cellar east of the house: cellar cells (2,0)-(3,0) on floor -1, stairs from (2,0) climbing west to
+        /// the den (1,0), the cellar hatch on the den's east border. Ground cell (2,0) is the hatch hole.
+        /// </summary>
+        private static Parts MiniWithCellar()
+        {
+            Parts p = Parts.Mini();
+            p.Rooms.Add(new GrayboxRoom("cellar", "Cellar", 'Z', GrayboxLayout.CellarFloor, 0, false, GrayboxFloorStyle.Stone,
+                new GrayboxRect(2, 0, 2, 1)));
+            p.Stairs.Add(new GrayboxStairs(C(2, 0), GrayboxDirection.West, GrayboxLayout.CellarFloor));
+            p.Doors.Add(Door(G, 1, 0, 2, 0, GrayboxDoorKind.CellarHatch));
+            return p;
+        }
+
+        [Test]
+        public void Accepts_ACellarOfOneRoom_ReachedThroughTheHatch()
+        {
+            GrayboxLayout layout = MiniWithCellar().Build();
+
+            List<string> errors = Errors(layout);
+            Assert.IsEmpty(errors, Dump(errors));
+            Assert.IsTrue(layout.IsStairVoid(G, C(2, 0)));
+            Assert.IsFalse(layout.IsStairVoid(GrayboxLayout.CellarFloor, C(2, 0)));
+        }
+
+        [Test]
+        public void Rejects_CellarStairsWithoutAHatch()
+        {
+            Parts p = MiniWithCellar();
+            p.RemoveDoor(G, 1, 0, 2, 0);
+
+            AssertRejected(p.Build(), "needs a CellarHatch door");
+        }
+
+        [Test]
+        public void Rejects_AHatchThatIsNotOnTheCellarStairs()
+        {
+            Parts p = MiniWithCellar();
+            p.RemoveDoor(G, 0, 0, 1, 0);
+            p.Doors.Add(Door(G, 0, 0, 1, 0, GrayboxDoorKind.CellarHatch));
+
+            AssertRejected(p.Build(), "a CellarHatch must sit on the arrival border of the cellar stairs");
+        }
+
+        [Test]
+        public void Rejects_ACellarWithoutStairs()
+        {
+            Parts p = MiniWithCellar();
+            p.Stairs.RemoveAt(p.Stairs.Count - 1);
+
+            AssertRejected(p.Build(), "rooms on floor -1 but no staircase");
+        }
+
+        [Test]
+        public void Planner_BuildsTheHatchDoor_AndWallsAroundTheHole()
+        {
+            GrayboxLayout layout = MiniWithCellar().Build();
+
+            List<GrayboxWallSegment> segments = GrayboxWallPlanner.PlanWalls(layout);
+
+            GrayboxWallSegment hatch = SegmentAt(segments, Edge(G, 1, 0, 2, 0));
+            Assert.IsNotNull(hatch);
+            Assert.AreEqual(GrayboxWallKind.Door, hatch.Kind);
+            Assert.AreEqual(GrayboxDoorKind.CellarHatch, hatch.Door.Kind);
+            Assert.AreEqual("den", hatch.OwnerRoomId);
+            Assert.AreEqual(GrayboxWallKind.Wall, SegmentAt(segments, Edge(GrayboxLayout.CellarFloor, 3, 0, 4, 0)).Kind, "cellar outer wall");
         }
 
         [Test]
@@ -921,7 +1051,7 @@ namespace CinliMahzen.Tests.EditMode.World
                 }
                 if (segment.Kind == GrayboxWallKind.Railing)
                 {
-                    Assert.AreEqual(U, segment.Edge.Floor, segment.ToString());
+                    Assert.GreaterOrEqual(segment.Edge.Floor, U, segment.ToString());
                     Assert.IsNotNull(layout.FindRailing(segment.Edge), segment.ToString());
                 }
             }
@@ -943,7 +1073,16 @@ namespace CinliMahzen.Tests.EditMode.World
             }
             for (int s = 0; s < layout.Stairs.Count; s++)
             {
-                Assert.AreEqual(0, CountAt(segments, layout.Stairs[s].ArrivalEdge));
+                GrayboxStairs stairs = layout.Stairs[s];
+                if (!stairs.IsCellarStairs)
+                {
+                    Assert.AreEqual(0, CountAt(segments, stairs.ArrivalEdge), stairs.ToString());
+                    continue;
+                }
+                GrayboxWallSegment hatch = SegmentAt(segments, stairs.ArrivalEdge);
+                Assert.IsNotNull(hatch, "the cellar hatch closes the top of the cellar stairs");
+                Assert.AreEqual(GrayboxWallKind.Door, hatch.Kind);
+                Assert.AreEqual(GrayboxDoorKind.CellarHatch, hatch.Door.Kind);
             }
         }
 
@@ -1184,7 +1323,12 @@ namespace CinliMahzen.Tests.EditMode.World
             }
             StringAssert.Contains("^", map);
             StringAssert.Contains("=", map);
-            Assert.AreEqual(GrayboxLayout.Default.Stairs.Count * GrayboxStairs.RunCells, CountChar(map, '^'), "one arrow per shaft cell");
+            int shafts = 0;
+            for (int i = 0; i < GrayboxLayout.Default.Stairs.Count; i++)
+            {
+                shafts += GrayboxLayout.Default.Stairs[i].TopFloor == U ? 1 : 0;
+            }
+            Assert.AreEqual(shafts * GrayboxStairs.RunCells, CountChar(map, '^'), "one arrow per shaft cell");
             Assert.AreEqual(0, CountChar(map, 'F'));
             Assert.AreEqual(0, CountChar(map, '~'), "no fence upstairs");
         }

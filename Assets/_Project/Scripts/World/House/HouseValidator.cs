@@ -12,9 +12,11 @@ namespace CinliMahzen.World
     /// Errors: unique room ids/keys; every marker's room id names an existing room; slots lie in rooms of their stage; at least
     /// 3 PuzzleSlots per puzzle stage, 8 ReferenceSlots, 5 KeyHideSpots in the garden, 3 CologneSpawnSpots inside the house;
     /// every indoor room has a lamp and a light switch; exactly 1 HumanSpawn (garden) and 3 JinnSpawns (house); exactly one
-    /// ToolShedItemPoint with the blessed oil; the front door needs the house key; no NetId collision or out-of-range id.
-    /// Warnings: fewer than 3 DigSpots (the cellar is TODO 3.7), the last stage has no gate (cellar hatch, TODO 3.7), markers
-    /// that lie outside the room they name, overlapping room boxes, all slots of a stage in one room.
+    /// ToolShedItemPoint with the blessed oil; the front door needs the house key; at most one cellar hatch, locked with the cellar
+    /// key; every stage but the last has a gate; every room except the cellar (floor -1) is in a StageZone; no NetId collision or
+    /// out-of-range id.
+    /// Warnings: fewer than 3 DigSpots in the cellar, no cellar hatch, markers that lie outside the room they name, overlapping room
+    /// boxes, all slots of a stage in one room.
     /// </summary>
     public static class HouseValidator
     {
@@ -219,7 +221,8 @@ namespace CinliMahzen.World
             }
             for (int i = 0; i < index.Rooms.Count; i++)
             {
-                if (!stageOfRoom.ContainsKey(index.Rooms[i].Id))
+                // The cellar belongs to no stage: it opens through the hatch after the last active puzzle stage.
+                if (!stageOfRoom.ContainsKey(index.Rooms[i].Id) && index.Rooms[i].Floor != HouseContract.CellarFloor)
                 {
                     Error(issues, "room " + index.Rooms[i] + " is not in any StageZone");
                 }
@@ -302,9 +305,30 @@ namespace CinliMahzen.World
         private static void CheckGates(HouseIndex index, ICollection<string> knownItemIds, List<HouseIssue> issues)
         {
             var gateCount = new Dictionary<int, int>();
+            int hatches = 0;
             for (int i = 0; i < index.Gates.Count; i++)
             {
                 HouseGateEntry gate = index.Gates[i];
+                if (gate.HasLock && knownItemIds != null && !knownItemIds.Contains(gate.RequiredItemId))
+                {
+                    Error(issues, "GateLock on " + gate.Path + " requires unknown item '" + gate.RequiredItemId + "'");
+                }
+                if (gate.IsCellarHatch)
+                {
+                    // TODO 4.1: its stage follows StagesActive, so it is not counted per stage.
+                    hatches++;
+                    if (hatches == 2)
+                    {
+                        Error(issues, "the house has more than one cellar hatch");
+                    }
+                    if (gate.RequiredItemId != HouseContract.CellarKeyItemId)
+                    {
+                        Error(issues, "the cellar hatch " + gate.Path + " must require '" + HouseContract.CellarKeyItemId + "' but requires '"
+                            + gate.RequiredItemId + "'");
+                    }
+                    continue;
+                }
+
                 if (index.FindStage(gate.StageIndex) == null)
                 {
                     Error(issues, "StageGate " + gate.Path + " completes stage " + gate.StageIndex + ", which has no StageZone");
@@ -318,10 +342,6 @@ namespace CinliMahzen.World
                     Error(issues, "stage " + gate.StageIndex + " has more than one StageGate");
                 }
 
-                if (gate.HasLock && knownItemIds != null && !knownItemIds.Contains(gate.RequiredItemId))
-                {
-                    Error(issues, "GateLock on " + gate.Path + " requires unknown item '" + gate.RequiredItemId + "'");
-                }
                 if (gate.StageIndex == HouseContract.GardenStage && gate.RequiredItemId != HouseContract.FrontDoorItemId)
                 {
                     Error(issues, "the stage 0 gate (front door) " + gate.Path + " must require '" + HouseContract.FrontDoorItemId
@@ -341,14 +361,15 @@ namespace CinliMahzen.World
                 {
                     continue;
                 }
-                if (stage == highest)
-                {
-                    Warn(issues, "stage " + stage + " has no StageGate (the cellar hatch arrives with TODO 3.7)");
-                }
-                else
+                // The last stage needs no gate of its own: the cellar hatch (or the cellar itself) follows it.
+                if (stage != highest)
                 {
                     Error(issues, "stage " + stage + " has no StageGate");
                 }
+            }
+            if (hatches == 0)
+            {
+                Warn(issues, "the house has no cellar hatch: the cellar opens right after the last puzzle stage");
             }
         }
 

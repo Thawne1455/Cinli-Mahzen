@@ -5,7 +5,7 @@ namespace CinliMahzen.World.Graybox
     /// (NetIds are derived from hierarchy paths, so the names are part of the data). Nothing at runtime looks anything up by
     /// these names (CLAUDE.md rule 11); they only name the objects the builder creates.
     ///
-    /// Layout: P_House / Garden | Floor0 | Floor1 / Room_X (RoomMarker) / Markers / (markers); P_House / Markers / Stage_N.
+    /// Layout: P_House / Garden | Floor-1 | Floor0 | Floor1 | Floor2 / Room_X (RoomMarker) / Markers / (markers); P_House / Markers / Stage_N.
     /// </summary>
     public static class GrayboxNaming
     {
@@ -29,10 +29,16 @@ namespace CinliMahzen.World.Graybox
             return RoomPrefix + room.Name;
         }
 
-        /// <summary>Name of the group that holds the room group: "Garden" or "Floor0"/"Floor1".</summary>
+        /// <summary>Name of the group that holds the room group: "Garden" or "Floor-1" / "Floor0" / "Floor1" / "Floor2".</summary>
         public static string RoomParentName(GrayboxRoom room)
         {
-            return room.Stage == GardenStage ? GardenGroupName : FloorGroupName(room.Floor);
+            return IsGardenRoom(room) ? GardenGroupName : FloorGroupName(room.Floor);
+        }
+
+        /// <summary>The garden and the shed: stage 0 on the ground floor (the cellar has stage 0 too but lives under its floor group).</summary>
+        public static bool IsGardenRoom(GrayboxRoom room)
+        {
+            return room.Stage == GardenStage && room.Floor == GrayboxLayout.GroundFloor;
         }
 
         /// <summary>Path of the room group relative to the house root, e.g. "Floor0/Room_Hall".</summary>

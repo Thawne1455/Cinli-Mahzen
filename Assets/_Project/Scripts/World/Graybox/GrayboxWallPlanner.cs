@@ -11,7 +11,8 @@ namespace CinliMahzen.World.Graybox
     ///  - both cells in the same room: nothing.
     ///  - two different rooms: one wall (or door) shared by both, owned by the indoor room (else the room listed first).
     ///  - room next to nothing: a fence for outdoor rooms, a full exterior wall otherwise.
-    ///  - room next to the upper-floor stair shaft: railing if declared, nothing on the arrival border, else full wall.
+    ///  - room next to a stair shaft: railing if declared, nothing on the arrival border (the cellar hatch door if one is
+    ///    declared there), else full wall.
     /// </summary>
     public static class GrayboxWallPlanner
     {
@@ -21,7 +22,7 @@ namespace CinliMahzen.World.Graybox
             var cells = new List<GrayboxCell>();
             var seen = new HashSet<GrayboxEdge>();
 
-            for (int floor = 0; floor < GrayboxLayout.FloorCount; floor++)
+            for (int floor = GrayboxLayout.MinFloor; floor <= GrayboxLayout.MaxFloor; floor++)
             {
                 seen.Clear();
                 for (int roomIndex = 0; roomIndex < layout.Rooms.Count; roomIndex++)
@@ -71,7 +72,9 @@ namespace CinliMahzen.World.Graybox
             {
                 if (IsArrivalEdge(layout, edge))
                 {
-                    return null;
+                    // Open, except the cellar hatch that closes the top of the cellar stairs.
+                    GrayboxDoor hatch = layout.FindDoor(edge);
+                    return hatch != null ? new GrayboxWallSegment(edge, GrayboxWallKind.Door, hatch, room.Id) : null;
                 }
                 bool railing = layout.FindRailing(edge) != null;
                 return new GrayboxWallSegment(edge, railing ? GrayboxWallKind.Railing : GrayboxWallKind.Wall, null, room.Id);

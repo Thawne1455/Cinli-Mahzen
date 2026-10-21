@@ -8,10 +8,11 @@ namespace CinliMahzen.World.Graybox
     /// problem; an empty list means the layout is valid.
     ///
     /// Rules: rooms are well formed and do not overlap on a floor; every door joins two different rooms; exactly one
-    /// front door (garden to house); every staircase sits in a ground-floor room, arrives in an upper-floor room,
-    /// leaves its shaft open above and is entered through a stage gate; railings only line the shaft; every room is
-    /// reachable from the front door (stairs included); every floor has at least one loop in its door graph; garden
-    /// props stand where they belong.
+    /// front door (garden to house); every staircase sits in a room of its base floor, arrives in a room of the floor above,
+    /// leaves its shaft open above and is entered through a stage gate (the cellar stairs instead end at the single cellar
+    /// hatch); every level is linked by stairs; railings only line a shaft; every room is reachable from the front door
+    /// (stairs included); every floor with several rooms has at least one loop in its door graph; garden props stand where
+    /// they belong.
     /// </summary>
     public static class GrayboxLayoutValidator
     {
@@ -63,9 +64,9 @@ namespace CinliMahzen.World.Graybox
                     errors.Add("duplicate room id '" + room.Id + "'");
                 }
 
-                if (room.Floor < 0 || room.Floor >= GrayboxLayout.FloorCount)
+                if (room.Floor < GrayboxLayout.MinFloor || room.Floor > GrayboxLayout.MaxFloor)
                 {
-                    errors.Add("room '" + room.Id + "' has floor " + room.Floor + " (allowed 0.." + (GrayboxLayout.FloorCount - 1) + ")");
+                    errors.Add("room '" + room.Id + "' has floor " + room.Floor + " (allowed " + GrayboxLayout.MinFloor + ".." + GrayboxLayout.MaxFloor + ")");
                 }
                 if (room.IsOutdoor && room.Floor != GrayboxLayout.GroundFloor)
                 {
@@ -89,7 +90,7 @@ namespace CinliMahzen.World.Graybox
         {
             var reported = new HashSet<string>();
             var cells = new List<GrayboxCell>();
-            for (int floor = 0; floor < GrayboxLayout.FloorCount; floor++)
+            for (int floor = GrayboxLayout.MinFloor; floor <= GrayboxLayout.MaxFloor; floor++)
             {
                 var owner = new Dictionary<GrayboxCell, int>();
                 for (int i = 0; i < layout.Rooms.Count; i++)
@@ -132,7 +133,7 @@ namespace CinliMahzen.World.Graybox
             for (int i = 0; i < layout.Doors.Count; i++)
             {
                 GrayboxDoor door = layout.Doors[i];
-                if (door.Floor < 0 || door.Floor >= GrayboxLayout.FloorCount)
+                if (door.Floor < GrayboxLayout.MinFloor || door.Floor > GrayboxLayout.MaxFloor)
                 {
                     errors.Add(door + ": floor " + door.Floor + " does not exist");
                     continue;
@@ -144,6 +145,15 @@ namespace CinliMahzen.World.Graybox
 
                 GrayboxRoom a = layout.RoomAt(door.Floor, door.CellA);
                 GrayboxRoom b = layout.RoomAt(door.Floor, door.CellB);
+                if (door.Kind == GrayboxDoorKind.CellarHatch)
+                {
+                    // The hatch joins a room and the top of the cellar stairs (checked in CheckStairs).
+                    if (!IsCellarArrival(layout, door.Edge) || (a == null) == (b == null))
+                    {
+                        errors.Add(door + ": a CellarHatch must sit on the arrival border of the cellar stairs, between the shaft and a room");
+                    }
+                    continue;
+                }
                 if (a == null || b == null)
                 {
                     errors.Add(door + ": does not connect two rooms (cell " + (a == null ? door.CellA : door.CellB) + " has no room)");
@@ -185,30 +195,43 @@ namespace CinliMahzen.World.Graybox
 
         private static void CheckStairs(GrayboxLayout layout, List<string> errors)
         {
-            bool hasUpperRooms = false;
-            for (int i = 0; i < layout.Rooms.Count; i++)
+            // Every level other than the ground floor is reached by a staircase that arrives on it (or leaves it, for the cellar).
+            for (int floor = GrayboxLayout.MinFloor; floor <= GrayboxLayout.MaxFloor; floor++)
             {
-                hasUpperRooms |= layout.Rooms[i].Floor == GrayboxLayout.UpperFloor;
-            }
-            if (hasUpperRooms && layout.Stairs.Count == 0)
-            {
-                errors.Add("the layout has upper-floor rooms but no staircase");
+                if (floor == GrayboxLayout.GroundFloor || !HasRoomsOn(layout, floor))
+                {
+                    continue;
+                }
+                bool linked = false;
+                for (int s = 0; s < layout.Stairs.Count; s++)
+                {
+                    linked |= floor > GrayboxLayout.GroundFloor ? layout.Stairs[s].TopFloor == floor : layout.Stairs[s].BaseFloor == floor;
+                }
+                if (!linked)
+                {
+                    errors.Add("the layout has rooms on floor " + floor + " but no staircase to them");
+                }
             }
 
             for (int s = 0; s < layout.Stairs.Count; s++)
             {
                 GrayboxStairs stairs = layout.Stairs[s];
                 string label = stairs.ToString();
+                if (stairs.BaseFloor < GrayboxLayout.MinFloor || stairs.TopFloor > GrayboxLayout.MaxFloor)
+                {
+                    errors.Add(label + ": climbs from floor " + stairs.BaseFloor + ", outside the layout's floors");
+                    continue;
+                }
 
                 GrayboxRoom stairRoom = null;
                 bool lowerOk = true;
                 for (int c = 0; c < stairs.Cells.Count; c++)
                 {
                     GrayboxCell cell = stairs.Cells[c];
-                    GrayboxRoom lower = layout.RoomAt(GrayboxLayout.GroundFloor, cell);
+                    GrayboxRoom lower = layout.RoomAt(stairs.BaseFloor, cell);
                     if (lower == null)
                     {
-                        errors.Add(label + ": cell " + cell + " is not inside a ground-floor room");
+                        errors.Add(label + ": cell " + cell + " is not inside a room of floor " + stairs.BaseFloor);
                         lowerOk = false;
                     }
                     else if (stairRoom == null)
@@ -221,10 +244,10 @@ namespace CinliMahzen.World.Graybox
                         lowerOk = false;
                     }
 
-                    GrayboxRoom upper = layout.RoomAt(GrayboxLayout.UpperFloor, cell);
+                    GrayboxRoom upper = layout.RoomAt(stairs.TopFloor, cell);
                     if (upper != null)
                     {
-                        errors.Add(label + ": shaft cell " + cell + " is covered by upper-floor room '" + upper.Id + "'");
+                        errors.Add(label + ": shaft cell " + cell + " is covered by floor " + stairs.TopFloor + " room '" + upper.Id + "'");
                     }
                 }
 
@@ -233,16 +256,27 @@ namespace CinliMahzen.World.Graybox
                     errors.Add(label + ": the stairs stand in outdoor room '" + stairRoom.Id + "'");
                 }
 
-                GrayboxRoom arrival = layout.RoomAt(GrayboxLayout.UpperFloor, stairs.Arrival);
+                GrayboxRoom arrival = layout.RoomAt(stairs.TopFloor, stairs.Arrival);
                 if (arrival == null)
                 {
-                    errors.Add(label + ": arrival cell " + stairs.Arrival + " is not inside an upper-floor room");
+                    errors.Add(label + ": arrival cell " + stairs.Arrival + " is not inside a room of floor " + stairs.TopFloor);
                 }
 
-                GrayboxRoom entrance = layout.RoomAt(GrayboxLayout.GroundFloor, stairs.Entrance);
+                if (stairs.IsCellarStairs)
+                {
+                    // Down to the cellar: the hatch closes the top, the bottom opens straight into the cellar.
+                    GrayboxDoor hatch = layout.FindDoor(stairs.ArrivalEdge);
+                    if (hatch == null || hatch.Kind != GrayboxDoorKind.CellarHatch)
+                    {
+                        errors.Add(label + ": the arrival border " + stairs.ArrivalEdge + " needs a CellarHatch door");
+                    }
+                    continue;
+                }
+
+                GrayboxRoom entrance = layout.RoomAt(stairs.BaseFloor, stairs.Entrance);
                 if (entrance == null)
                 {
-                    errors.Add(label + ": entrance cell " + stairs.Entrance + " is not inside a ground-floor room");
+                    errors.Add(label + ": entrance cell " + stairs.Entrance + " is not inside a room of floor " + stairs.BaseFloor);
                 }
                 else if (stairRoom != null && ReferenceEquals(entrance, stairRoom))
                 {
@@ -255,6 +289,40 @@ namespace CinliMahzen.World.Graybox
                     errors.Add(label + ": the entrance border " + stairs.EntranceEdge + " needs a StageGate door");
                 }
             }
+
+            int hatches = 0;
+            for (int i = 0; i < layout.Doors.Count; i++)
+            {
+                hatches += layout.Doors[i].Kind == GrayboxDoorKind.CellarHatch ? 1 : 0;
+            }
+            if (hatches > 1)
+            {
+                errors.Add("expected at most one CellarHatch, found " + hatches);
+            }
+        }
+
+        private static bool HasRoomsOn(GrayboxLayout layout, int floor)
+        {
+            for (int i = 0; i < layout.Rooms.Count; i++)
+            {
+                if (layout.Rooms[i].Floor == floor)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool IsCellarArrival(GrayboxLayout layout, GrayboxEdge edge)
+        {
+            for (int i = 0; i < layout.Stairs.Count; i++)
+            {
+                if (layout.Stairs[i].IsCellarStairs && layout.Stairs[i].ArrivalEdge.Equals(edge))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static void CheckRailings(GrayboxLayout layout, List<string> errors)
@@ -262,9 +330,9 @@ namespace CinliMahzen.World.Graybox
             for (int i = 0; i < layout.Railings.Count; i++)
             {
                 GrayboxRailing railing = layout.Railings[i];
-                if (railing.Floor != GrayboxLayout.UpperFloor)
+                if (railing.Floor <= GrayboxLayout.GroundFloor || railing.Floor > GrayboxLayout.MaxFloor)
                 {
-                    errors.Add(railing + ": railings belong on the upper floor");
+                    errors.Add(railing + ": railings belong on the upper floors");
                     continue;
                 }
 
@@ -332,8 +400,8 @@ namespace CinliMahzen.World.Graybox
             }
             for (int i = 0; i < layout.Stairs.Count; i++)
             {
-                int low = layout.RoomIndexAt(GrayboxLayout.GroundFloor, layout.Stairs[i].Start);
-                int high = layout.RoomIndexAt(GrayboxLayout.UpperFloor, layout.Stairs[i].Arrival);
+                int low = layout.RoomIndexAt(layout.Stairs[i].BaseFloor, layout.Stairs[i].Start);
+                int high = layout.RoomIndexAt(layout.Stairs[i].TopFloor, layout.Stairs[i].Arrival);
                 if (low >= 0 && high >= 0)
                 {
                     adjacency[low].Add(high);
@@ -385,11 +453,12 @@ namespace CinliMahzen.World.Graybox
 
         /// <summary>
         /// Every floor needs at least one loop (escape route, GDD 9): the door graph of its indoor rooms must have
-        /// more doors than a spanning forest needs, i.e. doors - rooms + components >= 1.
+        /// more doors than a spanning forest needs, i.e. doors - rooms + components >= 1. A floor that is a single open room
+        /// (the cellar) has nothing to loop around and is exempt.
         /// </summary>
         private static void CheckLoops(GrayboxLayout layout, List<string> errors)
         {
-            for (int floor = 0; floor < GrayboxLayout.FloorCount; floor++)
+            for (int floor = GrayboxLayout.MinFloor; floor <= GrayboxLayout.MaxFloor; floor++)
             {
                 var parent = new Dictionary<int, int>();
                 for (int i = 0; i < layout.Rooms.Count; i++)
@@ -399,7 +468,7 @@ namespace CinliMahzen.World.Graybox
                         parent.Add(i, i);
                     }
                 }
-                if (parent.Count == 0)
+                if (parent.Count <= 1)
                 {
                     continue;
                 }

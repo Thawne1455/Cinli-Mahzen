@@ -7,7 +7,7 @@ namespace CinliMahzen.Tests.EditMode.World
 {
     /// <summary>
     /// A small hand-made house for the House* tests: five rooms, every contract rule satisfied (only the two "arrives later"
-    /// warnings remain: no DigSpots and no stage 2 gate). Tests take <see cref="Valid"/>, change the public lists and call
+    /// warnings remain: no DigSpots and no cellar hatch). Tests take <see cref="Valid"/>, change the public lists and call
     /// <see cref="Build"/> to break exactly one rule.
     ///
     /// Rooms (X east, Y up, Z north): garden (id 0, outdoor, stage 0) X-20..20 Z-20..0; hall (1) and kitchen (2) on the ground

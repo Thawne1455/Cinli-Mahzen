@@ -5,7 +5,7 @@ namespace CinliMahzen.World.Graybox
     /// <summary>
     /// Text picture of one floor of a layout, north at the top. Each cell is 3 characters wide and shows the room
     /// symbol; borders show what the planner builds: walls | and ---, fence ~, railing =, doors d (open), D (door),
-    /// G (stage gate), F (front door). Stair shaft cells show an arrow in the climbing direction.
+    /// G (stage gate), F (front door), V (cellar hatch). Stair shaft cells show an arrow in the climbing direction.
     /// </summary>
     public static class GrayboxAsciiMap
     {
@@ -138,6 +138,7 @@ namespace CinliMahzen.World.Graybox
                 case GrayboxDoorKind.Open: return 'd';
                 case GrayboxDoorKind.StageGate: return 'G';
                 case GrayboxDoorKind.FrontDoor: return 'F';
+                case GrayboxDoorKind.CellarHatch: return 'V';
                 default: return 'D';
             }
         }
