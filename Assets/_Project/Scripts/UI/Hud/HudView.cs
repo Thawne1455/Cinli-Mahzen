@@ -173,7 +173,11 @@ namespace CinliMahzen.UI
             if (obj == null)
                 return;
             if (_stage.Changed(obj.StageIndex * 64 + obj.StageCount, _state.PuzzlesSolved * 64 + obj.PuzzleCount, (int)obj.Phase))
-                _stage.Text = Loc.T("hud.stage", Loc.T(PhaseKey(obj.Phase)), obj.StageIndex + 1, Mathf.Max(1, obj.StageCount), _state.PuzzlesSolved, obj.PuzzleCount);
+            {
+                // The cellar comes after the last counted stage: it stays at count/count.
+                int stageCount = Mathf.Max(1, obj.StageCount);
+                _stage.Text = Loc.T("hud.stage", Loc.T(PhaseKey(obj.Phase)), Mathf.Min(obj.StageIndex + 1, stageCount), stageCount, _state.PuzzlesSolved, obj.PuzzleCount);
+            }
             GUI.Label(new Rect(x, margin + lineHeight * 2f, panelWidth, lineHeight), _stage.Text, _center);
         }
 
@@ -317,7 +321,7 @@ namespace CinliMahzen.UI
                 PossessionPhase matePhase = _state.PhaseOf(mate);
                 bool mateInside = matePhase == PossessionPhase.Lurking || matePhase == PossessionPhase.Charging || matePhase == PossessionPhase.Recovering;
                 if (_teammate.Changed(mate.Value, mateInside ? 1 : 0, matePhase == PossessionPhase.Charging ? 1 : 0))
-                    _teammate.Text = Loc.T("hud.teammate", mate.ToString(), Loc.T(mateInside ? "hud.teammate_inside" : "hud.teammate_free"));
+                    _teammate.Text = Loc.T("hud.teammate", NicknameOf(mate), Loc.T(mateInside ? "hud.teammate_inside" : "hud.teammate_free"));
                 y = Line(y, _teammate.Text);
             }
 
@@ -393,7 +397,7 @@ namespace CinliMahzen.UI
             {
                 _sb.Clear();
                 _sb.Append(Loc.T("hud.match_end")).Append('\n');
-                _sb.Append(_state.Winner.IsValid ? Loc.T("hud.winner", _state.Winner.ToString(), _state.TopScore) : Loc.T("hud.tie", _state.TopScore)).Append("\n\n");
+                _sb.Append(_state.Winner.IsValid ? Loc.T("hud.winner", NicknameOf(_state.Winner), _state.TopScore) : Loc.T("hud.tie", _state.TopScore)).Append("\n\n");
                 AppendScores(false);
                 AppendTitles();
                 _sb.Append('\n').Append(Loc.T("hud.restart_hint"));
@@ -454,10 +458,15 @@ namespace CinliMahzen.UI
             for (int i = 0; i < stats.Titles.Count; i++)
             {
                 MatchTitle title = stats.Titles[i];
-                PlayerInfo info = _players.Get(title.Player);
-                string who = info != null ? info.Nickname : title.Player.ToString();
-                _sb.Append(Loc.T("hud.title_row", Loc.T(HudFormat.TitleKey(title.Kind)), who, title.Count)).Append('\n');
+                _sb.Append(Loc.T("hud.title_row", Loc.T(HudFormat.TitleKey(title.Kind)), NicknameOf(title.Player), title.Count)).Append('\n');
             }
+        }
+
+        /// <summary>The name the score rows show (the id for a player the registry does not know).</summary>
+        private string NicknameOf(PlayerId player)
+        {
+            PlayerInfo info = _players.Get(player);
+            return info != null ? info.Nickname : player.ToString();
         }
 
         private int ScoreHash()

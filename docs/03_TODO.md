@@ -205,20 +205,22 @@ F8 ile 3 farklı seed: F3 1.5 sn basılı tutarak bulmacayı toplu sabote eder, 
 
 | ✔ | ID | Görev | Bağımlılık | Boyut |
 |---|---|---|---|---|
-| [~] | 3.1 | P2 **Heykelin Nazarlığı** (6 çevre objesi yönü + 3 asa eğimi) | 2.7 | M |
-| [~] | 3.2 | P3 **Tılsımlı Şalter** (4 soket × 6 köy motifi + referansta 2 Çarpı `X` tuzağı, Şalter Anahtarı) | 2.7 | M |
-| [~] | 3.3 | P4 **Mühür Taşları** (3×3 ızgara + 4 köşe sembolü + dönük referans, Boya gereksinimi) | 2.7 | M |
-| [~] | 3.4 | Işık & Radyo sistemi: lambalar, düğmeler, `LightService`, aydınlanınca atılma, Patlat, Radyo ses bastırma | 2.2, 1.8 | M |
-| [~] | 3.5 | İyi cin yetenekleri: Ruh Perdesi Odakla, Lamba Yak/Onar, İşaret, Kov, Eşyaya Gir (hasarsız + Kolonya) | 3.4, 1.7 | L |
-| [~] | 3.6 | Bahçe aşaması: `KeyHideSpot`, ön kapı `GateLock` (+90 sn), alet kulübesi **Kutsanmış Yağ** | 2.7 | S |
+| [x] | 3.1 | P2 **Heykelin Nazarlığı** (6 çevre objesi yönü + 3 asa eğimi) | 2.7 | M |
+| [x] | 3.2 | P3 **Tılsımlı Şalter** (4 soket × 6 köy motifi + referansta 2 Çarpı `X` tuzağı, Şalter Anahtarı) | 2.7 | M |
+| [x] | 3.3 | P4 **Mühür Taşları** (3×3 ızgara + 4 köşe sembolü + dönük referans, Boya gereksinimi) | 2.7 | M |
+| [x] | 3.4 | Işık & Radyo sistemi: lambalar, düğmeler, `LightService`, aydınlanınca atılma, Patlat, Radyo ses bastırma | 2.2, 1.8 | M |
+| [x] | 3.5 | İyi cin yetenekleri: Ruh Perdesi Odakla, Lamba Yak/Onar, İşaret, Kov, Eşyaya Gir (hasarsız + Kolonya) | 3.4, 1.7 | L |
+| [x] | 3.6 | Bahçe aşaması: `KeyHideSpot`, ön kapı `GateLock` (+90 sn), alet kulübesi **Kutsanmış Yağ** | 2.7 | S |
 | [~] | 3.7 | Mahzen: kapak, `DigSpot`, kürek, **3 katmanlı kazı (3×6 sn)**, Öfke, **Ruh Siperi (`SpiritBlock`)**, `TreasureDug` | 2.7 | M |
-| [~] | 3.8 | Sabit Fener (Zayıf → Kutsanmış Yağ ile Güçlü Mod: 2.5 m sabotaj koruması + Sağ Tık Parlat) + Tekme + itme | 1.8, 2.7 | M |
-| [~] | 3.9 | Görünürlük servisi (GDD §12 tablosu + odaklanan iyi cin parıltısı) + soğuk nefes | 1.7 | M |
-| [~] | 3.10 | Maç tam: 4 raund rotasyon, **Kademeli Puanlama (`ScoreService`)**, `MatchEnd` | 1.10, 3.7 | M |
-| [~] | 3.11 | HUD'lar: İnsan, İyi Cin, Kötü Cin (GDD v2.1 §13 ve Teknik §10) | 3.5, 3.10 | L |
-| [~] | 3.12 | Dummy İnsan botu (NavMesh gezinme) | 2.2 | S |
+| [x] | 3.8 | Sabit Fener (Zayıf → Kutsanmış Yağ ile Güçlü Mod: 2.5 m sabotaj koruması + Sağ Tık Parlat) + Tekme + itme | 1.8, 2.7 | M |
+| [x] | 3.9 | Görünürlük servisi (GDD §12 tablosu + odaklanan iyi cin parıltısı) + soğuk nefes | 1.7 | M |
+| [x] | 3.10 | Maç tam: 4 raund rotasyon, **Kademeli Puanlama (`ScoreService`)**, `MatchEnd` | 1.10, 3.7 | M |
+| [x] | 3.11 | HUD'lar: İnsan, İyi Cin, Kötü Cin (GDD v2.1 §13 ve Teknik §10) | 3.5, 3.10 | L |
+| [x] | 3.12 | Dummy İnsan botu (NavMesh gezinme) | 2.2 | S |
 
 Her bulmaca görevi için kabul: tip planner'a eklendi, 500 seed raporu geçerli, MCP ile çözülme + toplu sabotaj + Ruh Perdesi referans screenshot'ı.
+
+> **Durum (2026-10-22):** M3 çıkış testi MCP ile oynandı (anahtar → ön kapı → 4 bulmaca → kürek → 3 katman kazı → SeekersWin; 3 bayılma → JinnsWin; süre → JinnsWin; 4 raund rotasyon + MatchEnd). 3.7'de yalnızca **mahzen kapağı / `cellar_key`** play'de denenmedi: evde kapak geçidi yok — 4.1'deki gerçek mahzenle doğrulanacak. Test mahzeni: `CinliMahzen/Setup/Add Test Dig Spots To House In Open Scene` (bahçenin altında, kat −1).
 
 ### ✅ M3 Çıkış Testi (tam raund, hotseat)
 Bahçede Kutsanmış Yağ ve anahtar → ön kapı (+90 sn) → zemin kat 2 bulmaca (+90 sn) → 1. kat 2 bulmaca (+90 sn) → mahzen 3 katmanlı kazı (İyi Cin Ruh Siperi ile uçan eşyayı bloklar) → SeekersWin; ayrı raundda 3 bayılma → JinnsWin; süre bitimi → JinnsWin. 4 raund → Kademeli puanlar (`ScorePerPuzzle`, `ScorePerUnfinishedPuzzle` vb.) doğru hesaplanır.

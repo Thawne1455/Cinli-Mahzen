@@ -37,6 +37,10 @@ namespace CinliMahzen.Editor
         [MenuItem(Root + "Cycle Camera Mode (Fps-Orbit-Faint)")]
         public static void CycleCameraMode() => DebugCommands.CycleCameraMode();
 
+        [MenuItem(Root + "Toggle Dummy Human (F12)")]
+        public static void ToggleDummyHuman() => DebugCommands.ToggleDummyHuman();
+
+        [MenuItem(Root + "Toggle Dummy Human (F12)", true)]
         [MenuItem(Root + "Dump State To Console", true)]
         [MenuItem(Root + "Toggle Debug Overlay (F9)", true)]
         [MenuItem(Root + "Toggle Time Scale x2 (F10)", true)]

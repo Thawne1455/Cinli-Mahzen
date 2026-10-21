@@ -626,6 +626,7 @@ uGUI + TextMeshPro. `UIRoot` Canvas 1920x1080 referans.
 ```
 CinliMahzen/Debug/Switch To Player 1..4
 CinliMahzen/Debug/Restart Round (New Seed)
+CinliMahzen/Debug/Toggle Dummy Human (F12)
 CinliMahzen/Debug/Faint Human
 CinliMahzen/Debug/Revive Human With Cologne
 CinliMahzen/Debug/Complete Current Stage
