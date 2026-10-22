@@ -510,11 +510,42 @@ namespace CinliMahzen.Objectives
 
             ObjectivePuzzleInfo info = _round[index];
             _lastRewardPosition = info.RewardPosition;
+            ConsumeRequiredItemAuthority(e.PuzzleSlot);
             if (info.RewardItemId.Length > 0)
                 _net.Broadcast(ItemSpawnedMsg.Encode(_allocateId(), info.RewardItemId, info.RewardPosition));
 
             if (IsStageDone(info.Stage))
                 OpenGateAuthority(info.Stage);
+        }
+
+        /// <summary>
+        /// Authority (TODO 4.1, Oyun 3.1): the item a solved puzzle needed (paint, fuse key) leaves the human's inventory unless an unsolved
+        /// puzzle of the round still needs it, so three slots are always enough (the cellar key and the shovel come last).
+        /// </summary>
+        private void ConsumeRequiredItemAuthority(int solvedSlot)
+        {
+            if (!_puzzles.TryGetSlot(solvedSlot, out PuzzleSlotRuntime solved) || !solved.HasRequiredItem)
+                return;
+            string item = solved.RequiredItemId;
+            for (int i = 0; i < _round.Count; i++)
+            {
+                int slot = _round[i].Slot;
+                if (slot != solvedSlot && !_completedSlots.Contains(slot) && _puzzles.TryGetSlot(slot, out PuzzleSlotRuntime other)
+                    && other.RequiredItemId == item)
+                    return;
+            }
+            IReadOnlyList<PlayerInfo> players = _players.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                PlayerId who = players[i].Id;
+                int index = _inventory.IndexOf(who, item);
+                if (index < 0)
+                    continue;
+                _inventory.TryRemoveAt(who, index, out string _);
+                _net.Broadcast(InventoryChangedMsg.Encode(who, _inventory.Snapshot(who)));
+                CMLog.Info(Category, who + " used up " + item + " on puzzle " + solvedSlot);
+                return;
+            }
         }
 
         private void OnGateOpened(NetMsg msg)

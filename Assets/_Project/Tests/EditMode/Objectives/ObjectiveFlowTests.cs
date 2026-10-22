@@ -196,6 +196,35 @@ namespace CinliMahzen.Tests.EditMode.Objectives
         }
 
         [Test]
+        public void SolvingAPuzzle_UsesUpTheItemItNeeded_OnceNoUnsolvedPuzzleNeedsItAnymore()
+        {
+            // Slot B (stage 1) and slot C (stage 2) both need the paint that slot A rewards.
+            Puzzles.RegisterSlot(SlotB, NewPaintings(new Vector3(0f, 0f, 0.5f), SlotStage, "paint"));
+            Puzzles.RegisterSlot(SlotC, NewPaintings(new Vector3(0f, 0f, -0.5f), 2, "paint"));
+            Complete(Slot);
+            Assert.IsTrue(_flow.PickupAuthority(HumanId, OnlyGroundItem("paint")));
+
+            Complete(SlotB);
+            Assert.IsTrue(_flow.HasItem(HumanId, "paint"), "slot C still needs the paint");
+
+            _flowMsgs.Clear();
+            Complete(SlotC);
+            Assert.IsFalse(_flow.HasItem(HumanId, "paint"), "nothing needs it anymore: the slot is free again");
+            Assert.AreEqual(1, FlowSent(MsgCode.InventoryChanged).Count);
+        }
+
+        [Test]
+        public void SolvingAPuzzleThatNeedsNoItem_KeepsTheInventory()
+        {
+            Complete(Slot);
+            Assert.IsTrue(_flow.PickupAuthority(HumanId, OnlyGroundItem("paint")));
+
+            Complete(SlotB);
+
+            Assert.IsTrue(_flow.HasItem(HumanId, "paint"));
+        }
+
+        [Test]
         public void JinnsCannotPickUpItems()
         {
             Complete(Slot);

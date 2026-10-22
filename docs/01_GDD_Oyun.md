@@ -66,7 +66,7 @@ Orman içinde, köyden uzak, **3 katlı eski bir köy evi**. Rivayete göre evin
 - Her aşama bir **kat/bölge** ile eşleşir ve **kilitli bir geçitle** biter (kapı / merdiven kapısı / bodrum kapağı).
 - Her aşamada **2 bulmaca** aynı anda açıktır. **İkisi de çözülmeli**, sıra serbest. İnsan hangisine gideceğini seçer → kötü cinler bölünmek zorunda kalır.
 - Bir bulmaca çözülünce **ödül** verir: bir **görev eşyası** (bkz. §6) ve/veya geçidin kilit parçası. Aşamadaki iki bulmaca da çözülünce geçit açılır ve +90 sn süre eklenir.
-- Bazı bulmacalar başlamak için **eşya ister** (ör. Sembol Boyama → Boya). Rastgele dağıtım, gerekli eşyanın **daha önceki bir aşamada** veya **aynı aşamadaki diğer bulmacanın ödülü** olarak verilmesini garanti eder.
+- Bazı bulmacalar başlamak için **eşya ister** (ör. Sembol Boyama → Boya). Rastgele dağıtım, gerekli eşyanın **daha önceki bir aşamada** veya **aynı aşamadaki diğer bulmacanın ödülü** olarak verilmesini garanti eder. Bulmaca çözülünce gerektirdiği eşya envanterden **düşer** (raundda onu isteyen çözülmemiş başka bulmaca yoksa); anahtarlar da kilidinde kalır. Böylece 3 slot hep yeter.
 
 > MVP (ilk oynanabilir sürüm): Bahçe + **2 aşama** (zemin kat + 1. kat, toplam 4 bulmaca) + Mahzen. Çatı katı aşaması bulmaca havuzu büyüyünce açılır.
 
