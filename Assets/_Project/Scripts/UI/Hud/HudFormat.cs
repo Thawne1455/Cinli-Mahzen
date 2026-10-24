@@ -70,6 +70,18 @@ namespace CinliMahzen.UI
             return Arrows[index];
         }
 
+        /// <summary>TODO 4.2: the role's goal in two lines, shown under the role reveal.</summary>
+        public static string RoleGoalKey(Role role)
+        {
+            switch (role)
+            {
+                case Role.Human: return "hud.role_goal.human";
+                case Role.GoodJinn: return "hud.role_goal.good_jinn";
+                case Role.EvilJinn: return "hud.role_goal.evil_jinn";
+                default: return "hud.role_goal.none";
+            }
+        }
+
         public static string RoleKey(Role role)
         {
             switch (role)

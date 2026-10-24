@@ -21,6 +21,8 @@ namespace CinliMahzen.UI
         [SerializeField] private float margin = 16f;
         [SerializeField] private float lineHeight = 26f;
         [SerializeField] private float panelWidth = 420f;
+        [Tooltip("Width (px) of the role goal text under the role reveal (TODO 4.2).")]
+        [SerializeField] private float revealGoalWidth = 720f;
         [SerializeField] private int barCells = 10;
         [Tooltip("How long the '+90 s' sunrise bonus stays on screen (s).")]
         [SerializeField] private float timeBonusShowSeconds = 2.5f;
@@ -61,6 +63,7 @@ namespace CinliMahzen.UI
         private readonly Cached _teammate = new Cached();
         private readonly Cached _scramble = new Cached();
         private readonly Cached _reveal = new Cached();
+        private string _revealGoal = string.Empty;
         private readonly Cached _report = new Cached();
         private readonly Cached _matchEnd = new Cached();
         private readonly System.Text.StringBuilder _sb = new System.Text.StringBuilder(256);
@@ -99,6 +102,12 @@ namespace CinliMahzen.UI
             _state?.Detach();
         }
 
+        private static bool MenuOpen()
+        {
+            MenuFocus focus = GameServices.Get<MenuFocus>();
+            return focus != null && focus.IsOpen;
+        }
+
         private PlayerId ReadLocalPlayer()
         {
             return _players.LocalPlayer;
@@ -107,7 +116,8 @@ namespace CinliMahzen.UI
         private void OnGUI()
         {
             IMatchInfo match = GameServices.Match;
-            if (match == null || _state == null)
+            // The stub (no MatchController: main menu, after leaving the Game scene) is not a match. A menu covers the HUD (TODO 4.2).
+            if (match == null || match is StubMatchInfo || _state == null || MenuOpen())
                 return;
             MatchState ms = match.State;
             if (ms == MatchState.Lobby || ms == MatchState.RoundSetup)
@@ -370,9 +380,15 @@ namespace CinliMahzen.UI
 
         private void DrawRoleReveal(Role role)
         {
-            if (_reveal.Changed((int)role))
+            if (_reveal.Changed((int)role, (int)Loc.Language))
+            {
                 _reveal.Text = Loc.T("hud.role_reveal", Loc.T(HudFormat.RoleKey(role)));
+                _revealGoal = Loc.T(HudFormat.RoleGoalKey(role));
+            }
             GUI.Label(new Rect(0f, Screen.height * 0.4f, Screen.width, lineHeight * 2f), _reveal.Text, _big);
+            // TODO 4.2: what the role has to do, under its name.
+            float width = Mathf.Min(Screen.width - margin * 2f, revealGoalWidth);
+            GUI.Label(new Rect((Screen.width - width) * 0.5f, Screen.height * 0.4f + lineHeight * 2.2f, width, lineHeight * 5f), _revealGoal, _center);
         }
 
         private void DrawRoundReport(int roundIndex)

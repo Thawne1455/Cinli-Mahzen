@@ -57,6 +57,11 @@ namespace CinliMahzen.Core
             GameServices.Register<IPlayerRegistry>(players);
             GameServices.Register<INetBridge>(new OfflineNetBridge(localPlayer: () => players.LocalPlayer));
             GameServices.Register<IEntityRegistry>(new EntityRegistry());
+            // TODO 4.2: player settings (PlayerPrefs) and the menu input focus.
+            var gameSettings = new GameSettings(new PlayerPrefsSettingsStore());
+            gameSettings.Apply();
+            GameServices.Register(gameSettings);
+            GameServices.Register(new MenuFocus());
             if (settings != null && settings.Config != null)
                 GameServices.Register(settings.Config);
             else

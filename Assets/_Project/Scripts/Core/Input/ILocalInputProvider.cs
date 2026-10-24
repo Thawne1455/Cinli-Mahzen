@@ -16,5 +16,8 @@ namespace CinliMahzen.Core
         /// source, which implements IHumanInput / ISpiritInput / IPossessedInput. Repeating it for the same role is a no-op.
         /// </summary>
         IPawnInput AcquireLocal(Role role);
+
+        /// <summary>TODO 4.2: Esc this frame (UI map, always on: it works while a menu holds the input).</summary>
+        bool PausePressed { get; }
     }
 }

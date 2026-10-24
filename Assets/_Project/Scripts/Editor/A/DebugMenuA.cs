@@ -40,6 +40,17 @@ namespace CinliMahzen.Editor
         [MenuItem(Root + "Toggle Dummy Human (F12)")]
         public static void ToggleDummyHuman() => DebugCommands.ToggleDummyHuman();
 
+        [MenuItem(Root + "Toggle Pause Menu (Esc)")]
+        public static void TogglePauseMenu()
+        {
+            var pause = UnityEngine.Object.FindFirstObjectByType<CinliMahzen.UI.PauseMenuView>();
+            if (pause != null)
+                pause.Toggle();
+            else
+                UnityEngine.Debug.LogWarning("[Debug] No PauseMenuView (it is created by the HUD bootstrap in play mode)");
+        }
+
+        [MenuItem(Root + "Toggle Pause Menu (Esc)", true)]
         [MenuItem(Root + "Toggle Dummy Human (F12)", true)]
         [MenuItem(Root + "Dump State To Console", true)]
         [MenuItem(Root + "Toggle Debug Overlay (F9)", true)]

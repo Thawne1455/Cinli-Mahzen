@@ -363,11 +363,11 @@ FOV: İnsan 75, ruh formu 85 (renkli vinyet: iyi turkuaz, kötü mor), eşya iç
 
 1. **Ana Menü:** Oyna (Online — sonra), Test Oyunu (offline hotseat), Ayarlar, Çıkış
 2. **Lobi:** Oda kodu, 4 slot, hazır, Discord takım kanalı hatırlatması
-3. **Rol Açıklama (3 sn)**
+3. **Rol Açıklama (3 sn)**: rol adı + rolün hedefi (iki satır)
 4. **HUD — İnsan:** Can (3 kalp), bayılma sayacı (☠ 1/3), stamina, Fener durumu + 3 eşya slotu, aşama ilerlemesi (Zemin Kat: ✔ Portreler · ◻ Şalter), gün doğumu göstergesi (+90 sn animasyonu), 3 kademeli kazı barı, etkileşim ipucu
 5. **HUD — İyi Cin:** Yetenek bekleme süreleri, enerji, insanın canı/bayılma, aşama ilerlemesi, insanın yönü, referans odaklanma göstergesi
 6. **HUD — Kötü Cin:** Enerji, aksiyon kartları, bulmaca sabotaj bekleme süresi, takım arkadaşı, aşama ilerlemesi, ÖFKE
-7. **Raund Raporu**, **Maç Sonu**, **Duraklat/Ayarlar**
+7. **Raund Raporu**, **Maç Sonu**, **Duraklat/Ayarlar** (Esc: Devam, Ayarlar, Ana Menü, Çıkış; Ayarlar: fare hassasiyeti, ters dikey bakış, ana ses, dil, tam ekran — offline duraklatma zamanı durdurur, online durdurmaz)
 
 Dil: Türkçe öncelikli, tüm metinler `Loc` anahtarlı.
 

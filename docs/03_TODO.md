@@ -232,7 +232,7 @@ Bahçede Kutsanmış Yağ ve anahtar → ön kapı (+90 sn) → zemin kat 2 bulm
 | ✔ | ID | Görev | Boyut |
 |---|---|---|---|
 | [~] | 4.1 | Ev v1: KayKit ile 3 kat + çatı katı + mahzen + bahçe (Claude Code iskelet, 🖐 elle detay) | L |
-| [ ] | 4.2 | Ana menü, ayarlar, duraklat, rol açıklama | M |
+| [x] | 4.2 | Ana menü, ayarlar, duraklat, rol açıklama | M |
 | [~] | 4.3 | Raund raporu + maç sonu unvanları (`StatsService`, `TitleCalculator`: "Bozguncu", "Terlik Nişancısı", "Kolonyacı" dahil) | M |
 | [ ] | 4.4 | Ses: telgraf, toplu sabotaj gıcırtısı, Anne Terliği "ŞRAK!", Eski Radyo oyun havası (ses bastırma), ortam, müzik | M |
 | [ ] | 4.5 | VFX: cin görselleri, Ruh Perdesi odak parıltısı, Ruh Siperi çarpışma efekti, lamba patlaması | M |

@@ -388,3 +388,60 @@ MonoBehaviour:
   - key: hud.title_row
     tr: "{0}: {1} ({2})"
     en: "{0}: {1} ({2})"
+  - key: menu.settings
+    tr: "Ayarlar"
+    en: "Settings"
+  - key: menu.back
+    tr: "Geri"
+    en: "Back"
+  - key: pause.title
+    tr: "Duraklat\u0131ld\u0131"
+    en: "Paused"
+  - key: pause.resume
+    tr: "Devam Et"
+    en: "Resume"
+  - key: pause.main_menu
+    tr: "Ana Men\u00FCye D\u00F6n"
+    en: "Back to Main Menu"
+  - key: settings.title
+    tr: "Ayarlar"
+    en: "Settings"
+  - key: settings.unavailable
+    tr: "Ayarlar y\u00FCklenemedi"
+    en: "Settings are not available"
+  - key: settings.sensitivity
+    tr: "Fare hassasiyeti: {0}"
+    en: "Mouse sensitivity: {0}"
+  - key: settings.invert_y
+    tr: "Dikey bak\u0131\u015F\u0131 ters \u00E7evir"
+    en: "Invert vertical look"
+  - key: settings.volume
+    tr: "Ana ses: %{0}"
+    en: "Master volume: {0}%"
+  - key: settings.language
+    tr: "Dil"
+    en: "Language"
+  - key: settings.lang_tr
+    tr: "T\u00FCrk\u00E7e"
+    en: "T\u00FCrk\u00E7e"
+  - key: settings.lang_en
+    tr: "English"
+    en: "English"
+  - key: settings.fullscreen
+    tr: "Tam ekran"
+    en: "Fullscreen"
+  - key: settings.reset
+    tr: "Varsay\u0131lanlara d\u00F6n"
+    en: "Reset to defaults"
+  - key: hud.role_goal.human
+    tr: "Bah\u00E7ede ev anahtar\u0131n\u0131 bul, iyi cinin okudu\u011Fu referanslarla bulmacalar\u0131 \u00E7\u00F6z,\nmahzende hazineyi g\u00FCn do\u011Fmadan kaz. 3 kez bay\u0131l\u0131rsan kaybedersin."
+    en: "Find the house key in the garden, solve the puzzles with the references the good jinn reads,\ndig the treasure in the cellar before sunrise. Fainting 3 times loses the round."
+  - key: hud.role_goal.good_jinn
+    tr: "Ruh Perdesi'ni a\u00E7\u0131p (Sa\u011F T\u0131k) referanslar\u0131 insana anlat, lambalar\u0131 yak,\nk\u00F6t\u00FC cinleri kov ve bayg\u0131n insan\u0131 kolonyayla ay\u0131lt."
+    en: "Open the Spirit Veil (Right Click) and tell the human the references, light the lamps,\nexorcise the evil jinns and revive the fainted human with cologne."
+  - key: hud.role_goal.evil_jinn
+    tr: "E\u015Fyalara girip insan\u0131 3 kez bay\u0131lt ya da g\u00FCn do\u011Fana kadar oyala.\nBulmacalar\u0131 toplu sabote et, lambalar\u0131 patlat; tak\u0131m arkada\u015F\u0131nla b\u00F6l\u00FCn."
+    en: "Possess objects and make the human faint 3 times, or stall until sunrise.\nScramble the puzzles, burst the lamps; split up with your teammate."
+  - key: hud.role_goal.none
+    tr: ""
+    en: ""

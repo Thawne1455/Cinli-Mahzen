@@ -18,6 +18,8 @@ namespace CinliMahzen.Player
         private Role _role;
         // Which players are inside an object (any jinn, not only the local one): hotseat switches to a possessing jinn must land in Possessed.
         private readonly bool[] _insideByPlayer = new bool[256];
+        // TODO 4.2: a menu (pause, settings) holds the input: every gameplay map stays off until it closes.
+        private bool _menuOpen;
 
         /// <param name="localPlayer">Defaults to GameServices.Net/Players local player.</param>
         public LocalInputSource(Func<PlayerId> localPlayer = null)
@@ -30,6 +32,7 @@ namespace CinliMahzen.Player
             _actions.Debug.Enable();
             EventBus.Subscribe<LocalRoleChangedEvt>(OnLocalRoleChanged);
             EventBus.Subscribe<PossessionChangedEvt>(OnPossessionChanged);
+            EventBus.Subscribe<MenuFocusChangedEvt>(OnMenuFocusChanged);
         }
 
         public InputMode Mode { get; private set; } = InputMode.None;
@@ -61,6 +64,7 @@ namespace CinliMahzen.Player
         {
             EventBus.Unsubscribe<LocalRoleChangedEvt>(OnLocalRoleChanged);
             EventBus.Unsubscribe<PossessionChangedEvt>(OnPossessionChanged);
+            EventBus.Unsubscribe<MenuFocusChangedEvt>(OnMenuFocusChanged);
             _actions.Disable();
             // Generated Dispose() uses Object.Destroy, which is illegal outside play mode (EditMode tests, editor tools).
             if (Application.isPlaying)
@@ -84,9 +88,20 @@ namespace CinliMahzen.Player
                 SetMode(CurrentMode());
         }
 
-        /// <summary>The map for the local player now: its role's map, or Possessed while a local jinn (evil or good) is inside an object.</summary>
+        private void OnMenuFocusChanged(MenuFocusChangedEvt e)
+        {
+            _menuOpen = e.IsOpen;
+            SetMode(CurrentMode());
+        }
+
+        /// <summary>
+        /// The map for the local player now: none while a menu is open, else its role's map, or Possessed while a local jinn (evil or good)
+        /// is inside an object.
+        /// </summary>
         private InputMode CurrentMode()
         {
+            if (_menuOpen)
+                return InputMode.None;
             InputMode mode = ModeForRole(_role);
             PlayerId local = _localPlayer();
             if (mode == InputMode.Spirit && local.IsValid && _insideByPlayer[local.Value])
@@ -130,9 +145,16 @@ namespace CinliMahzen.Player
             return net != null ? net.LocalPlayer : new PlayerId(0);
         }
 
+        /// <summary>TODO 4.2: the player's look sensitivity and inverted look (GameSettings), one place for every controller.</summary>
+        private static Vector2 ScaleLook(Vector2 raw)
+        {
+            GameSettings settings = GameServices.Get<GameSettings>();
+            return settings != null ? settings.ScaleLook(raw) : raw;
+        }
+
         // --- IHumanInput (Oyun §11 "İnsan (FPS)") ---
         Vector2 IHumanInput.Move => _actions.Human.Move.ReadValue<Vector2>();
-        Vector2 IHumanInput.Look => _actions.Human.Look.ReadValue<Vector2>();
+        Vector2 IHumanInput.Look => ScaleLook(_actions.Human.Look.ReadValue<Vector2>());
         public bool Sprint => _actions.Human.Sprint.IsPressed();
         public bool InteractHeld => _actions.Human.Interact.IsPressed();
         public bool InteractPressed => _actions.Human.Interact.WasPressedThisFrame();
@@ -159,7 +181,7 @@ namespace CinliMahzen.Player
 
         // --- ISpiritInput (Oyun §11 "Cin — Ruh Formu") ---
         Vector2 ISpiritInput.Move => _actions.Spirit.Move.ReadValue<Vector2>();
-        Vector2 ISpiritInput.Look => _actions.Spirit.Look.ReadValue<Vector2>();
+        Vector2 ISpiritInput.Look => ScaleLook(_actions.Spirit.Look.ReadValue<Vector2>());
         public float Vertical => _actions.Spirit.Vertical.ReadValue<float>();
         public bool Boost => _actions.Spirit.Boost.IsPressed();
         public bool PrimaryPressed => IsPrimaryAllowed(_actions.Spirit.Boost.IsPressed()) && _actions.Spirit.Primary.WasPressedThisFrame();
@@ -170,7 +192,7 @@ namespace CinliMahzen.Player
         public bool ExorciseHeld => _actions.Spirit.Exorcise.IsPressed();
 
         // --- IPossessedInput ---
-        Vector2 IPossessedInput.Look => _actions.Possessed.Look.ReadValue<Vector2>();
+        Vector2 IPossessedInput.Look => ScaleLook(_actions.Possessed.Look.ReadValue<Vector2>());
         Vector2 IPossessedInput.Move => _actions.Possessed.Move.ReadValue<Vector2>();
         public float Turn => _actions.Possessed.Turn.ReadValue<float>();
         public bool Action1Pressed => _actions.Possessed.Action1.WasPressedThisFrame();

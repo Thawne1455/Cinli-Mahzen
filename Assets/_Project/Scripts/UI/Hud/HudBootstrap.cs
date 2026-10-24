@@ -20,6 +20,8 @@ namespace CinliMahzen.UI
             var go = new GameObject("Hud");
             Object.DontDestroyOnLoad(go);
             go.AddComponent<HudView>();
+            // TODO 4.2: Esc pause menu, drawn over the HUD.
+            go.AddComponent<PauseMenuView>();
         }
     }
 }
